@@ -5,18 +5,42 @@ import { Button } from '@/components/ui/button';
 import { Copy, History, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { useDoc, useFirestore, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '../ui/skeleton';
+
+type UserProfile = {
+  inrBalance: number;
+  orBalance: number;
+  walletAddress: string;
+}
 
 export default function WalletHomePage() {
   const { toast } = useToast();
-  const walletAddress = 'ORA4I30NRTT';
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = firestore && user ? doc(firestore, 'users', user.uid) : null;
+  const { data: userProfile, loading } = useDoc<UserProfile>(userProfileRef);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(walletAddress);
+    if (!userProfile?.walletAddress) return;
+    navigator.clipboard.writeText(userProfile.walletAddress);
     toast({
       title: 'Copied!',
       description: 'Wallet address copied to clipboard.',
     });
   };
+
+  if (loading) {
+    return (
+        <div className="grid gap-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+        </div>
+    )
+  }
 
   return (
     <div className="grid gap-6">
@@ -26,7 +50,7 @@ export default function WalletHomePage() {
           <span className="font-semibold">₹</span>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold">₹0.303</div>
+          <div className="text-4xl font-bold">₹{userProfile?.inrBalance?.toFixed(3) || '0.00'}</div>
           <p className="text-xs text-muted-foreground">Available to withdraw</p>
           <Button variant="secondary" className="mt-4">
             <History className="mr-2 h-4 w-4" />
@@ -41,7 +65,7 @@ export default function WalletHomePage() {
           <LinkIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold">0.003</div>
+          <div className="text-4xl font-bold">{userProfile?.orBalance?.toFixed(3) || '0.00'}</div>
           <p className="text-xs text-muted-foreground">OR Coins</p>
         </CardContent>
       </Card>
@@ -54,14 +78,14 @@ export default function WalletHomePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
                <Avatar className="h-10 w-10">
-                <AvatarFallback>N</AvatarFallback>
+                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <p className="font-mono text-lg">{walletAddress}</p>
+                <p className="font-mono text-lg">{userProfile?.walletAddress}</p>
                 <p className="text-xs text-muted-foreground">Share this address to receive OR coins.</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={copyToClipboard}>
+            <Button variant="ghost" size="icon" onClick={copyToClipboard} disabled={!userProfile?.walletAddress}>
               <Copy className="h-5 w-5" />
             </Button>
           </div>

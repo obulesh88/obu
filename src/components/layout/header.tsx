@@ -2,23 +2,10 @@
 
 import { Logo } from '@/components/icons';
 import { UserNav } from '@/components/layout/user-nav';
-import type { User } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '../ui/button';
+import { useUser } from '@/firebase';
 
-interface HeaderProps {
-  user: User;
-}
-
-export function Header({ user }: HeaderProps) {
-  const { toast } = useToast();
-
-  const handleWithdraw = () => {
-    toast({
-      title: 'Withdrawal Processing',
-      description: `Your withdrawal of $${user.balance.toFixed(2)} has been initiated.`,
-    });
-  };
+export function Header() {
+  const { user } = useUser();
   
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
@@ -32,7 +19,7 @@ export function Header({ user }: HeaderProps) {
         </a>
       </nav>
       <div className="flex flex-1 items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <UserNav user={user} />
+        {user ? <UserNav user={user} /> : null}
       </div>
     </header>
   );

@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type Task = {
   id: string;
   title: string;
@@ -9,9 +11,19 @@ export type Task = {
   reason?: string; // AI-generated reason for recommendation
 };
 
-export type User = {
-  name: string;
-  avatarUrl: string; // id from placeholder-images.json
-  balance: number;
-  history: string;
+export type UserProfile = {
+  displayName: string;
+  email: string;
+  photoURL: string;
+  inrBalance: number;
+  orBalance: number;
+  walletAddress: string;
+  createdAt: Timestamp;
 };
+
+export type UserTask = {
+  id: string;
+  status: Task['status'];
+  submittedAt?: Timestamp;
+  completedAt?: Timestamp;
+}

@@ -4,39 +4,62 @@ import { recommendRelevantTasks } from '@/ai/flows/recommend-relevant-tasks';
 import { TaskCard } from '@/components/tasks/task-card';
 import { TaskSubmissionDialog } from '@/components/tasks/task-submission-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { initialTasks, initialUser } from '@/lib/data';
 import type { Task } from '@/lib/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, doc, updateDoc, writeBatch } from 'firebase/firestore';
 
-interface TaskListClientProps {
-  initialTasks: Task[];
-  initialUser: { history: string };
-}
+export default function TaskListClient() {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const { data: tasks, loading: tasksLoading, error: tasksError } = useCollection<Task>(firestore ? collection(firestore, 'tasks') : null);
+  const { data: userDoc, loading: userLoading } = useCollection(firestore && user ? collection(firestore, 'users', user.uid, 'tasks') : null);
 
-export default function TaskListClient({ initialTasks, initialUser }: TaskListClientProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [recommendedTasks, setRecommendedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
+  const userTaskStatus = useMemo(() => {
+    if (!userDoc) return {};
+    const statusMap: { [key: string]: Task['status'] } = {};
+    userDoc.forEach((task) => {
+      statusMap[task.id] = task.status;
+    });
+    return statusMap;
+  }, [userDoc]);
+
+  const mergedTasks = useMemo(() => {
+    if (!tasks) return [];
+    return tasks.map(task => ({
+      ...task,
+      status: userTaskStatus[task.id] || task.status,
+    }));
+  }, [tasks, userTaskStatus]);
+
   useEffect(() => {
+    if (tasksLoading || userLoading) return;
     async function getRecommendations() {
+      if (!tasks || !user) {
+        setIsLoading(false);
+        return;
+      }
       try {
-        const availableTasks = tasks
+        const availableTasks = mergedTasks
           .filter(t => t.status === 'available')
           .map(t => `ID: ${t.id}, Title: ${t.title}, Description: ${t.description}`)
           .join('\n');
         
+        // TODO: Get user history from firestore
         const recommendations = await recommendRelevantTasks({
-          userHistory: initialUser.history,
+          userHistory: 'Completed 5 data entry tasks',
           availableTasks,
         });
 
         const recommendedTaskDetails = recommendations.map(rec => {
-          const taskDetail = tasks.find(t => t.id === rec.taskId);
+          const taskDetail = mergedTasks.find(t => t.id === rec.taskId);
           return { ...taskDetail, reason: rec.reason } as Task;
         }).filter(Boolean);
 
@@ -53,11 +76,14 @@ export default function TaskListClient({ initialTasks, initialUser }: TaskListCl
       }
     }
     getRecommendations();
-  }, []);
+  }, [tasksLoading, userLoading, tasks, mergedTasks, user, toast]);
 
-  const handleTaskAction = (task: Task) => {
+  const handleTaskAction = async (task: Task) => {
+    if (!firestore || !user) return;
+    const userTaskRef = doc(firestore, 'users', user.uid, 'tasks', task.id);
+
     if (task.status === 'available') {
-      setTasks(tasks.map(t => t.id === task.id ? { ...t, status: 'in-progress' } : t));
+      await updateDoc(userTaskRef, { status: 'in-progress' });
       toast({
         title: `Task "${task.title}" started!`,
         description: 'You can now submit it for verification.',
@@ -68,8 +94,11 @@ export default function TaskListClient({ initialTasks, initialUser }: TaskListCl
     }
   };
 
-  const handleTaskSubmit = (task: Task, evidence: string) => {
-    setTasks(tasks.map(t => (t.id === task.id ? { ...t, status: 'pending-verification', evidence } : t)));
+  const handleTaskSubmit = async (task: Task, evidence: string) => {
+    if (!firestore || !user) return;
+    const userTaskRef = doc(firestore, 'users', user.uid, 'tasks', task.id);
+    await updateDoc(userTaskRef, { status: 'pending-verification', evidence });
+
     setIsDialogOpen(false);
     toast({
       title: 'Task Submitted!',
@@ -77,10 +106,14 @@ export default function TaskListClient({ initialTasks, initialUser }: TaskListCl
     });
     
     // Simulate verification
-    setTimeout(() => {
-      setTasks(prevTasks => prevTasks.map(t => (t.id === task.id ? { ...t, status: 'completed' } : t)));
-      // Note: In a real app, user balance would be updated here from a central store.
-      // This is a visual simulation.
+    setTimeout(async () => {
+      const batch = writeBatch(firestore);
+      const userProfileRef = doc(firestore, 'users', user.uid);
+      batch.update(userTaskRef, { status: 'completed' });
+      // This is not ideal, should use a transaction to update balance
+      // batch.update(userProfileRef, { balance: increment(task.reward) });
+      await batch.commit();
+
       toast({
         title: 'Task Approved!',
         description: `+ $${task.reward.toFixed(2)} has been added to your balance.`,
@@ -89,7 +122,11 @@ export default function TaskListClient({ initialTasks, initialUser }: TaskListCl
     }, 5000);
   };
 
-  const otherTasks = tasks.filter(task => !recommendedTasks.some(rec => rec.id === task.id));
+  if (tasksError) {
+    return <div>Error loading tasks.</div>
+  }
+
+  const otherTasks = mergedTasks.filter(task => !recommendedTasks.some(rec => rec.id === task.id) && task.status === 'available');
 
   return (
     <>
@@ -98,7 +135,7 @@ export default function TaskListClient({ initialTasks, initialUser }: TaskListCl
           <h2 className="text-2xl font-bold tracking-tight font-headline">Recommended for You</h2>
           <p className="text-muted-foreground">Tasks selected by AI based on your activity.</p>
         </div>
-        {isLoading ? (
+        {isLoading || tasksLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64" />)}
             </div>
