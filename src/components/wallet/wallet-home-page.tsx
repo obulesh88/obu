@@ -35,17 +35,17 @@ export default function WalletHomePage() {
 
   if (loading) {
     return (
-        <div className="grid gap-6">
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-24 w-full" />
+        <div className="grid gap-6 md:grid-cols-2">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
             <Skeleton className="h-48 w-full" />
         </div>
     )
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-6 md:grid-cols-2">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium">Your INR Balance</CardTitle>
@@ -83,7 +83,7 @@ export default function WalletHomePage() {
                 <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <p className="font-mono text-lg">{userProfile?.walletAddress}</p>
+                <p className="font-mono text-lg truncate">{userProfile?.walletAddress}</p>
                 <p className="text-xs text-muted-foreground">Share this address to receive OR coins.</p>
               </div>
             </div>

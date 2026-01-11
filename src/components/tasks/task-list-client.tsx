@@ -136,11 +136,11 @@ export default function TaskListClient() {
           <p className="text-muted-foreground">Tasks selected by AI based on your activity.</p>
         </div>
         {isLoading || tasksLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64" />)}
+            <div className="grid gap-4 md:grid-cols-2">
+                {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-64" />)}
             </div>
         ) : recommendedTasks.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             {recommendedTasks.map(task => (
               <TaskCard key={task.id} task={task} onAction={handleTaskAction} />
             ))}
@@ -153,7 +153,7 @@ export default function TaskListClient() {
       <div className="mt-8">
         <h2 className="text-2xl font-bold tracking-tight font-headline">All Tasks</h2>
         <p className="text-muted-foreground">Explore all available opportunities.</p>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
+        <div className="grid gap-4 md:grid-cols-2 mt-4">
           {otherTasks.map(task => (
             <TaskCard key={task.id} task={task} onAction={handleTaskAction} />
           ))}
