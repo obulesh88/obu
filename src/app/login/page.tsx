@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuth, useFirestore } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FcGoogle } from 'react-icons/fc';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,8 +43,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Button onClick={handleGoogleSignIn}>Sign in with Google</Button>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Welcome to EarnEasy</CardTitle>
+          <CardDescription>Sign in or create an account to start earning.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleGoogleSignIn} className="w-full" variant="outline">
+            <FcGoogle className="mr-2 h-5 w-5" />
+            Sign in with Google
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
