@@ -8,7 +8,7 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'EarnEasy',
+  title: 'OR-wallet',
   description: 'Complete tasks and earn rewards with AI-powered recommendations.',
 };
 

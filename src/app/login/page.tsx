@@ -101,7 +101,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Welcome to EarnEasy</CardTitle>
+          <CardTitle className="text-2xl">Welcome to OR-wallet</CardTitle>
           <CardDescription>Sign in or create an account to start earning.</CardDescription>
         </CardHeader>
         <CardContent>

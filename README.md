@@ -1,6 +1,6 @@
-# EarnEasy
+# OR-wallet
 
-EarnEasy is a Next.js application that allows users to earn rewards by completing tasks. The app features AI-powered task recommendations to help users find relevant opportunities.
+OR-wallet is a Next.js application that allows users to earn rewards by completing tasks. The app features AI-powered task recommendations to help users find relevant opportunities.
 
 To get started, run the development server:
 

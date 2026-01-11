@@ -50,7 +50,7 @@ export function Header() {
           className="flex items-center gap-2 font-semibold text-foreground"
         >
           <Logo className="h-6 w-6" />
-          <span className="font-headline text-xl">OR Wallet</span>
+          <span className="font-headline text-xl">OR-wallet</span>
         </a>
       </nav>
       <div className="flex flex-1 items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
