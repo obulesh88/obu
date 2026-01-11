@@ -1,13 +1,24 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Download, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useDoc, useFirestore, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+import { Skeleton } from '../ui/skeleton';
 
 export default function WalletPageContent() {
-  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(true);
+  const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = firestore && user ? doc(firestore, 'users', user.uid) : null;
+  const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  const loading = userLoading || profileLoading;
 
   return (
     <div className="grid gap-6">
@@ -53,8 +64,16 @@ export default function WalletPageContent() {
       </div>
 
       {showWithdraw && (
-        <Card>
-          <CardContent className="p-6">
+         <Card>
+          <CardHeader>
+             <CardTitle className="text-sm font-medium">Available to Withdraw</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+             {loading ? (
+                <Skeleton className="h-8 w-24" />
+             ) : (
+                <div className="text-2xl font-bold">₹{userProfile?.inrBalance?.toFixed(2) || '0.00'}</div>
+             )}
             <Button className="w-full">
               <Upload className="mr-2 h-4 w-4" />
               Withdraw
