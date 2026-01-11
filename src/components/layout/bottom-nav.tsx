@@ -1,14 +1,14 @@
 'use client';
 
-import { Wallet, Briefcase, Sparkles, User } from 'lucide-react';
+import { Home, RefreshCw, Wallet, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export function BottomNav() {
   const navItems = [
+    { href: '#', icon: <Home />, label: 'Home' },
+    { href: '#', icon: <RefreshCw />, label: 'Convert' },
     { href: '#', icon: <Wallet />, label: 'Wallet' },
-    { href: '#', icon: <Briefcase />, label: 'Tasks' },
-    { href: '#', icon: <Sparkles />, label: 'AI' },
     { href: '#', icon: <User />, label: 'Profile' },
   ];
 
