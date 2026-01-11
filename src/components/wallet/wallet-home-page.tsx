@@ -8,11 +8,21 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
 import Link from 'next/link';
 import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 
 export default function WalletHomePage() {
   const { toast } = useToast();
   const { user, userProfile, loading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
 
   const copyToClipboard = () => {
     if (!userProfile?.wallet.walletAddress) return;
@@ -23,7 +33,7 @@ export default function WalletHomePage() {
     });
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
         <div className="grid gap-6 md:grid-cols-2">
             <Skeleton className="h-48 w-full" />
