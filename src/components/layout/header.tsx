@@ -5,7 +5,7 @@ import { UserNav } from '@/components/layout/user-nav';
 import { useUser } from '@/firebase';
 import { Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from '../ui/sidebar';
 import Link from 'next/link';
-import { Home, RefreshCw, User as UserIcon, Wallet } from 'lucide-react';
+import { Home, RefreshCw, User as UserIcon, Wallet, Briefcase } from 'lucide-react';
 
 export function Header() {
   const { user } = useUser();
@@ -20,6 +20,11 @@ export function Header() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
                 <Link href="/"><Home />Home</Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+                <Link href="/tasks"><Briefcase />Tasks</Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
