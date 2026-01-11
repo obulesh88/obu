@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "Represents a user in the system.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique ID."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL of the user's profile picture."
+        },
+        "orBalance": {
+          "type": "number",
+          "description": "The user's balance of OR coins."
+        },
+        "inrBalance": {
+          "type": "number",
+          "description": "The user's balance in INR."
+        },
+        "walletAddress": {
+            "type": "string",
+            "description": "The user's wallet address."
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "task": {
+      "title": "Task",
+      "description": "Represents a task a user can complete.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique ID of the task."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the task."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the task."
+        },
+        "reward": {
+          "type": "number",
+          "description": "The amount of OR coins awarded for completing the task."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["Survey", "Testing", "Review", "Data Entry", "Games", "Watch Ads", "Captcha", "Other"],
+          "description": "The type of the task."
+        }
+      },
+      "required": ["id", "title", "description", "reward", "type"]
+    },
+    "userTask": {
+        "title": "User Task",
+        "description": "Represents a user's progress on a task.",
+        "type": "object",
+        "properties": {
+            "status": {
+                "type": "string",
+                "enum": ["available", "in-progress", "pending-verification", "completed", "rejected"],
+                "description": "The status of the task for the user."
+            },
+            "evidence": {
+                "type": "string",
+                "description": "Evidence of task completion provided by the user."
+            },
+            "submittedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The timestamp when the user submitted the task."
+            },
+            "completedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The timestamp when the task was marked as completed."
+            }
+        },
+        "required": ["status"]
+    }
+  },
+  "auth": {
+    "providers": ["Google"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/user"
+      },
+      "description": "Stores user profile information."
+    },
+    "/tasks": {
+        "schema": {
+            "$ref": "#/entities/task"
+        },
+        "description": "Stores all available tasks."
+    },
+    "/users/{userId}/tasks/{taskId}": {
+        "schema": {
+            "$ref": "#/entities/userTask"
+        },
+        "description": "Tracks the status of tasks for each user."
+    }
+  }
+}

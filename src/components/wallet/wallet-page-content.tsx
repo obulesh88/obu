@@ -3,32 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Download, Upload } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
-
-const mockUserProfile: UserProfile = {
-    displayName: 'John Doe',
-    email: 'john.doe@example.com',
-    photoURL: '',
-    inrBalance: 125.50,
-    orBalance: 125000,
-    walletAddress: '0x123...abc',
-    createdAt: new Date() as any,
-};
+import { useUser } from '@/firebase';
 
 export default function WalletPageContent() {
   const [showWithdraw, setShowWithdraw] = useState(true);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setTimeout(() => {
-        setUserProfile(mockUserProfile);
-        setLoading(false);
-    }, 500)
-  }, []);
+  const { userProfile, loading } = useUser();
 
   return (
     <div className="grid gap-6">

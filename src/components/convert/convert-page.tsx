@@ -8,15 +8,15 @@ import { useToast } from '@/hooks/use-toast';
 import { RefreshCw, ArrowRightLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '../ui/skeleton';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, runTransaction } from 'firebase/firestore';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 
 export default function ConvertPage() {
   const { toast } = useToast();
-  
-  const [userProfile, setUserProfile] = useState({ orBalance: 5000, inrBalance: 50 });
-  const [loading, setLoading] = useState(false);
-
+  const { user, userProfile, loading } = useUser();
+  const firestore = useFirestore();
 
   const [orAmount, setOrAmount] = useState('');
   const [inrAmount, setInrAmount] = useState('');
@@ -32,6 +32,15 @@ export default function ConvertPage() {
   }, [orAmount]);
 
   const handleConvert = async () => {
+    if (!user || !userProfile) {
+      toast({
+        variant: 'destructive',
+        title: 'Not Authenticated',
+        description: 'You must be logged in to convert coins.',
+      });
+      return;
+    }
+
     const orToConvert = parseFloat(orAmount);
 
     if (isNaN(orToConvert) || orToConvert <= 0) {
@@ -43,7 +52,7 @@ export default function ConvertPage() {
       return;
     }
 
-    if (!userProfile || userProfile.orBalance < orToConvert) {
+    if (userProfile.orBalance < orToConvert) {
       toast({
         variant: 'destructive',
         title: 'Insufficient Balance',
@@ -54,25 +63,28 @@ export default function ConvertPage() {
 
     setIsConverting(true);
     try {
-      // Mock conversion
-      const newOrBalance = userProfile.orBalance - orToConvert;
-      const newInrBalance = userProfile.inrBalance + orToConvert / CONVERSION_RATE;
-      
-      setTimeout(() => {
-        setUserProfile({
-            orBalance: newOrBalance,
-            inrBalance: newInrBalance,
-        });
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await runTransaction(firestore, async (transaction) => {
+        const userDoc = await transaction.get(userDocRef);
+        if (!userDoc.exists()) {
+          throw 'User document does not exist!';
+        }
 
-        toast({
-          title: 'Conversion Successful',
-          description: `${orToConvert} OR coins have been converted to ₹${(orToConvert / CONVERSION_RATE).toFixed(2)} INR.`,
-        });
-        setOrAmount('');
-        setInrAmount('');
-        setIsConverting(false);
-      }, 1000);
+        const newOrBalance = userDoc.data().orBalance - orToConvert;
+        const newInrBalance = userDoc.data().inrBalance + orToConvert / CONVERSION_RATE;
 
+        transaction.update(userDocRef, {
+          orBalance: newOrBalance,
+          inrBalance: newInrBalance,
+        });
+      });
+
+      toast({
+        title: 'Conversion Successful',
+        description: `${orToConvert} OR coins have been converted to ₹${(orToConvert / CONVERSION_RATE).toFixed(2)} INR.`,
+      });
+      setOrAmount('');
+      setInrAmount('');
     } catch (error: any) {
       console.error('Conversion failed: ', error);
       toast({
@@ -80,6 +92,7 @@ export default function ConvertPage() {
         title: 'Conversion Failed',
         description: error.message || 'An unexpected error occurred.',
       });
+    } finally {
       setIsConverting(false);
     }
   };
@@ -153,7 +166,7 @@ export default function ConvertPage() {
         <p className="text-sm text-muted-foreground">1,000 OR = ₹1.00</p>
       </CardContent>
       <CardFooter>
-        <Button className="w-full" onClick={handleConvert} disabled={isConverting}>
+        <Button className="w-full" onClick={handleConvert} disabled={isConverting || !user}>
           {isConverting ? (
             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
           ) : (

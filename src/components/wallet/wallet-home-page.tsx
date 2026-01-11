@@ -7,38 +7,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useUser } from '@/firebase';
 
-type UserProfile = {
-  inrBalance: number;
-  orBalance: number;
-  walletAddress: string;
-}
-
-const mockUserProfile: UserProfile = {
-  inrBalance: 125.50,
-  orBalance: 125000,
-  walletAddress: '0x123...abc'
-};
-
-const mockUser = {
-    displayName: 'John Doe'
-};
 
 export default function WalletHomePage() {
   const { toast } = useToast();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setUserProfile(mockUserProfile);
-      setUser(mockUser);
-      setLoading(false);
-    }, 500);
-  }, []);
+  const { user, userProfile, loading } = useUser();
 
   const copyToClipboard = () => {
     if (!userProfile?.walletAddress) return;

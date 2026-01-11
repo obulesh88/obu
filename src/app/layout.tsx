@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'EarnEasy',
@@ -31,6 +32,7 @@ export default function RootLayout({
           'min-h-screen bg-background font-body antialiased'
         )}
       >
+        <FirebaseClientProvider>
           <SidebarProvider>
               <div className="flex min-h-screen w-full flex-col">
                 <Header />
@@ -43,6 +45,7 @@ export default function RootLayout({
               </div>
           </SidebarProvider>
           <Toaster />
+        </FirebaseClientProvider>
       </body>
     </html>
   );

@@ -10,6 +10,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { signOut } from 'firebase/auth';
+import { useAuth } from '@/firebase';
+import { useRouter } from 'next/navigation';
+
 
 // This component is now simplified as auth is removed.
 // It receives a mock user object.
@@ -22,6 +26,14 @@ interface UserNavProps {
 }
 
 export function UserNav({ user }: UserNavProps) {
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push('/login');
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -49,7 +61,7 @@ export function UserNav({ user }: UserNavProps) {
           <DropdownMenuItem>Settings</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Log out</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut}>Log out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

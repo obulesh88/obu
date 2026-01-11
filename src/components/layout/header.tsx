@@ -5,22 +5,10 @@ import { UserNav } from '@/components/layout/user-nav';
 import { Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from '../ui/sidebar';
 import Link from 'next/link';
 import { Home, RefreshCw, User as UserIcon, Wallet, Briefcase } from 'lucide-react';
-import { useState, useEffect } from 'react';
-
-// Mock user object
-const mockUser = {
-  displayName: 'John Doe',
-  email: 'john.doe@example.com',
-  photoURL: 'https://picsum.photos/seed/1/40/40',
-};
+import { useUser } from '@/firebase';
 
 export function Header() {
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    // In a real app, you'd fetch this from your auth provider
-    setUser(mockUser);
-  }, []);
+  const { user } = useUser();
   
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">

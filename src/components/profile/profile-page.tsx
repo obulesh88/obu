@@ -5,26 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { useEffect, useState } from 'react';
-
-// Mock user object
-const mockUser = {
-  displayName: 'John Doe',
-  email: 'john.doe@example.com',
-  photoURL: 'https://picsum.photos/seed/1/80/80',
-};
+import { useUser } from '@/firebase';
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate fetching user data
-    setTimeout(() => {
-      setUser(mockUser);
-      setLoading(false);
-    }, 500);
-  }, []);
+  const { user, userProfile, loading } = useUser();
 
   if (loading) {
     return (
@@ -35,7 +19,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) {
+  if (!user || !userProfile) {
     return <div>Please log in to view your profile.</div>;
   }
 
@@ -47,12 +31,12 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? ''} />
-            <AvatarFallback>{user.displayName?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
+            <AvatarImage src={userProfile.photoURL ?? ''} alt={userProfile.displayName ?? ''} />
+            <AvatarFallback>{userProfile.displayName?.charAt(0) || userProfile.email?.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="grid gap-1">
-            <h2 className="text-2xl font-bold">{user.displayName}</h2>
-            <p className="text-muted-foreground">{user.email}</p>
+            <h2 className="text-2xl font-bold">{userProfile.displayName}</h2>
+            <p className="text-muted-foreground">{userProfile.email}</p>
           </div>
         </CardContent>
       </Card>
@@ -63,11 +47,11 @@ export default function ProfilePage() {
         <CardContent className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
-                <Input id="displayName" value={user.displayName ?? ''} readOnly />
+                <Input id="displayName" value={userProfile.displayName ?? ''} readOnly />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
-                <Input id="email" type="email" value={user.email ?? ''} readOnly />
+                <Input id="email" type="email" value={userProfile.email ?? ''} readOnly />
             </div>
         </CardContent>
       </Card>
