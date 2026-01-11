@@ -5,10 +5,9 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Briefcase, Copy, History, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 type UserProfile = {
   inrBalance: number;
@@ -16,13 +15,30 @@ type UserProfile = {
   walletAddress: string;
 }
 
+const mockUserProfile: UserProfile = {
+  inrBalance: 125.50,
+  orBalance: 125000,
+  walletAddress: '0x123...abc'
+};
+
+const mockUser = {
+    displayName: 'John Doe'
+};
+
 export default function WalletHomePage() {
   const { toast } = useToast();
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const userProfileRef = firestore && user ? doc(firestore, 'users', user.uid) : null;
-  const { data: userProfile, loading } = useDoc<UserProfile>(userProfileRef);
+  useEffect(() => {
+    // Simulate loading
+    setTimeout(() => {
+      setUserProfile(mockUserProfile);
+      setUser(mockUser);
+      setLoading(false);
+    }, 500);
+  }, []);
 
   const copyToClipboard = () => {
     if (!userProfile?.walletAddress) return;
@@ -38,8 +54,8 @@ export default function WalletHomePage() {
         <div className="grid gap-6 md:grid-cols-2">
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full md:col-span-2" />
+             <Skeleton className="h-48 w-full md:col-span-2" />
         </div>
     )
   }

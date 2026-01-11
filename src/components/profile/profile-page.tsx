@@ -1,14 +1,30 @@
 'use client';
 
-import { useUser } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useEffect, useState } from 'react';
+
+// Mock user object
+const mockUser = {
+  displayName: 'John Doe',
+  email: 'john.doe@example.com',
+  photoURL: 'https://picsum.photos/seed/1/80/80',
+};
 
 export default function ProfilePage() {
-  const { user, loading } = useUser();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate fetching user data
+    setTimeout(() => {
+      setUser(mockUser);
+      setLoading(false);
+    }, 500);
+  }, []);
 
   if (loading) {
     return (

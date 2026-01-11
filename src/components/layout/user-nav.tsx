@@ -9,17 +9,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { User } from 'firebase/auth';
-import { signOut } from 'firebase/auth';
-import { useAuth } from '@/firebase';
 import Link from 'next/link';
 
+// This component is now simplified as auth is removed.
+// It receives a mock user object.
 interface UserNavProps {
-  user: User;
+  user: {
+    displayName?: string | null;
+    email?: string | null;
+    photoURL?: string | null;
+  };
 }
 
 export function UserNav({ user }: UserNavProps) {
-  const auth = useAuth();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -47,7 +49,7 @@ export function UserNav({ user }: UserNavProps) {
           <DropdownMenuItem>Settings</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut(auth)}>Log out</DropdownMenuItem>
+        <DropdownMenuItem>Log out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

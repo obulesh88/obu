@@ -1,4 +1,3 @@
-import { Timestamp } from "firebase/firestore";
 
 export type Task = {
   id: string;
@@ -18,12 +17,12 @@ export type UserProfile = {
   inrBalance: number;
   orBalance: number;
   walletAddress: string;
-  createdAt: Timestamp;
+  createdAt: Date;
 };
 
 export type UserTask = {
   id: string;
   status: Task['status'];
-  submittedAt?: Timestamp;
-  completedAt?: Timestamp;
+  submittedAt?: Date;
+  completedAt?: Date;
 }

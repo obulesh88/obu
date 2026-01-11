@@ -6,21 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { RefreshCw, ArrowRightLeft } from 'lucide-react';
-import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc, runTransaction } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
-import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 
 export default function ConvertPage() {
   const { toast } = useToast();
-  const { user, loading: userLoading } = useUser();
-  const firestore = useFirestore();
+  
+  const [userProfile, setUserProfile] = useState({ orBalance: 5000, inrBalance: 50 });
+  const [loading, setLoading] = useState(false);
 
-  const userProfileRef = firestore && user ? doc(firestore, 'users', user.uid) : null;
-  const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const [orAmount, setOrAmount] = useState('');
   const [inrAmount, setInrAmount] = useState('');
@@ -36,8 +32,6 @@ export default function ConvertPage() {
   }, [orAmount]);
 
   const handleConvert = async () => {
-    if (!firestore || !user || !userProfileRef) return;
-
     const orToConvert = parseFloat(orAmount);
 
     if (isNaN(orToConvert) || orToConvert <= 0) {
@@ -60,34 +54,25 @@ export default function ConvertPage() {
 
     setIsConverting(true);
     try {
-      await runTransaction(firestore, async (transaction) => {
-        const userDoc = await transaction.get(userProfileRef);
-        if (!userDoc.exists()) {
-          throw 'User document does not exist!';
-        }
-
-        const currentOrBalance = userDoc.data().orBalance || 0;
-        const currentInrBalance = userDoc.data().inrBalance || 0;
-
-        if (currentOrBalance < orToConvert) {
-          throw 'Insufficient OR balance.';
-        }
-
-        const newOrBalance = currentOrBalance - orToConvert;
-        const newInrBalance = currentInrBalance + orToConvert / CONVERSION_RATE;
-
-        transaction.update(userProfileRef, {
-          orBalance: newOrBalance,
-          inrBalance: newInrBalance,
+      // Mock conversion
+      const newOrBalance = userProfile.orBalance - orToConvert;
+      const newInrBalance = userProfile.inrBalance + orToConvert / CONVERSION_RATE;
+      
+      setTimeout(() => {
+        setUserProfile({
+            orBalance: newOrBalance,
+            inrBalance: newInrBalance,
         });
-      });
 
-      toast({
-        title: 'Conversion Successful',
-        description: `${orToConvert} OR coins have been converted to ₹${(orToConvert / CONVERSION_RATE).toFixed(2)} INR.`,
-      });
-      setOrAmount('');
-      setInrAmount('');
+        toast({
+          title: 'Conversion Successful',
+          description: `${orToConvert} OR coins have been converted to ₹${(orToConvert / CONVERSION_RATE).toFixed(2)} INR.`,
+        });
+        setOrAmount('');
+        setInrAmount('');
+        setIsConverting(false);
+      }, 1000);
+
     } catch (error: any) {
       console.error('Conversion failed: ', error);
       toast({
@@ -95,12 +80,10 @@ export default function ConvertPage() {
         title: 'Conversion Failed',
         description: error.message || 'An unexpected error occurred.',
       });
-    } finally {
       setIsConverting(false);
     }
   };
 
-  const loading = userLoading || profileLoading;
 
   if (loading) {
     return (
