@@ -13,12 +13,16 @@ export type Task = {
 
 export type UserProfile = {
   uid: string;
-  displayName: string;
   email: string;
-  photoURL: string;
-  inrBalance: number;
-  orBalance: number;
-  walletAddress: string;
+  profile: {
+    displayName: string;
+    photoURL: string;
+  };
+  wallet: {
+    orBalance: number;
+    inrBalance: number;
+    walletAddress: string;
+  };
   createdAt: Timestamp;
 };
 

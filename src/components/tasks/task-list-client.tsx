@@ -122,9 +122,10 @@ export default function TaskListClient() {
             if (!userDoc.exists()) {
               throw "User document does not exist!";
             }
-
-            const newOrBalance = userDoc.data().orBalance + taskToVerify.reward;
-            transaction.update(userDocRef, { orBalance: newOrBalance });
+            
+            const currentData = userDoc.data();
+            const newOrBalance = (currentData.wallet?.orBalance || 0) + taskToVerify.reward;
+            transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
             transaction.update(userTaskDocRef, { status: 'completed', completedAt: new Date() });
           });
 

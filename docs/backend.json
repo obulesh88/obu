@@ -9,34 +9,46 @@
           "type": "string",
           "description": "The user's unique ID."
         },
-        "displayName": {
-          "type": "string",
-          "description": "The user's display name."
-        },
         "email": {
           "type": "string",
           "format": "email",
           "description": "The user's email address."
         },
-        "photoURL": {
-          "type": "string",
-          "format": "uri",
-          "description": "The URL of the user's profile picture."
+        "profile": {
+          "type": "object",
+          "description": "User's public profile information.",
+          "properties": {
+            "displayName": {
+              "type": "string",
+              "description": "The user's display name."
+            },
+            "photoURL": {
+              "type": "string",
+              "format": "uri",
+              "description": "The URL of the user's profile picture."
+            }
+          }
         },
-        "orBalance": {
-          "type": "number",
-          "description": "The user's balance of OR coins."
-        },
-        "inrBalance": {
-          "type": "number",
-          "description": "The user's balance in INR."
-        },
-        "walletAddress": {
-            "type": "string",
-            "description": "The user's wallet address."
+        "wallet": {
+          "type": "object",
+          "description": "User's wallet and balance information.",
+          "properties": {
+            "orBalance": {
+              "type": "number",
+              "description": "The user's balance of OR coins."
+            },
+            "inrBalance": {
+              "type": "number",
+              "description": "The user's balance in INR."
+            },
+            "walletAddress": {
+              "type": "string",
+              "description": "The user's wallet address."
+            }
+          }
         }
       },
-      "required": ["uid", "email"]
+      "required": ["uid", "email", "profile", "wallet"]
     },
     "task": {
       "title": "Task",
@@ -68,35 +80,37 @@
       "required": ["id", "title", "description", "reward", "type"]
     },
     "userTask": {
-        "title": "User Task",
-        "description": "Represents a user's progress on a task.",
-        "type": "object",
-        "properties": {
-            "status": {
-                "type": "string",
-                "enum": ["available", "in-progress", "pending-verification", "completed", "rejected"],
-                "description": "The status of the task for the user."
-            },
-            "evidence": {
-                "type": "string",
-                "description": "Evidence of task completion provided by the user."
-            },
-            "submittedAt": {
-                "type": "string",
-                "format": "date-time",
-                "description": "The timestamp when the user submitted the task."
-            },
-            "completedAt": {
-                "type": "string",
-                "format": "date-time",
-                "description": "The timestamp when the task was marked as completed."
-            }
+      "title": "User Task",
+      "description": "Represents a user's progress on a task.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["available", "in-progress", "pending-verification", "completed", "rejected"],
+          "description": "The status of the task for the user."
         },
-        "required": ["status"]
+        "evidence": {
+          "type": "string",
+          "description": "Evidence of task completion provided by the user."
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user submitted the task."
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the task was marked as completed."
+        }
+      },
+      "required": ["status"]
     }
   },
   "auth": {
-    "providers": ["Google"]
+    "providers": [
+      "Google"
+    ]
   },
   "firestore": {
     "/users/{userId}": {
@@ -106,16 +120,16 @@
       "description": "Stores user profile information."
     },
     "/tasks": {
-        "schema": {
-            "$ref": "#/entities/task"
-        },
-        "description": "Stores all available tasks."
+      "schema": {
+        "$ref": "#/entities/task"
+      },
+      "description": "Stores all available tasks."
     },
     "/users/{userId}/tasks/{taskId}": {
-        "schema": {
-            "$ref": "#/entities/userTask"
-        },
-        "description": "Tracks the status of tasks for each user."
+      "schema": {
+        "$ref": "#/entities/userTask"
+      },
+      "description": "Tracks the status of tasks for each user."
     }
   }
 }

@@ -21,12 +21,16 @@ export default function LoginPage() {
       const userRef = doc(firestore, 'users', user.uid);
       await setDoc(userRef, {
         uid: user.uid,
-        displayName: user.displayName,
         email: user.email,
-        photoURL: user.photoURL,
-        orBalance: 0,
-        inrBalance: 0,
-        walletAddress: `0x${user.uid.substring(0,10)}...${user.uid.slice(-4)}`,
+        profile: {
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        },
+        wallet: {
+          orBalance: 0,
+          inrBalance: 0,
+          walletAddress: `0x${user.uid.substring(0,10)}...${user.uid.slice(-4)}`,
+        },
         createdAt: serverTimestamp(),
       }, { merge: true });
 

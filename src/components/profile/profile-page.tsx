@@ -31,11 +31,11 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={userProfile.photoURL ?? ''} alt={userProfile.displayName ?? ''} />
-            <AvatarFallback>{userProfile.displayName?.charAt(0) || userProfile.email?.charAt(0)}</AvatarFallback>
+            <AvatarImage src={userProfile.profile?.photoURL ?? ''} alt={userProfile.profile?.displayName ?? ''} />
+            <AvatarFallback>{userProfile.profile?.displayName?.charAt(0) || userProfile.email?.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="grid gap-1">
-            <h2 className="text-2xl font-bold">{userProfile.displayName}</h2>
+            <h2 className="text-2xl font-bold">{userProfile.profile?.displayName}</h2>
             <p className="text-muted-foreground">{userProfile.email}</p>
           </div>
         </CardContent>
@@ -47,7 +47,7 @@ export default function ProfilePage() {
         <CardContent className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
-                <Input id="displayName" value={userProfile.displayName ?? ''} readOnly />
+                <Input id="displayName" value={userProfile.profile?.displayName ?? ''} readOnly />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>

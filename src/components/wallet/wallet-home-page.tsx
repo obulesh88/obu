@@ -15,8 +15,8 @@ export default function WalletHomePage() {
   const { user, userProfile, loading } = useUser();
 
   const copyToClipboard = () => {
-    if (!userProfile?.walletAddress) return;
-    navigator.clipboard.writeText(userProfile.walletAddress);
+    if (!userProfile?.wallet.walletAddress) return;
+    navigator.clipboard.writeText(userProfile.wallet.walletAddress);
     toast({
       title: 'Copied!',
       description: 'Wallet address copied to clipboard.',
@@ -42,7 +42,7 @@ export default function WalletHomePage() {
           <span className="font-semibold">₹</span>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold">₹{userProfile?.inrBalance?.toFixed(2) || '0.00'}</div>
+          <div className="text-4xl font-bold">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
           <p className="text-xs text-muted-foreground">Available to withdraw</p>
           <Button variant="secondary" className="mt-4">
             <History className="mr-2 h-4 w-4" />
@@ -57,7 +57,7 @@ export default function WalletHomePage() {
           <LinkIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold">{userProfile?.orBalance?.toFixed(2) || '0.00'}</div>
+          <div className="text-4xl font-bold">{userProfile?.wallet?.orBalance?.toFixed(2) || '0.00'}</div>
           <p className="text-xs text-muted-foreground">OR Coins</p>
         </CardContent>
       </Card>
@@ -73,11 +73,11 @@ export default function WalletHomePage() {
                 <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <p className="font-mono text-lg truncate">{userProfile?.walletAddress}</p>
+                <p className="font-mono text-lg truncate">{userProfile?.wallet?.walletAddress}</p>
                 <p className="text-xs text-muted-foreground">Share this address to receive OR coins.</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={copyToClipboard} disabled={!userProfile?.walletAddress}>
+            <Button variant="ghost" size="icon" onClick={copyToClipboard} disabled={!userProfile?.wallet?.walletAddress}>
               <Copy className="h-5 w-5" />
             </Button>
           </div>

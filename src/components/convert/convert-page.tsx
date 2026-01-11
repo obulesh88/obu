@@ -52,7 +52,7 @@ export default function ConvertPage() {
       return;
     }
 
-    if (userProfile.orBalance < orToConvert) {
+    if (userProfile.wallet.orBalance < orToConvert) {
       toast({
         variant: 'destructive',
         title: 'Insufficient Balance',
@@ -69,13 +69,14 @@ export default function ConvertPage() {
         if (!userDoc.exists()) {
           throw 'User document does not exist!';
         }
-
-        const newOrBalance = userDoc.data().orBalance - orToConvert;
-        const newInrBalance = userDoc.data().inrBalance + orToConvert / CONVERSION_RATE;
+        
+        const currentData = userDoc.data();
+        const newOrBalance = (currentData.wallet?.orBalance || 0) - orToConvert;
+        const newInrBalance = (currentData.wallet?.inrBalance || 0) + orToConvert / CONVERSION_RATE;
 
         transaction.update(userDocRef, {
-          orBalance: newOrBalance,
-          inrBalance: newInrBalance,
+          'wallet.orBalance': newOrBalance,
+          'wallet.inrBalance': newInrBalance,
         });
       });
 
@@ -123,7 +124,7 @@ export default function ConvertPage() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-right text-sm font-medium text-muted-foreground">
-          Available OR: {userProfile?.orBalance?.toFixed(2) || '0.00'}
+          Available OR: {userProfile?.wallet?.orBalance?.toFixed(2) || '0.00'}
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto_1fr] items-center">
           <div className="space-y-2">

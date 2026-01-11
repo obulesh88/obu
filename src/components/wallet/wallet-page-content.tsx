@@ -64,7 +64,7 @@ export default function WalletPageContent() {
              {loading ? (
                 <Skeleton className="h-8 w-24" />
              ) : (
-                <div className="text-2xl font-bold">₹{userProfile?.inrBalance?.toFixed(2) || '0.00'}</div>
+                <div className="text-2xl font-bold">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
              )}
             <Button className="w-full">
               <Upload className="mr-2 h-4 w-4" />
