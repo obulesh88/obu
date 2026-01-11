@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, DollarSign, Download } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Input } from '../ui/input';
 
@@ -24,9 +24,9 @@ export default function Wallet() {
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="9" stroke="hsl(var(--destructive))" strokeWidth="2"></circle>
-                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" fill="hsl(var(--destructive))" fillOpacity="0.5"></path>
-                    <circle cx="12" cy="12" r="1" fill="white"></circle>
+                    <circle cx="12" cy="12" r="9" stroke="hsl(var(--primary))" strokeWidth="2"></circle>
+                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" fill="hsl(var(--accent))" ></path>
+                    <circle cx="12" cy="12" r="1" fill="hsl(var(--primary-foreground))"></circle>
                   </svg>
                   <span className="font-semibold">OR</span>
                 </div>
@@ -52,7 +52,7 @@ export default function Wallet() {
               </div>
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-destructive">₹</span>
+                  <span className="font-semibold text-primary">₹</span>
                   <span className="font-semibold">INR</span>
                 </div>
                 <span className="text-2xl font-bold text-muted-foreground">--</span>
@@ -62,14 +62,28 @@ export default function Wallet() {
           <div className="mt-4 text-center text-xs text-muted-foreground">
             1000 OR ≈ ₹1
           </div>
-          <Button variant="destructive" size="lg" className="mt-6 w-full font-bold">
+          <Button variant="default" size="lg" className="mt-6 w-full font-bold">
              <Avatar className="mr-2 h-6 w-6 bg-white/20">
-                <AvatarFallback className="bg-transparent text-destructive-foreground">N</AvatarFallback>
+                <AvatarFallback className="bg-transparent text-primary-foreground">N</AvatarFallback>
             </Avatar>
             Convert Now
           </Button>
         </CardContent>
       </Card>
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="flex flex-col items-center justify-center p-6">
+          <Button variant="outline" size="icon" className="h-12 w-12 rounded-full bg-card">
+            <DollarSign className="h-6 w-6" />
+          </Button>
+          <p className="mt-2 font-semibold">Earning</p>
+        </Card>
+        <Card className="flex flex-col items-center justify-center p-6">
+          <Button variant="outline" size="icon" className="h-12 w-12 rounded-full bg-card">
+            <Download className="h-6 w-6" />
+          </Button>
+          <p className="mt-2 font-semibold">Deposit</p>
+        </Card>
+      </div>
     </div>
   );
 }
