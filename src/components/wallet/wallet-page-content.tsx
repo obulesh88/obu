@@ -81,6 +81,24 @@ export default function WalletPageContent() {
           </CardContent>
         </Card>
       )}
+
+      {!showWithdraw && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Deposit Options</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4">
+            <Button variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Add
+            </Button>
+            <Button variant="outline">
+              <Upload className="mr-2 h-4 w-4" />
+              Withdrawal
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
