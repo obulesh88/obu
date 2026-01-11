@@ -6,9 +6,9 @@ import Link from 'next/link';
 
 export function BottomNav() {
   const navItems = [
-    { href: '#', icon: <Home />, label: 'Home' },
-    { href: '#', icon: <RefreshCw />, label: 'Convert' },
-    { href: '#', icon: <Wallet />, label: 'Wallet' },
+    { href: '/', icon: <Home />, label: 'Home' },
+    { href: '/wallet', icon: <RefreshCw />, label: 'Convert' },
+    { href: '/wallet', icon: <Wallet />, label: 'Wallet' },
     { href: '#', icon: <User />, label: 'Profile' },
   ];
 
