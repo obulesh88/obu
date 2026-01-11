@@ -5,8 +5,39 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, DollarSign, Download } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Input } from '../ui/input';
+import { useDoc, useFirestore, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+
+type UserProfile = {
+  inrBalance: number;
+  orBalance: number;
+}
 
 export default function Wallet() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = firestore && user ? doc(firestore, 'users', user.uid) : null;
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+  
+  const [orAmount, setOrAmount] = useState(0);
+  const [inrAmount, setInrAmount] = useState(0);
+
+  const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
+
+  useEffect(() => {
+    if (orAmount) {
+      setInrAmount(orAmount / CONVERSION_RATE);
+    } else {
+      setInrAmount(0);
+    }
+  }, [orAmount]);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    setOrAmount(isNaN(value) ? 0 : value);
+  };
 
   return (
     <div className="grid gap-6">
@@ -19,7 +50,7 @@ export default function Wallet() {
             <div className="rounded-lg border bg-secondary/30 p-4">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>From</span>
-                <span>Available balance: 0.003</span>
+                <span>Available balance: {userProfile?.orBalance?.toFixed(3) || '0.000'}</span>
               </div>
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -32,8 +63,9 @@ export default function Wallet() {
                 </div>
                 <Input
                   type="number"
-                  defaultValue="0"
-                  className="w-24 border-none bg-transparent text-right text-2xl font-bold focus-visible:ring-0"
+                  value={orAmount}
+                  onChange={handleAmountChange}
+                  className="w-32 border-none bg-transparent text-right text-2xl font-bold focus-visible:ring-0"
                 />
               </div>
             </div>
@@ -55,12 +87,12 @@ export default function Wallet() {
                   <span className="font-semibold text-primary">₹</span>
                   <span className="font-semibold">INR</span>
                 </div>
-                <span className="text-2xl font-bold text-muted-foreground">--</span>
+                <span className="text-2xl font-bold text-muted-foreground">{inrAmount.toFixed(2)}</span>
               </div>
             </div>
           </div>
           <div className="mt-4 text-center text-xs text-muted-foreground">
-            1000 OR ≈ ₹1
+            {CONVERSION_RATE} OR ≈ ₹1
           </div>
           <Button variant="default" size="lg" className="mt-6 w-full font-bold">
              <Avatar className="mr-2 h-6 w-6 bg-white/20">
