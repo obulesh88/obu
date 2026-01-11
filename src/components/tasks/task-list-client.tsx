@@ -107,8 +107,11 @@ export default function TaskListClient() {
     
     // Simulate verification and reward
     setTimeout(async () => {
+      if (!firestore || !user) return;
       try {
+        const taskToVerify = task; // use a local variable
         await runTransaction(firestore, async (transaction) => {
+          const userTaskRef = doc(firestore, 'users', user.uid, 'tasks', taskToVerify.id);
           const userProfileRef = doc(firestore, 'users', user.uid);
           const userProfileDoc = await transaction.get(userProfileRef);
 
@@ -116,7 +119,7 @@ export default function TaskListClient() {
             throw "User profile does not exist!";
           }
 
-          const newOrBalance = (userProfileDoc.data().orBalance || 0) + task.reward;
+          const newOrBalance = (userProfileDoc.data().orBalance || 0) + taskToVerify.reward;
           
           transaction.update(userTaskRef, { status: 'completed' });
           transaction.update(userProfileRef, { orBalance: newOrBalance });
@@ -124,7 +127,7 @@ export default function TaskListClient() {
 
         toast({
           title: 'Task Approved!',
-          description: `+ ${task.reward.toFixed(2)} OR coins have been added to your balance.`,
+          description: `+ ${taskToVerify.reward.toFixed(2)} OR coins have been added to your balance.`,
           className: 'bg-green-100 border-green-300 text-green-800',
         });
       } catch (e) {
