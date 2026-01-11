@@ -14,7 +14,7 @@ import { doc, setDoc, runTransaction } from 'firebase/firestore';
 export default function TaskListClient() {
   const { data: availableTasks, loading: tasksLoading } = useCollection<Task>('tasks');
   const { user, userProfile, loading: userLoading } = useUser();
-  const { data: userTasks, loading: userTasksLoading } = useCollection<UserTask>(user ? `users/${user.uid}/tasks` : '');
+  const { data: userTasks, loading: userTasksLoading } = useCollection<UserTask>(user ? `users/${user.uid}/tasks` : null);
   
   const [recommendedTasks, setRecommendedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,9 +25,12 @@ export default function TaskListClient() {
 
 
   const mergedTasks = useMemo(() => {
-    if (tasksLoading || userTasksLoading) return [];
+    if (tasksLoading || userTasksLoading || !availableTasks) return [];
+    
+    const userTasksData = userTasks || [];
+    
     return availableTasks.map(task => {
-      const userTask = userTasks.find(ut => ut.id === task.id);
+      const userTask = userTasksData.find(ut => ut.id === task.id);
       return {
         ...task,
         status: userTask?.status || 'available',
@@ -47,8 +50,8 @@ export default function TaskListClient() {
           .map(t => `ID: ${t.id}, Title: ${t.title}, Description: ${t.description}`)
           .join('\n');
         
-        const userHistory = userTasks.filter(ut => ut.status === 'completed').length > 0
-            ? `Completed ${userTasks.filter(ut => ut.status === 'completed').length} tasks.`
+        const userHistory = (userTasks || []).filter(ut => ut.status === 'completed').length > 0
+            ? `Completed ${(userTasks || []).filter(ut => ut.status === 'completed').length} tasks.`
             : 'No tasks completed yet.';
 
         const recommendations = await recommendRelevantTasks({

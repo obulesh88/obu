@@ -4,13 +4,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { onSnapshot, collection, Query, collectionGroup } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 
-export function useCollection<T>(path: string, type: 'collection' | 'collectionGroup' = 'collection') {
+export function useCollection<T>(path: string | null, type: 'collection' | 'collectionGroup' = 'collection') {
   const firestore = useFirestore();
-  const [data, setData] = useState<T[]>([]);
+  const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  const query: Query<T> = useMemo(() => {
+  const query: Query<T> | null = useMemo(() => {
+      if (!path) return null;
       if (type === 'collectionGroup') {
           return collectionGroup(firestore, path) as Query<T>;
       }
@@ -19,6 +20,11 @@ export function useCollection<T>(path: string, type: 'collection' | 'collectionG
 
 
   useEffect(() => {
+    if (!query) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const unsubscribe = onSnapshot(
       query,
