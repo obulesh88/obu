@@ -45,13 +45,13 @@ export function Header() {
         </SidebarMenu>
       </Sidebar>
       <nav className="hidden w-full items-center gap-6 text-lg font-medium md:flex md:gap-5 md:text-sm lg:gap-6">
-        <a
-          href="#"
+        <Link
+          href="/"
           className="flex items-center gap-2 font-semibold text-foreground"
         >
           <Logo className="h-6 w-6" />
           <span className="font-headline text-xl">OR-wallet</span>
-        </a>
+        </Link>
       </nav>
       <div className="flex flex-1 items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
         {user ? <UserNav user={user} /> : null}
