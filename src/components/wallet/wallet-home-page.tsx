@@ -36,35 +36,16 @@ export default function WalletHomePage() {
   if (loading) {
     return (
         <div className="grid gap-6">
-            <Skeleton className="h-48 w-full" />
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-48 w-full" />
         </div>
     )
   }
 
   return (
     <div className="grid gap-6">
-       <Card className="bg-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Briefcase className="h-6 w-6" />
-            <span>Start Earning</span>
-          </CardTitle>
-          <CardDescription>
-            Complete tasks to earn OR coins. Our AI will help you find tasks that match your skills.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/tasks" passHref>
-            <Button className="w-full">
-              <span>View Tasks</span>
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium">Your INR Balance</CardTitle>
@@ -110,6 +91,26 @@ export default function WalletHomePage() {
               <Copy className="h-5 w-5" />
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="h-6 w-6" />
+            <span>Start Earning</span>
+          </CardTitle>
+          <CardDescription>
+            Complete tasks to earn OR coins. Our AI will help you find tasks that match your skills.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/tasks" passHref>
+            <Button className="w-full">
+              <span>View Tasks</span>
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     </div>
