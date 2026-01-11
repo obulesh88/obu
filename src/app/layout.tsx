@@ -3,6 +3,9 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { Sidebar, SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { Header } from '@/components/layout/header';
+import { BottomNav } from '@/components/layout/bottom-nav';
 
 export const metadata: Metadata = {
   title: 'EarnEasy',
@@ -30,7 +33,17 @@ export default function RootLayout({
         )}
       >
         <FirebaseClientProvider>
-          {children}
+          <SidebarProvider>
+              <div className="flex min-h-screen w-full flex-col">
+                <Header />
+                <SidebarInset>
+                  <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+                   {children}
+                  </main>
+                </SidebarInset>
+                <BottomNav />
+              </div>
+          </SidebarProvider>
           <Toaster />
         </FirebaseClientProvider>
       </body>
