@@ -1,9 +1,9 @@
 'use client';
 
 import { createContext, useContext, useMemo } from 'react';
-import { FirebaseApp } from 'firebase/app';
-import { Auth }import 'firebase/auth';
-import { Firestore } from 'firebase/firestore';
+import type { FirebaseApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
 import { initializeFirebase } from './index';
 
 type FirebaseContextValue = {
