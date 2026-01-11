@@ -39,7 +39,7 @@ export function Header() {
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild>
-                <Link href="#"><UserIcon />Profile</Link>
+                <Link href="/profile"><UserIcon />Profile</Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

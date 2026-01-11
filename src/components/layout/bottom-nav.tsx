@@ -9,7 +9,7 @@ export function BottomNav() {
     { href: '/', icon: <Home />, label: 'Home' },
     { href: '/tasks', icon: <CheckSquare />, label: 'Tasks' },
     { href: '/wallet', icon: <Wallet />, label: 'Wallet' },
-    { href: '#', icon: <User />, label: 'Profile' },
+    { href: '/profile', icon: <User />, label: 'Profile' },
   ];
 
   return (
