@@ -2,11 +2,10 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Briefcase, Copy, History, Link as LinkIcon } from 'lucide-react';
+import { Copy, History, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
-import Link from 'next/link';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -39,7 +38,6 @@ export default function WalletHomePage() {
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-48 w-full md:col-span-2" />
-             <Skeleton className="h-48 w-full md:col-span-2" />
         </div>
     )
   }
@@ -91,26 +89,6 @@ export default function WalletHomePage() {
               <Copy className="h-5 w-5" />
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-card md:col-span-2">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Briefcase className="h-6 w-6" />
-            <span>Start Earning</span>
-          </CardTitle>
-          <CardDescription>
-            Complete tasks to earn OR coins. Our AI will help you find tasks that match your skills.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/tasks" passHref>
-            <Button className="w-full">
-              <span>View Tasks</span>
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
         </CardContent>
       </Card>
     </div>
