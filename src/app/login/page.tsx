@@ -2,11 +2,10 @@
 
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth, useFirestore } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FcGoogle } from 'react-icons/fc';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +13,6 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -87,7 +85,7 @@ export default function LoginPage() {
 
   const onSignIn: SubmitHandler<SignInSchemaType> = async (data) => {
     try {
-      const result = await signInWithEmailAndPassword(auth, data.email, data.password);
+      await signInWithEmailAndPassword(auth, data.email, data.password);
       // The onAuthStateChanged listener will handle redirection
     } catch (error: any) {
       console.error("Sign in failed: ", error);
@@ -96,16 +94,6 @@ export default function LoginPage() {
         title: 'Sign In Failed',
         description: error.message,
       });
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      await handleUserCreation(result.user);
-    } catch (error) {
-      console.error("Authentication failed: ", error);
     }
   };
 
@@ -136,18 +124,6 @@ export default function LoginPage() {
                 </div>
                 <Button type="submit" className="w-full">Sign In</Button>
               </form>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <Separator />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                </div>
-              </div>
-              <Button onClick={handleGoogleSignIn} className="w-full" variant="outline">
-                <FcGoogle className="mr-2 h-5 w-5" />
-                Sign in with Google
-              </Button>
             </TabsContent>
             <TabsContent value="signup">
               <form onSubmit={handleSubmitSignUp(onSignUp)} className="space-y-4 pt-4">

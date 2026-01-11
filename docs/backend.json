@@ -109,7 +109,6 @@
   },
   "auth": {
     "providers": [
-      "Google",
       "Email/Password"
     ]
   },
