@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,6 +13,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -32,6 +33,14 @@ export default function LoginPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user, loading } = useUser();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
 
   const {
     register: registerSignUp,
@@ -86,7 +95,7 @@ export default function LoginPage() {
   const onSignIn: SubmitHandler<SignInSchemaType> = async (data) => {
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
-      // The onAuthStateChanged listener will handle redirection
+      router.push('/');
     } catch (error: any) {
       console.error("Sign in failed: ", error);
       toast({
@@ -96,6 +105,10 @@ export default function LoginPage() {
       });
     }
   };
+
+  if (loading || user) {
+    return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
