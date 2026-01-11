@@ -1,26 +1,28 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if the user is the owner of the document.
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // Users can read and write to their own user document.
+    
+    // Allow users to read/write their own user document
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-
-    // Any authenticated user can read the list of available tasks.
+    
+    // Tasks - everyone can read, only admins can write
     match /tasks/{taskId} {
       allow read: if request.auth != null;
+      allow write: if false; // For now, prevent writes until admin logic is built
+    }
+    
+    // This is a placeholder for user-specific task data.
+    // The previous rules had a subcollection here, which we can build out next.
+    match /users/{userId}/tasks/{taskId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Users can read and write to the tasks subcollection within their own user document.
-    match /users/{userId}/tasks/{taskId} {
-        allow read, write: if isOwner(userId);
+    // Default deny for any other collections to keep the database secure.
+    // We will add rules for new collections as we build them.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
