@@ -2,44 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, RefreshCw } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { RefreshCw } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Input } from '../ui/input';
 
 export default function Wallet() {
-  const { toast } = useToast();
-  const walletAddress = 'ORA4I30NRTT';
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(walletAddress);
-    toast({
-      title: 'Copied!',
-      description: 'Wallet address copied to clipboard.',
-    });
-  };
 
   return (
     <div className="grid gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Your OR Wallet Address</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col">
-                <p className="font-mono text-lg">{walletAddress}</p>
-                <p className="text-xs text-muted-foreground">Share this address to receive OR coins.</p>
-              </div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={copyToClipboard}>
-              <Copy className="h-5 w-5" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-bold">Convert</CardTitle>
@@ -54,9 +24,9 @@ export default function Wallet() {
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="#F87171" strokeWidth="2"/>
-                    <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" fill="#F87171" fillOpacity="0.5"/>
-                    <circle cx="12" cy="12" r="1" fill="white"/>
+                    <circle cx="12" cy="12" r="9" stroke="hsl(var(--destructive))" strokeWidth="2"></circle>
+                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" fill="hsl(var(--destructive))" fillOpacity="0.5"></path>
+                    <circle cx="12" cy="12" r="1" fill="white"></circle>
                   </svg>
                   <span className="font-semibold">OR</span>
                 </div>
@@ -82,7 +52,7 @@ export default function Wallet() {
               </div>
               <div className="mt-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-red-500">₹</span>
+                  <span className="font-semibold text-destructive">₹</span>
                   <span className="font-semibold">INR</span>
                 </div>
                 <span className="text-2xl font-bold text-muted-foreground">--</span>
