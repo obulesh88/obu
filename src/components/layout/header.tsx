@@ -28,22 +28,10 @@ export function Header({ user }: HeaderProps) {
           className="flex items-center gap-2 font-semibold text-foreground"
         >
           <Logo className="h-6 w-6" />
-          <span className="font-headline text-xl">EarnEasy</span>
+          <span className="font-headline text-xl">OR Wallet</span>
         </a>
       </nav>
       <div className="flex flex-1 items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <div className="flex items-center gap-4">
-            <div className="text-right">
-                <p className="text-xs text-muted-foreground">Your Balance</p>
-                <p className="font-semibold text-lg">${user.balance.toFixed(2)}</p>
-            </div>
-            <Button
-                onClick={handleWithdraw}
-                className="bg-accent text-accent-foreground hover:bg-accent/90"
-              >
-              Withdraw
-            </Button>
-        </div>
         <UserNav user={user} />
       </div>
     </header>
