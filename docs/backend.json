@@ -73,7 +73,7 @@
         },
         "type": {
           "type": "string",
-          "enum": ["Survey", "Testing", "Review", "Data Entry", "Games", "Watch Ads", "Captcha", "Other"],
+          "enum": ["Watch Ads", "Games", "Captcha", "Other"],
           "description": "The type of the task."
         }
       },

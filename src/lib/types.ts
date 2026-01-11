@@ -5,7 +5,7 @@ export type Task = {
   title: string;
   description: string;
   reward: number;
-  type: 'Survey' | 'Testing' | 'Review' | 'Data Entry' | 'Games' | 'Watch Ads' | 'Captcha' | 'Other';
+  type: 'Watch Ads' | 'Games' | 'Captcha' | 'Other';
   status: 'available' | 'in-progress' | 'pending-verification' | 'completed' | 'rejected';
   evidence?: string;
   reason?: string; // AI-generated reason for recommendation
