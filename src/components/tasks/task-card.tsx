@@ -4,9 +4,12 @@ import {
   Briefcase,
   CheckCircle,
   CircleDollarSign,
+  Clapperboard,
   Clock,
   FlaskConical,
+  Gamepad2,
   Keyboard,
+  ShieldCheck,
   Star,
   XCircle,
 } from 'lucide-react';
@@ -33,6 +36,9 @@ const taskTypeIcons = {
   Testing: <FlaskConical className="h-4 w-4" />,
   Review: <Star className="h-4 w-4" />,
   'Data Entry': <Keyboard className="h-4 w-4" />,
+  Games: <Gamepad2 className="h-4 w-4" />,
+  'Watch Ads': <Clapperboard className="h-4 w-4" />,
+  Captcha: <ShieldCheck className="h-4 w-4" />,
   Other: <Briefcase className="h-4 w-4" />,
 };
 

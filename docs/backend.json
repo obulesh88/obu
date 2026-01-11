@@ -55,7 +55,7 @@
         },
         "type": {
           "type": "string",
-          "enum": ["Survey", "Testing", "Review", "Data Entry", "Other"]
+          "enum": ["Survey", "Testing", "Review", "Data Entry", "Games", "Watch Ads", "Captcha", "Other"]
         },
         "status": {
           "type": "string",
