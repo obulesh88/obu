@@ -52,7 +52,7 @@ export default function WalletHomePage() {
           <span className="font-semibold">₹</span>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold">₹{userProfile?.inrBalance?.toFixed(3) || '0.00'}</div>
+          <div className="text-4xl font-bold">₹{userProfile?.inrBalance?.toFixed(2) || '0.00'}</div>
           <p className="text-xs text-muted-foreground">Available to withdraw</p>
           <Button variant="secondary" className="mt-4">
             <History className="mr-2 h-4 w-4" />
@@ -67,12 +67,12 @@ export default function WalletHomePage() {
           <LinkIcon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold">{userProfile?.orBalance?.toFixed(3) || '0.00'}</div>
+          <div className="text-4xl font-bold">{userProfile?.orBalance?.toFixed(2) || '0.00'}</div>
           <p className="text-xs text-muted-foreground">OR Coins</p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="md:col-span-2">
         <CardHeader>
           <CardTitle className="text-sm font-medium">Your OR Wallet Address</CardTitle>
         </CardHeader>
@@ -94,7 +94,7 @@ export default function WalletHomePage() {
         </CardContent>
       </Card>
 
-      <Card className="bg-card">
+      <Card className="bg-card md:col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Briefcase className="h-6 w-6" />

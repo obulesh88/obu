@@ -4,17 +4,17 @@ import { recommendRelevantTasks } from '@/ai/flows/recommend-relevant-tasks';
 import { TaskCard } from '@/components/tasks/task-card';
 import { TaskSubmissionDialog } from '@/components/tasks/task-submission-dialog';
 import { useToast } from '@/hooks/use-toast';
-import type { Task } from '@/lib/types';
+import type { Task, UserProfile } from '@/lib/types';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, runTransaction, setDoc, writeBatch } from 'firebase/firestore';
 
 export default function TaskListClient() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { data: tasks, loading: tasksLoading, error: tasksError } = useCollection<Task>(firestore ? collection(firestore, 'tasks') : null);
-  const { data: userDoc, loading: userLoading } = useCollection(firestore && user ? collection(firestore, 'users', user.uid, 'tasks') : null);
+  const { data: userTasks, loading: userTasksLoading } = useCollection(firestore && user ? collection(firestore, 'users', user.uid, 'tasks') : null);
 
   const [recommendedTasks, setRecommendedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,24 +23,24 @@ export default function TaskListClient() {
   const { toast } = useToast();
 
   const userTaskStatus = useMemo(() => {
-    if (!userDoc) return {};
+    if (!userTasks) return {};
     const statusMap: { [key: string]: Task['status'] } = {};
-    userDoc.forEach((task) => {
+    userTasks.forEach((task) => {
       statusMap[task.id] = task.status;
     });
     return statusMap;
-  }, [userDoc]);
+  }, [userTasks]);
 
   const mergedTasks = useMemo(() => {
     if (!tasks) return [];
     return tasks.map(task => ({
       ...task,
-      status: userTaskStatus[task.id] || task.status,
+      status: userTaskStatus[task.id] || 'available',
     }));
   }, [tasks, userTaskStatus]);
 
   useEffect(() => {
-    if (tasksLoading || userLoading) return;
+    if (tasksLoading || userTasksLoading) return;
     async function getRecommendations() {
       if (!tasks || !user) {
         setIsLoading(false);
@@ -76,14 +76,14 @@ export default function TaskListClient() {
       }
     }
     getRecommendations();
-  }, [tasksLoading, userLoading, tasks, mergedTasks, user, toast]);
+  }, [tasksLoading, userTasksLoading, tasks, mergedTasks, user, toast]);
 
   const handleTaskAction = async (task: Task) => {
     if (!firestore || !user) return;
     const userTaskRef = doc(firestore, 'users', user.uid, 'tasks', task.id);
 
     if (task.status === 'available') {
-      await updateDoc(userTaskRef, { status: 'in-progress' });
+      await setDoc(userTaskRef, { status: 'in-progress' });
       toast({
         title: `Task "${task.title}" started!`,
         description: 'You can now submit it for verification.',
@@ -97,7 +97,7 @@ export default function TaskListClient() {
   const handleTaskSubmit = async (task: Task, evidence: string) => {
     if (!firestore || !user) return;
     const userTaskRef = doc(firestore, 'users', user.uid, 'tasks', task.id);
-    await updateDoc(userTaskRef, { status: 'pending-verification', evidence });
+    await setDoc(userTaskRef, { status: 'pending-verification', evidence }, { merge: true });
 
     setIsDialogOpen(false);
     toast({
@@ -105,20 +105,36 @@ export default function TaskListClient() {
       description: 'Your submission is pending verification.',
     });
     
-    // Simulate verification
+    // Simulate verification and reward
     setTimeout(async () => {
-      const batch = writeBatch(firestore);
-      const userProfileRef = doc(firestore, 'users', user.uid);
-      batch.update(userTaskRef, { status: 'completed' });
-      // This is not ideal, should use a transaction to update balance
-      // batch.update(userProfileRef, { balance: increment(task.reward) });
-      await batch.commit();
+      try {
+        await runTransaction(firestore, async (transaction) => {
+          const userProfileRef = doc(firestore, 'users', user.uid);
+          const userProfileDoc = await transaction.get(userProfileRef);
 
-      toast({
-        title: 'Task Approved!',
-        description: `+ $${task.reward.toFixed(2)} has been added to your balance.`,
-        className: 'bg-green-100 border-green-300 text-green-800',
-      });
+          if (!userProfileDoc.exists()) {
+            throw "User profile does not exist!";
+          }
+
+          const newOrBalance = (userProfileDoc.data().orBalance || 0) + task.reward;
+          
+          transaction.update(userTaskRef, { status: 'completed' });
+          transaction.update(userProfileRef, { orBalance: newOrBalance });
+        });
+
+        toast({
+          title: 'Task Approved!',
+          description: `+ ${task.reward.toFixed(2)} OR coins have been added to your balance.`,
+          className: 'bg-green-100 border-green-300 text-green-800',
+        });
+      } catch (e) {
+        console.error("Transaction failed: ", e);
+        toast({
+          title: 'Error updating balance',
+          description: 'Could not update your balance after task approval.',
+          variant: 'destructive',
+        });
+      }
     }, 5000);
   };
 
