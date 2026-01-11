@@ -159,7 +159,7 @@ export default function ConvertPage() {
                 readOnly 
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <span className="text-sm text-muted-foreground">INR</span>
+                <span className="text-sm text-muted-foreground">₹</span>
               </div>
             </div>
           </div>
