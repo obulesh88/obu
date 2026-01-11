@@ -1,7 +1,7 @@
-import Wallet from '@/components/wallet/wallet';
+import WalletPageContent from '@/components/wallet/wallet-page-content';
 
 export default function WalletPage() {
   return (
-    <Wallet />
+    <WalletPageContent />
   );
 }

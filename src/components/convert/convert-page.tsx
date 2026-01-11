@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { RefreshCw, ArrowRightLeft } from 'lucide-react';
 
-export default function Wallet() {
+export default function ConvertPage() {
   const { toast } = useToast();
 
   const handleConvert = () => {

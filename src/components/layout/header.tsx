@@ -5,7 +5,7 @@ import { UserNav } from '@/components/layout/user-nav';
 import { useUser } from '@/firebase';
 import { Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from '../ui/sidebar';
 import Link from 'next/link';
-import { Home, RefreshCw, User as UserIcon } from 'lucide-react';
+import { Home, RefreshCw, User as UserIcon, Wallet } from 'lucide-react';
 
 export function Header() {
   const { user } = useUser();
@@ -24,7 +24,12 @@ export function Header() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-                <Link href="/wallet"><RefreshCw />Convert</Link>
+                <Link href="/convert"><RefreshCw />Convert</Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+                <Link href="/wallet"><Wallet />Wallet</Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
