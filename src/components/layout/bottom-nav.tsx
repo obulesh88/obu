@@ -1,20 +1,19 @@
 'use client';
 
-import { Home, RefreshCw, Wallet, User, CheckSquare } from 'lucide-react';
+import { Home, RefreshCw, Wallet, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export function BottomNav() {
   const navItems = [
     { href: '/', icon: <Home />, label: 'Home' },
-    { href: '/tasks', icon: <CheckSquare />, label: 'Tasks' },
-    { href: '/wallet', icon: <Wallet />, label: 'Wallet' },
+    { href: '/wallet', icon: <RefreshCw />, label: 'Convert' },
     { href: '/profile', icon: <User />, label: 'Profile' },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full border-t bg-background/80 backdrop-blur-sm md:hidden">
-      <div className="grid h-16 grid-cols-4">
+      <div className="grid h-16 grid-cols-3">
         {navItems.map((item) => (
           <Button
             key={item.label}
