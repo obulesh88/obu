@@ -4,7 +4,7 @@ import { Logo } from '@/components/icons';
 import { UserNav } from '@/components/layout/user-nav';
 import { Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from '../ui/sidebar';
 import Link from 'next/link';
-import { Home, RefreshCw, User as UserIcon, Wallet } from 'lucide-react';
+import { Home, RefreshCw, User as UserIcon, Wallet, CircleDollarSign } from 'lucide-react';
 import { useUser } from '@/firebase';
 
 export function Header() {
@@ -20,6 +20,11 @@ export function Header() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
                 <Link href="/"><Home />Home</Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+                <Link href="/earning"><CircleDollarSign />Earn</Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
