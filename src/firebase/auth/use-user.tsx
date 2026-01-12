@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useAuth, useFirestore } from '../provider';
 import type { UserProfile } from '@/lib/types';
 
@@ -13,26 +13,35 @@ export function useUser() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const userDocRef = useMemo(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
-      if (authUser) {
-        const userDocRef = doc(firestore, 'users', authUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfile);
-        } else {
-          // Handle case where user exists in Auth but not in Firestore
-          setUserProfile(null);
-        }
-      } else {
-        setUserProfile(null);
-      }
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [auth, firestore]);
+    return () => unsubscribeAuth();
+  }, [auth]);
+
+  useEffect(() => {
+    if (userDocRef) {
+      const unsubscribeFirestore = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+          setUserProfile(doc.data() as UserProfile);
+        } else {
+          setUserProfile(null);
+        }
+      }, (error) => {
+        console.error("Error fetching user profile:", error);
+        setUserProfile(null);
+      });
+      return () => unsubscribeFirestore();
+    } else {
+        setUserProfile(null);
+    }
+  }, [userDocRef]);
+
 
   return { user, userProfile, loading };
 }

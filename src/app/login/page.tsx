@@ -59,14 +59,14 @@ export default function LoginPage() {
   });
 
   const handleUserCreation = async (user: any, displayName?: string | null) => {
-    if (!user) return;
+    if (!user || !firestore) return;
     const userRef = doc(firestore, 'users', user.uid);
     await setDoc(userRef, {
       uid: user.uid,
       email: user.email,
       profile: {
-        displayName: displayName || user.displayName,
-        photoURL: user.photoURL,
+        displayName: displayName || user.displayName || 'Anonymous',
+        photoURL: user.photoURL || '',
       },
       wallet: {
         orBalance: 0,
@@ -79,6 +79,7 @@ export default function LoginPage() {
   };
 
   const onSignUp: SubmitHandler<SignUpSchemaType> = async (data) => {
+    if (!auth) return;
     try {
       const result = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await handleUserCreation(result.user, data.name);
@@ -93,6 +94,7 @@ export default function LoginPage() {
   };
 
   const onSignIn: SubmitHandler<SignInSchemaType> = async (data) => {
+    if (!auth) return;
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
       router.push('/');
