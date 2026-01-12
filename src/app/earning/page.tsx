@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Gamepad2, Tv, Key } from 'lucide-react';
 import { useState } from 'react';
 import { CaptchaDialog } from '@/components/earning/captcha-dialog';
+import { AdDialog } from '@/components/earning/ad-dialog';
 
 export default function EarningPage() {
   const [isCaptchaDialogOpen, setIsCaptchaDialogOpen] = useState(false);
+  const [isAdDialogOpen, setIsAdDialogOpen] = useState(false);
 
   const earningOptions = [
-    { name: 'Watch Ads', icon: <Tv className="h-8 w-8" />, action: () => {} },
+    { name: 'Watch Ads', icon: <Tv className="h-8 w-8" />, action: () => setIsAdDialogOpen(true) },
     { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8" />, action: () => {} },
     { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, action: () => setIsCaptchaDialogOpen(true) },
   ];
@@ -36,6 +38,7 @@ export default function EarningPage() {
         </Card>
       </div>
       <CaptchaDialog open={isCaptchaDialogOpen} onOpenChange={setIsCaptchaDialogOpen} />
+      <AdDialog open={isAdDialogOpen} onOpenChange={setIsAdDialogOpen} />
     </>
   );
 }
