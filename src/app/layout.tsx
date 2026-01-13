@@ -10,17 +10,27 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
+import { useEffect } from 'react';
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => console.log('scope is: ', registration.scope));
+    }
+  }, []);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <title>OR-wallet</title>
         <meta name="description" content="Complete tasks and earn rewards with AI-powered recommendations." />
+        <meta name="monetag" content="48959e64e74cd9b476a2" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
