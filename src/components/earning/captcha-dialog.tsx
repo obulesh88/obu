@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,6 +19,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
 
 const REWARD_AMOUNT = 3;
+const SUBMIT_DELAY = 15; // 15 seconds
 
 function generateCaptcha() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -31,13 +33,24 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const [captchaText, setCaptchaText] = useState('');
   const [userInput, setUserInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   useEffect(() => {
     if (open) {
       setCaptchaText(generateCaptcha());
       setUserInput('');
+      setIsSubmitting(false);
+      setCountdown(0);
     }
   }, [open]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const refreshCaptcha = () => {
     setCaptchaText(generateCaptcha());
@@ -63,6 +76,9 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       setUserInput('');
       return;
     }
+    
+    setIsSubmitting(true);
+    setCountdown(SUBMIT_DELAY);
 
     // Add the script before processing the reward
     const script = document.createElement('script');
@@ -70,38 +86,39 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     script.async = true;
     document.body.appendChild(script);
 
-    setIsSubmitting(true);
-    try {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await runTransaction(firestore, async (transaction) => {
-        const userDoc = await transaction.get(userDocRef);
-        if (!userDoc.exists()) {
-          throw 'User document does not exist!';
-        }
+    setTimeout(async () => {
+        try {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await runTransaction(firestore, async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
+            if (!userDoc.exists()) {
+            throw 'User document does not exist!';
+            }
 
-        const currentData = userDoc.data();
-        const newOrBalance = (currentData.wallet?.orBalance || 0) + REWARD_AMOUNT;
+            const currentData = userDoc.data();
+            const newOrBalance = (currentData.wallet?.orBalance || 0) + REWARD_AMOUNT;
 
-        transaction.update(userDocRef, {
-          'wallet.orBalance': newOrBalance,
+            transaction.update(userDocRef, {
+            'wallet.orBalance': newOrBalance,
+            });
         });
-      });
 
-      toast({
-        title: 'Success!',
-        description: `You have earned ${REWARD_AMOUNT} OR coins.`,
-      });
-      onOpenChange(false);
-    } catch (error: any) {
-      console.error('Failed to award points: ', error);
-      toast({
-        variant: 'destructive',
-        title: 'An error occurred',
-        description: 'Could not award points. Please try again.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+        toast({
+            title: 'Success!',
+            description: `You have earned ${REWARD_AMOUNT} OR coins.`,
+        });
+        onOpenChange(false);
+        } catch (error: any) {
+        console.error('Failed to award points: ', error);
+        toast({
+            variant: 'destructive',
+            title: 'An error occurred',
+            description: 'Could not award points. Please try again.',
+        });
+        } finally {
+        setIsSubmitting(false);
+        }
+    }, SUBMIT_DELAY * 1000);
   };
 
   return (
@@ -116,7 +133,7 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
             <div className="w-full select-none rounded-md border bg-muted p-4 text-center font-mono text-2xl tracking-widest">
               {captchaText}
             </div>
-            <Button variant="ghost" size="icon" onClick={refreshCaptcha}>
+            <Button variant="ghost" size="icon" onClick={refreshCaptcha} disabled={isSubmitting}>
               <RefreshCw className="h-5 w-5" />
             </Button>
           </div>
@@ -134,7 +151,9 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         </div>
         <DialogFooter>
           <Button type="submit" onClick={handleSubmit} disabled={isSubmitting || !userInput}>
-            {isSubmitting ? 'Submitting...' : 'Submit & Earn 3 OR'}
+            {isSubmitting
+              ? `Please wait ${countdown}s`
+              : 'Submit & Earn 3 OR'}
           </Button>
         </DialogFooter>
       </DialogContent>
