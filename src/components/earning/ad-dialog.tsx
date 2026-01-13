@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
+import Script from 'next/script';
 
 const REWARD_AMOUNT = 5; // OR coins
 const AD_VIEW_TIME = 5; // seconds
@@ -98,21 +99,18 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="flex items-center justify-center rounded-md border bg-muted p-4 text-center min-h-[250px]">
-            {/* 
-              This is a placeholder for your ad.
-              You will need to replace this with your actual Google AdSense ad unit code.
-              For example:
-              <ins className="adsbygoogle"
-                   style={{ display: 'block' }}
-                   data-ad-client="ca-pub-XXXXXXXXXXXX"
-                   data-ad-slot="YYYYYYYYYY"
-                   data-ad-format="auto"
-                   data-full-width-responsive="true"></ins>
-              <Script id="adsense-script-injector">
-                (adsbygoogle = window.adsbygoogle || []).push({});
-              </Script>
-            */}
-            <p className="text-muted-foreground">Ad Placeholder</p>
+            <div id="ad-container"></div>
+            <Script
+              src="https://quge5.com/88/tag.min.js"
+              data-zone="201464"
+              data-cfasync="false"
+              strategy="lazyOnload"
+              onLoad={() => {
+                // The ad script might automatically find a container or need manual initialization.
+                // This is a common pattern for some ad networks.
+                // If ads don't appear, you may need to check the ad network's documentation.
+              }}
+            />
           </div>
         </div>
         <DialogFooter>
