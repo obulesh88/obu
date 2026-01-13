@@ -80,13 +80,13 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     setIsSubmitting(true);
     setCountdown(SUBMIT_DELAY);
     
-    const adUrl = 'https://frail-benefit.com/cQD/9M6.bC2/5llISRWHQ-9YNIjYcx0uNij_k/4SNViV0a2QN/z/Qi2dOwTvgc3F';
+    const adUrl = 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
     window.open(adUrl, '_blank');
 
     // Add the script before processing the reward
     const script = document.createElement('script');
     const lastScript = document.scripts[document.scripts.length - 1];
-    script.src = '//frail-benefit.com/cQD/9M6.bC2/5llISRWHQ-9YNIjYcx0uNij_k/4SNViV0a2QN/z/Qi2dOwTvgc3F';
+    script.src = '//multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
     script.async = true;
     script.referrerPolicy = 'no-referrer-when-downgrade';
 
