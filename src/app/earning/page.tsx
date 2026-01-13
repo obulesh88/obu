@@ -24,10 +24,18 @@ export default function EarningPage() {
     }
   }, []);
 
+  const handleCaptchaStart = () => {
+    const script = document.createElement('script');
+    script.src = 'https://multicoloredsister.com/b/3wVa0.PO3upjvKb/mVVIJgZSDy0O2/NAzEQO2-OlTogX2eLzTUYj3yNwDOYU5IORDrcW';
+    script.async = true;
+    document.body.appendChild(script);
+    setIsCaptchaDialogOpen(true);
+  };
+
 
   const earningOptions = [
     { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8" />, action: () => {} },
-    { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, action: () => setIsCaptchaDialogOpen(true) },
+    { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, action: handleCaptchaStart },
   ];
 
   return (
