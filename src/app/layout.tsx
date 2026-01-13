@@ -66,13 +66,6 @@ export default function RootLayout({
             <Toaster />
           </FirebaseClientProvider>
         </ThemeProvider>
-         <Script
-          src="https://quge5.com/88/tag.min.js"
-          data-zone="201464"
-          async
-          data-cfasync="false"
-          strategy="lazyOnload"
-        />
       </body>
     </html>
   );

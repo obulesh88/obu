@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, History, Link as LinkIcon, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -22,20 +22,6 @@ export default function WalletHomePage() {
       router.push('/login');
     }
   }, [user, loading, router]);
-
-  useEffect(() => {
-    const rifc = {};
-    const d = document;
-    const s = d.createElement('script');
-    const l = d.scripts[d.scripts.length - 1];
-    s.settings = rifc || {};
-    s.src = "//pristineproblem.com/b.XLVJs/d/GCli0YY/W/cU/ieQmV9FulZMUYl/kHPvT-Yy3rN/D_Yu5zOtDEEitMN/jBcg0BNOjbkJ4mMCgC";
-    s.async = true;
-    s.referrerPolicy = 'no-referrer-when-downgrade';
-    if (l && l.parentNode) {
-      l.parentNode.insertBefore(s, l);
-    }
-  }, []);
 
 
   const copyToClipboard = () => {
@@ -63,11 +49,6 @@ export default function WalletHomePage() {
         <span className="text-primary">OR</span>
         <span className="text-foreground">-wallet</span>
       </h1>
-      <Card>
-        <CardContent className="flex justify-center p-4">
-          {/* This container is for the banner ad script to inject content into */}
-        </CardContent>
-      </Card>
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
