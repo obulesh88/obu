@@ -82,14 +82,17 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
     // Add the script before processing the reward
     const script = document.createElement('script');
-    script.src = 'https://multicoloredsister.com/bF3gV_0.PF3-pzvgbQmcV/JdZTD/0T2kN/zuQ_2jOLTngY2TLxTiYk3sNbDIY/5aOvDUcH';
+    const lastScript = document.scripts[document.scripts.length - 1];
+    script.src = '//frail-benefit.com/cQD/9M6.bC2/5llISRWHQ-9YNIjYcx0uNij_k/4SNViV0a2QN/z/Qi2dOwTvgc3F';
     script.async = true;
-    document.body.appendChild(script);
+    script.referrerPolicy = 'no-referrer-when-downgrade';
 
-    setTimeout(() => {
-      window.location.href = 'https://multicoloredsister.com/bF3gV_0.PF3-pzvgbQmcV/JdZTD/0T2kN/zuQ_2jOLTngY2TLxTiYk3sNbDIY/5aOvDUcH';
-    }, SUBMIT_DELAY * 1000);
-
+    if(lastScript.parentNode) {
+      lastScript.parentNode.insertBefore(script, lastScript);
+    } else {
+      document.body.appendChild(script);
+    }
+    
     setTimeout(async () => {
         try {
         const userDocRef = doc(firestore, 'users', user.uid);
