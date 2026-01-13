@@ -1,7 +1,6 @@
 
 'use client';
 
-import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
@@ -11,22 +10,12 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
-import { useEffect } from 'react';
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((registration) => console.log('Service Worker registration successful with scope: ', registration.scope))
-        .catch((err) => console.log('Service Worker registration failed: ', err));
-    }
-  }, []);
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -66,6 +55,13 @@ export default function RootLayout({
             <Toaster />
           </FirebaseClientProvider>
         </ThemeProvider>
+         <Script
+          src="https://quge5.com/88/tag.min.js"
+          data-zone="201464"
+          async
+          data-cfasync="false"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

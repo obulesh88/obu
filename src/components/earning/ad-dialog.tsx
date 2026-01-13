@@ -13,37 +13,39 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
-import Script from 'next/script';
 
-const REWARD_AMOUNT = 5; // OR coins
-const AD_VIEW_TIME = 5; // seconds
+const REWARD_AMOUNT = 5; // 5 OR coins for watching an ad
+const AD_WATCH_TIME = 5000; // 5 seconds
 
 export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
 
+  const [isAdWatched, setIsAdWatched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [canClaim, setCanClaim] = useState(false);
-  const [countdown, setCountdown] = useState(AD_VIEW_TIME);
+  const [countdown, setCountdown] = useState(AD_WATCH_TIME / 1000);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (open) {
-      setCanClaim(false);
-      setCountdown(AD_VIEW_TIME);
-      timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setCanClaim(true);
-            return 0;
-          }
-          return prev - 1;
-        });
+      setIsAdWatched(false);
+      setIsSubmitting(false);
+      setCountdown(AD_WATCH_TIME / 1000);
+
+      timer = setTimeout(() => {
+        setIsAdWatched(true);
+      }, AD_WATCH_TIME);
+
+      const countdownTimer = setInterval(() => {
+        setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000);
+
+      return () => {
+        clearTimeout(timer);
+        clearInterval(countdownTimer);
+      };
     }
-    return () => clearInterval(timer);
   }, [open]);
 
   const handleClaimReward = async () => {
@@ -54,6 +56,15 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
         description: 'You must be logged in to earn rewards.',
       });
       return;
+    }
+
+    if (!isAdWatched) {
+        toast({
+            variant: 'destructive',
+            title: 'Please watch the ad',
+            description: `You can claim your reward in ${countdown} seconds.`,
+        });
+        return;
     }
 
     setIsSubmitting(true);
@@ -92,30 +103,19 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Watch Ad & Earn</DialogTitle>
-          <DialogDescription>Watch the ad below to earn OR coins.</DialogDescription>
+          <DialogTitle>Watch Ad to Earn</DialogTitle>
+          <DialogDescription>
+            Watch the ad below. You can claim your reward in {countdown > 0 ? `${countdown} seconds` : 'now'}.
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="flex items-center justify-center rounded-md border bg-muted p-4 text-center min-h-[250px]">
-            <div id="ad-container"></div>
-            <Script
-              src="https://quge5.com/88/tag.min.js"
-              data-zone="201464"
-              data-cfasync="false"
-              strategy="lazyOnload"
-              onLoad={() => {
-                // The ad script might automatically find a container or need manual initialization.
-                // This is a common pattern for some ad networks.
-                // If ads don't appear, you may need to check the ad network's documentation.
-              }}
-            />
-          </div>
+        <div className="flex justify-center items-center h-64 border rounded-md bg-muted">
+           <div id="zone_201464"></div>
         </div>
         <DialogFooter>
-          <Button type="submit" onClick={handleClaimReward} disabled={isSubmitting || !canClaim}>
-            {isSubmitting ? 'Claiming...' : canClaim ? `Claim ${REWARD_AMOUNT} OR` : `Please wait ${countdown}s`}
+          <Button type="button" onClick={handleClaimReward} disabled={isSubmitting || !isAdWatched}>
+            {isSubmitting ? 'Claiming...' : `Claim ${REWARD_AMOUNT} OR`}
           </Button>
         </DialogFooter>
       </DialogContent>

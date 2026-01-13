@@ -2,17 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, Tv, Key } from 'lucide-react';
+import { Gamepad2, Key } from 'lucide-react';
 import { useState } from 'react';
 import { CaptchaDialog } from '@/components/earning/captcha-dialog';
-import { AdDialog } from '@/components/earning/ad-dialog';
 
 export default function EarningPage() {
   const [isCaptchaDialogOpen, setIsCaptchaDialogOpen] = useState(false);
-  const [isAdDialogOpen, setIsAdDialogOpen] = useState(false);
 
   const earningOptions = [
-    { name: 'Watch Ads', icon: <Tv className="h-8 w-8" />, action: () => setIsAdDialogOpen(true) },
     { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8" />, action: () => {} },
     { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, action: () => setIsCaptchaDialogOpen(true) },
   ];
@@ -24,7 +21,7 @@ export default function EarningPage() {
           <CardHeader>
             <CardTitle>Choose How to Earn</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
+          <CardContent className="grid gap-4 md:grid-cols-2">
             {earningOptions.map((option) => (
               <Card key={option.name} className="flex flex-col items-center justify-center p-6 text-center">
                 {option.icon}
@@ -38,7 +35,6 @@ export default function EarningPage() {
         </Card>
       </div>
       <CaptchaDialog open={isCaptchaDialogOpen} onOpenChange={setIsCaptchaDialogOpen} />
-      <AdDialog open={isAdDialogOpen} onOpenChange={setIsAdDialogOpen} />
     </>
   );
 }
