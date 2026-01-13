@@ -17,13 +17,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((registration) => console.log('scope is: ', registration.scope));
-    }
-  }, []);
 
   return (
     <html lang="en" suppressHydrationWarning>
