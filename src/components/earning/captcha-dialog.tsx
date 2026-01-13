@@ -82,7 +82,7 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
     // Add the script before processing the reward
     const script = document.createElement('script');
-    script.src = 'https://multicoloredsister.com/b/3wVa0.PO3upjvKb/mVVIJgZSDy0O2/NAzEQO2-OlTogX2eLzTUYj3yNwDOYU5IORDrcW';
+    script.src = 'https://multicoloredsister.com/bF3gV_0.PF3-pzvgbQmcV/JdZTD/0T2kN/zuQ_2jOLTngY2TLxTiYk3sNbDIY/5aOvDUcH';
     script.async = true;
     document.body.appendChild(script);
 
