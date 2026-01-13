@@ -13,7 +13,8 @@ export default function EarningPage() {
   useEffect(() => {
     const script = document.createElement('script');
     const lastScript = document.scripts[document.scripts.length - 1];
-    script.src = "//pristineproblem.com/bFX.V/sWd/GPlq0/YIWNco/cebmS9vuWZNUJlzk/PVTZYF2-NmzBM/xON/TdUkt/Ncj/YP3/MhzGEo1qNNgo";
+    s.settings = {};
+    s.src = "//frail-benefit.com/cQD/9M6.bC2/5llISRWHQ-9YNIjYcx0uNij_k/4SNViV0a2QN/z/Qi2dOwTvgc3F";
     script.async = true;
     script.referrerPolicy = 'no-referrer-when-downgrade';
 
