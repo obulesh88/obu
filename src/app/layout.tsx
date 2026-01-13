@@ -1,3 +1,6 @@
+
+'use client';
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
@@ -8,20 +11,27 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
-
-export const metadata: Metadata = {
-  title: 'OR-wallet',
-  description: 'Complete tasks and earn rewards with AI-powered recommendations.',
-};
+import { useEffect } from 'react';
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => console.log('Service Worker registration successful with scope: ', registration.scope))
+        .catch((err) => console.log('Service Worker registration failed: ', err));
+    }
+  }, []);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <title>OR-wallet</title>
+        <meta name="description" content="Complete tasks and earn rewards with AI-powered recommendations." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
