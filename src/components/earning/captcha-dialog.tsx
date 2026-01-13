@@ -79,6 +79,9 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     
     setIsSubmitting(true);
     setCountdown(SUBMIT_DELAY);
+    
+    const adUrl = 'https://frail-benefit.com/cQD/9M6.bC2/5llISRWHQ-9YNIjYcx0uNij_k/4SNViV0a2QN/z/Qi2dOwTvgc3F';
+    window.open(adUrl, '_blank');
 
     // Add the script before processing the reward
     const script = document.createElement('script');
@@ -87,7 +90,7 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     script.async = true;
     script.referrerPolicy = 'no-referrer-when-downgrade';
 
-    if(lastScript.parentNode) {
+    if(lastScript && lastScript.parentNode) {
       lastScript.parentNode.insertBefore(script, lastScript);
     } else {
       document.body.appendChild(script);
