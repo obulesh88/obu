@@ -63,6 +63,11 @@ export default function WalletHomePage() {
         <span className="text-primary">OR</span>
         <span className="text-foreground">-wallet</span>
       </h1>
+      <Card>
+        <CardContent className="flex justify-center p-4">
+          {/* This container is for the banner ad script to inject content into */}
+        </CardContent>
+      </Card>
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
