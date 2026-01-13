@@ -64,6 +64,12 @@ export function CaptchaDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       return;
     }
 
+    // Add the script before processing the reward
+    const script = document.createElement('script');
+    script.src = 'https://multicoloredsister.com/b/3wVa0.PO3upjvKb/mVVIJgZSDy0O2/NAzEQO2-OlTogX2eLzTUYj3yNwDOYU5IORDrcW';
+    script.async = true;
+    document.body.appendChild(script);
+
     setIsSubmitting(true);
     try {
       const userDocRef = doc(firestore, 'users', user.uid);
