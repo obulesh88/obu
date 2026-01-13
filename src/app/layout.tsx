@@ -38,12 +38,6 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap"
           rel="stylesheet"
         />
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8809837457379626"
-          crossOrigin="anonymous"
-          strategy="lazyOnload"
-        />
       </head>
       <body
         className={cn(
