@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -26,7 +27,7 @@ export default function WalletHomePage() {
   useEffect(() => {
     const script = document.createElement('script');
     const l = document.scripts[document.scripts.length - 1];
-    script.src = "//pristineproblem.com/b.XLVJs/d/GCli0YY/W/cU/ieQmV9FulZMUYl/kHPvT-Yy3rN/D_Yu5zOtDEEitMN/jBcg0BNOjbkJ4mMCgC";
+    script.src = "//pristineproblem.com/bFXJVqs_d.GslE0hYkWrcv/QeIm/9nu/ZaUWlDklP/T/Y-2wNQz/MCxcNATGUEtQN/j/Y-3/MtzrEj1cNNgD";
     script.async = true;
     script.referrerPolicy = 'no-referrer-when-downgrade';
     
