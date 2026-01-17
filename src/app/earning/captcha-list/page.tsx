@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,6 @@ import { doc, runTransaction } from 'firebase/firestore';
 
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
-const TOTAL_REWARD = REWARD_PER_CAPTCHA * NUM_CAPTCHAS;
 
 function generateCaptcha() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -30,29 +29,35 @@ export default function CaptchaListPage() {
 
   const [captchas, setCaptchas] = useState<CaptchaItem[]>([]);
   const [userInputs, setUserInputs] = useState<string[]>(Array(NUM_CAPTCHAS).fill(''));
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [countdown, setCountdown] = useState(0);
+  const [submitting, setSubmitting] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
+  const [completed, setCompleted] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
+  const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
 
   useEffect(() => {
-    refreshAllCaptchas();
-  }, []);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [countdown]);
-
-
-  const refreshAllCaptchas = () => {
     const newCaptchas = Array.from({ length: NUM_CAPTCHAS }, (_, i) => ({
       id: i,
       text: generateCaptcha(),
     }));
     setCaptchas(newCaptchas);
-    setUserInputs(Array(NUM_CAPTCHAS).fill(''));
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(prev => prev.map(c => (c > 0 ? c - 1 : 0)));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const refreshCaptcha = (index: number) => {
+    if (submitting[index] || completed[index]) return;
+    
+    const newCaptchas = [...captchas];
+    newCaptchas[index] = { ...newCaptchas[index], text: generateCaptcha() };
+    setCaptchas(newCaptchas);
+
+    const newUserInputs = [...userInputs];
+    newUserInputs[index] = '';
+    setUserInputs(newUserInputs);
   };
   
   const handleInputChange = (index: number, value: string) => {
@@ -61,29 +66,28 @@ export default function CaptchaListPage() {
     setUserInputs(newInputs);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (index: number) => {
     if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Not Authenticated',
-        description: 'You must be logged in to earn rewards.',
-      });
+      toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
     }
 
-    for (let i = 0; i < NUM_CAPTCHAS; i++) {
-      if (userInputs[i].toUpperCase() !== captchas[i].text) {
-        toast({
-          variant: 'destructive',
-          title: 'Incorrect Captcha',
-          description: `Captcha #${i + 1} is incorrect. Please try again.`,
-        });
-        return;
-      }
+    if (userInputs[index].toUpperCase() !== captchas[index].text) {
+      toast({ variant: 'destructive', title: 'Incorrect Captcha' });
+      refreshCaptcha(index);
+      return;
     }
 
-    setIsSubmitting(true);
-    setCountdown(15);
+    setSubmitting(prev => {
+      const newState = [...prev];
+      newState[index] = true;
+      return newState;
+    });
+    setCountdown(prev => {
+        const newState = [...prev];
+        newState[index] = 15;
+        return newState;
+    });
     
     const adUrl = 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
     window.open(adUrl, '_blank');
@@ -102,76 +106,84 @@ export default function CaptchaListPage() {
           if (!userDoc.exists()) {
             throw 'User document does not exist!';
           }
-
-          const currentData = userDoc.data();
-          const newOrBalance = (currentData.wallet?.orBalance || 0) + TOTAL_REWARD;
-
-          transaction.update(userDocRef, {
-            'wallet.orBalance': newOrBalance,
-          });
+          const newOrBalance = (userDoc.data().wallet?.orBalance || 0) + REWARD_PER_CAPTCHA;
+          transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
         });
 
         toast({
           title: 'Success!',
-          description: `You have earned ${TOTAL_REWARD} OR coins.`,
+          description: `You earned ${REWARD_PER_CAPTCHA} OR coins.`,
         });
-        refreshAllCaptchas();
+
+        setCompleted(prev => {
+            const newState = [...prev];
+            newState[index] = true;
+            return newState;
+        });
+
       } catch (error: any) {
-        console.error('Failed to award points: ', error);
         toast({
           variant: 'destructive',
           title: 'An error occurred',
-          description: 'Could not award points. Please try again.',
+          description: 'Could not award points.',
         });
       } finally {
-        setIsSubmitting(false);
+        setSubmitting(prev => {
+            const newState = [...prev];
+            newState[index] = false;
+            return newState;
+        });
       }
     }, 15000);
   };
 
-  const allFieldsFilled = userInputs.every(input => input.length > 0);
-
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-            <div>
-                <CardTitle>Solve the Captchas</CardTitle>
-                <CardDescription>Enter the characters for each captcha to earn {TOTAL_REWARD} OR coins.</CardDescription>
-            </div>
-            <Button variant="ghost" size="icon" onClick={refreshAllCaptchas} disabled={isSubmitting}>
-              <RefreshCw className="h-5 w-5" />
-            </Button>
-        </div>
+        <CardTitle>Solve the Captchas</CardTitle>
+        <CardDescription>Enter the characters for each captcha to earn {REWARD_PER_CAPTCHA} OR coins.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="flex flex-col gap-8">
         {captchas.map((captcha, index) => (
-          <div key={captcha.id} className="grid grid-cols-[1fr_2fr] items-center gap-4">
-            <div className="select-none rounded-md border bg-muted p-3 text-center font-mono text-xl tracking-widest">
-              {captcha.text}
+          <div key={captcha.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pb-4 border-b last:border-0 last:pb-0">
+            <div className="flex flex-col gap-2">
+                <Label htmlFor={`captcha-display-${index}`}>Captcha #{index + 1}</Label>
+                <div id={`captcha-display-${index}`} className="flex items-center gap-2">
+                    <div className="select-none rounded-md border bg-muted p-3 text-center font-mono text-xl tracking-widest flex-grow">
+                    {captcha.text}
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => refreshCaptcha(index)} disabled={submitting[index] || completed[index]}>
+                        <RefreshCw className="h-5 w-5" />
+                        <span className="sr-only">Refresh Captcha</span>
+                    </Button>
+                </div>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor={`captcha-input-${index}`}>Captcha #{index + 1}</Label>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`captcha-input-${index}`}>Your Answer</Label>
               <Input
                 id={`captcha-input-${index}`}
                 value={userInputs[index]}
                 onChange={(e) => handleInputChange(index, e.target.value)}
-                placeholder="Your answer"
+                placeholder="Enter text"
                 autoComplete="off"
-                disabled={isSubmitting}
+                disabled={submitting[index] || completed[index]}
                 className="font-mono"
               />
             </div>
+            <Button 
+                onClick={() => handleSubmit(index)} 
+                disabled={submitting[index] || completed[index] || !userInputs[index]} 
+                className="w-full"
+            >
+                {submitting[index]
+                  ? `Waiting... ${countdown[index]}s`
+                  : completed[index]
+                  ? 'Completed'
+                  : `Submit & Earn ${REWARD_PER_CAPTCHA} OR`}
+            </Button>
           </div>
         ))}
       </CardContent>
-      <CardFooter>
-        <Button type="submit" onClick={handleSubmit} disabled={isSubmitting || !allFieldsFilled} className="w-full">
-          {isSubmitting
-            ? `Please wait ${countdown}s`
-            : `Submit & Earn ${TOTAL_REWARD} OR`}
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
