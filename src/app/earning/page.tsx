@@ -1,14 +1,12 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Gamepad2, Key } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { CaptchaDialog } from '@/components/earning/captcha-dialog';
+import { useEffect } from 'react';
+import Link from 'next/link';
 
 export default function EarningPage() {
-  const [isCaptchaDialogOpen, setIsCaptchaDialogOpen] = useState(false);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -24,22 +22,13 @@ export default function EarningPage() {
     }
   }, []);
 
-  const handleCaptchaStart = () => {
-    const script = document.createElement('script');
-    script.src = 'https://multicoloredsister.com/bF3gV_0.PF3-pzvgbQmcV/JdZTD/0T2kN/zuQ_2jOLTngY2TLxTiYk3sNbDIY/5aOvDUcH';
-    script.async = true;
-    document.body.appendChild(script);
-    setIsCaptchaDialogOpen(true);
-  };
-
 
   const earningOptions = [
     { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8" />, action: () => {} },
-    { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, action: handleCaptchaStart },
+    { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, href: '/earning/captcha-list' },
   ];
 
   return (
-    <>
       <div className="grid gap-6">
         <Card>
           <CardHeader>
@@ -50,15 +39,19 @@ export default function EarningPage() {
               <Card key={option.name} className="flex flex-col items-center justify-center p-6 text-center">
                 {option.icon}
                 <p className="mt-4 font-semibold">{option.name}</p>
-                <Button variant="secondary" className="mt-4" onClick={option.action}>
-                  Start
-                </Button>
+                {option.href ? (
+                  <Button asChild variant="secondary" className="mt-4">
+                    <Link href={option.href}>Start</Link>
+                  </Button>
+                ) : (
+                  <Button variant="secondary" className="mt-4" onClick={option.action}>
+                    Start
+                  </Button>
+                )}
               </Card>
             ))}
           </CardContent>
         </Card>
       </div>
-      <CaptchaDialog open={isCaptchaDialogOpen} onOpenChange={setIsCaptchaDialogOpen} />
-    </>
   );
 }
