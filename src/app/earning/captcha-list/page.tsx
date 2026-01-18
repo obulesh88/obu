@@ -12,6 +12,7 @@ import { doc, runTransaction } from 'firebase/firestore';
 
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
+const SUBMIT_DELAY = 15; // 15 seconds
 
 function generateCaptcha() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -32,6 +33,7 @@ export default function CaptchaListPage() {
   const [submitting, setSubmitting] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [completed, setCompleted] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
+  const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
 
   useEffect(() => {
     const newCaptchas = Array.from({ length: NUM_CAPTCHAS }, (_, i) => ({
@@ -41,23 +43,20 @@ export default function CaptchaListPage() {
     setCaptchas(newCaptchas);
   }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown(prev => prev.map(c => (c > 0 ? c - 1 : 0)));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   const refreshCaptcha = (index: number) => {
-    if (submitting[index] || completed[index]) return;
+    if (submitting[index] || completed[index] || readyToClaim[index]) return;
     
-    const newCaptchas = [...captchas];
-    newCaptchas[index] = { ...newCaptchas[index], text: generateCaptcha() };
-    setCaptchas(newCaptchas);
+    setCaptchas(prev => {
+        const newCaptchas = [...prev];
+        newCaptchas[index] = { ...newCaptchas[index], text: generateCaptcha() };
+        return newCaptchas;
+    });
 
-    const newUserInputs = [...userInputs];
-    newUserInputs[index] = '';
-    setUserInputs(newUserInputs);
+    setUserInputs(prev => {
+        const newUserInputs = [...prev];
+        newUserInputs[index] = '';
+        return newUserInputs;
+    });
   };
   
   const handleInputChange = (index: number, value: string) => {
@@ -66,7 +65,7 @@ export default function CaptchaListPage() {
     setUserInputs(newInputs);
   };
 
-  const handleSubmit = async (index: number) => {
+  const handleStart = (index: number) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
@@ -84,22 +83,49 @@ export default function CaptchaListPage() {
       return newState;
     });
     setCountdown(prev => {
-        const newState = [...prev];
-        newState[index] = 15;
-        return newState;
+      const newState = [...prev];
+      newState[index] = SUBMIT_DELAY;
+      return newState;
     });
     
     const adUrl = 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
     window.open(adUrl, '_blank');
 
-    const script = document.createElement('script');
-    script.src = adUrl;
-    script.async = true;
-    document.body.appendChild(script);
+    let currentCountdown = SUBMIT_DELAY;
+    const timer = setInterval(() => {
+        currentCountdown -= 1;
+        setCountdown(prev => {
+            const newState = [...prev];
+            newState[index] = currentCountdown;
+            return newState;
+        });
 
-    setTimeout(async () => {
+        if (currentCountdown <= 0) {
+            clearInterval(timer);
+            setReadyToClaim(prev => {
+                const newState = [...prev];
+                newState[index] = true;
+                return newState;
+            });
+            setSubmitting(prev => {
+                const newState = [...prev];
+                newState[index] = false;
+                return newState;
+            });
+        }
+    }, 1000);
+  };
+
+  const handleClaim = async (index: number) => {
+      if (!user || !firestore) return;
+
+      setSubmitting(prev => {
+        const newState = [...prev];
+        newState[index] = true;
+        return newState;
+      });
+
       try {
-        if (!firestore || !user) throw new Error("Firebase not initialized");
         const userDocRef = doc(firestore, 'users', user.uid);
         await runTransaction(firestore, async (transaction) => {
           const userDoc = await transaction.get(userDocRef);
@@ -120,6 +146,11 @@ export default function CaptchaListPage() {
             newState[index] = true;
             return newState;
         });
+        setReadyToClaim(prev => {
+            const newState = [...prev];
+            newState[index] = false;
+            return newState;
+        });
 
       } catch (error: any) {
         toast({
@@ -134,14 +165,25 @@ export default function CaptchaListPage() {
             return newState;
         });
       }
-    }, 15000);
+  };
+  
+  const getButtonContent = (index: number) => {
+      if(completed[index]) return 'Completed';
+      if(readyToClaim[index]) return `Claim ${REWARD_PER_CAPTCHA} OR`;
+      if(submitting[index]) return `Waiting... ${countdown[index]}s`;
+      return 'Submit';
+  };
+
+  const getButtonAction = (index: number) => {
+      if(readyToClaim[index]) return () => handleClaim(index);
+      return () => handleStart(index);
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Solve the Captchas</CardTitle>
-        <CardDescription>Enter the characters for each captcha to earn {REWARD_PER_CAPTCHA} OR coins.</CardDescription>
+        <CardDescription>Enter the characters for each captcha, click submit, wait {SUBMIT_DELAY} seconds, then claim your reward of {REWARD_PER_CAPTCHA} OR coins.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-8">
         {captchas.map((captcha, index) => (
@@ -152,7 +194,7 @@ export default function CaptchaListPage() {
                     <div className="select-none rounded-md border bg-muted p-3 text-center font-mono text-xl tracking-widest flex-grow">
                     {captcha.text}
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => refreshCaptcha(index)} disabled={submitting[index] || completed[index]}>
+                    <Button variant="ghost" size="icon" onClick={() => refreshCaptcha(index)} disabled={submitting[index] || completed[index] || readyToClaim[index]}>
                         <RefreshCw className="h-5 w-5" />
                         <span className="sr-only">Refresh Captcha</span>
                     </Button>
@@ -166,20 +208,16 @@ export default function CaptchaListPage() {
                 onChange={(e) => handleInputChange(index, e.target.value)}
                 placeholder="Enter text"
                 autoComplete="off"
-                disabled={submitting[index] || completed[index]}
+                disabled={submitting[index] || completed[index] || readyToClaim[index]}
                 className="font-mono"
               />
             </div>
             <Button 
-                onClick={() => handleSubmit(index)} 
-                disabled={submitting[index] || completed[index] || !userInputs[index]} 
+                onClick={getButtonAction(index)}
+                disabled={submitting[index] || completed[index] || (!userInputs[index] && !readyToClaim[index])} 
                 className="w-full"
             >
-                {submitting[index]
-                  ? `Waiting... ${countdown[index]}s`
-                  : completed[index]
-                  ? 'Completed'
-                  : `Submit & Earn ${REWARD_PER_CAPTCHA} OR`}
+              {getButtonContent(index)}
             </Button>
           </div>
         ))}

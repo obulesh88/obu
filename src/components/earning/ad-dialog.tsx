@@ -74,6 +74,7 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
 
   // 4. Limits Check
   const canWatch = useCallback(() => {
+    if (typeof window === 'undefined') return false;
     const dailyAds = parseInt(localStorage.getItem("dailyAds") || "0");
     if (dailyAds >= DAILY_AD_LIMIT) {
       toast({ variant: 'destructive', title: "Daily limit reached", description: "You have watched the maximum number of ads for today." });
@@ -103,7 +104,6 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
     setTimeout(() => {
       setShowClaimButton(true);
       setStatus("You can now claim your reward.");
-      setIsWatchButtonDisabled(false);
     }, WATCH_DELAY * 1000);
   };
 
@@ -120,6 +120,7 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
     // Anti-cheat check
     if (fingerprint() !== localStorage.getItem('ad_fp')) {
         toast({ variant: 'destructive', title: "Cheat Detected", description: "Your session information changed." });
+        onOpenChange(false);
         return;
     }
 
@@ -146,7 +147,6 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
         title: 'Success!',
         description: `You have earned ${REWARD_AMOUNT} OR coins.`,
       });
-      setStatus(`✅ Reward added! Ads watched today: ${adsWatched + 1}/${DAILY_AD_LIMIT}`);
       onOpenChange(false);
 
     } catch (error: any) {
@@ -156,10 +156,8 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
         title: 'An error occurred',
         description: error.message || 'Could not award points.',
       });
-      setStatus(`❌ Error: ${error.message || "Server error"}`);
     } finally {
       setIsClaiming(false);
-      setShowClaimButton(false);
     }
   };
 
