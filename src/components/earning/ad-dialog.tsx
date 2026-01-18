@@ -45,7 +45,7 @@ function fingerprint(): string {
 
 let adStartTime = 0;
 
-export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; onOpenChange: (open: boolean) => void; onComplete: () => void; }) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -147,6 +147,7 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
         title: 'Success!',
         description: `You have earned ${REWARD_AMOUNT} OR coins.`,
       });
+      onComplete();
       onOpenChange(false);
 
     } catch (error: any) {

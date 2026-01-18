@@ -9,6 +9,7 @@ import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
@@ -201,7 +202,10 @@ export default function CaptchaListPage() {
       </CardHeader>
       <CardContent className="flex flex-col gap-8">
         {captchas.map((captcha, index) => (
-          <div key={captcha.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pb-4 border-b last:border-0 last:pb-0">
+          <div key={captcha.id} className={cn(
+            "grid grid-cols-1 md:grid-cols-3 gap-4 items-end pb-4 border-b last:border-0 last:pb-0",
+            completed[index] && "opacity-50"
+          )}>
             <div className="flex flex-col gap-2">
                 <Label htmlFor={`captcha-display-${index}`}>Captcha #{index + 1}</Label>
                 <div id={`captcha-display-${index}`} className="flex items-center gap-2">

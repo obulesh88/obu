@@ -11,6 +11,23 @@ const REWARD_PER_AD = 10;
 
 export default function AdListPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [completed, setCompleted] = useState<boolean[]>(Array(NUM_ADS).fill(false));
+  const [currentAdIndex, setCurrentAdIndex] = useState<number | null>(null);
+
+  const handleWatchAdClick = (index: number) => {
+    setCurrentAdIndex(index);
+    setIsDialogOpen(true);
+  };
+
+  const handleAdComplete = () => {
+    if (currentAdIndex !== null) {
+      setCompleted(prev => {
+        const newCompleted = [...prev];
+        newCompleted[currentAdIndex] = true;
+        return newCompleted;
+      });
+    }
+  };
 
   return (
     <Card>
@@ -27,14 +44,18 @@ export default function AdListPage() {
               <Tv className="h-10 w-10 text-primary mb-4" />
               <p className="font-semibold mb-2">Ad #{index + 1}</p>
               <p className="text-sm text-muted-foreground mb-4">Earn {REWARD_PER_AD} OR</p>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                Watch Ad
+              <Button onClick={() => handleWatchAdClick(index)} disabled={completed[index]}>
+                {completed[index] ? 'Completed' : 'Watch Ad'}
               </Button>
             </CardContent>
           </Card>
         ))}
       </CardContent>
-      <AdDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      <AdDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onComplete={handleAdComplete}
+      />
     </Card>
   );
 }
