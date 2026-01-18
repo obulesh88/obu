@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
 
-const REWARD_AMOUNT = 10;
+const REWARD_AMOUNT = 5;
 const WATCH_DELAY = 15; // 15 seconds
 const DAILY_AD_LIMIT = 10;
 

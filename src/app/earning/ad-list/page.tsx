@@ -7,7 +7,7 @@ import { AdDialog } from '@/components/earning/ad-dialog';
 import { Tv } from 'lucide-react';
 
 const NUM_ADS = 10;
-const REWARD_PER_AD = 10;
+const REWARD_PER_AD = 5;
 const ADS_STORAGE_KEY = 'or_wallet_completed_ads';
 const ADS_DAY_KEY = 'or_wallet_ads_last_day';
 
