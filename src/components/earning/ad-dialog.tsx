@@ -53,13 +53,8 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
     setIsSubmitting(true);
     setCountdown(SUBMIT_DELAY);
 
-    const adUrl = 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
+    const adUrl = `https://djxh1.com/4/10481073?var=${user.uid}`;
     window.open(adUrl, '_blank');
-
-    const script = document.createElement('script');
-    script.src = adUrl;
-    script.async = true;
-    document.body.appendChild(script);
 
     setTimeout(async () => {
       try {
