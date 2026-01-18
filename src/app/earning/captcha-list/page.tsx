@@ -14,6 +14,20 @@ const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
 const SUBMIT_DELAY = 15; // 15 seconds
 
+const ads = [
+  "https://otieu.com/4/10481723",
+  "https://djxh1.com/4/10481073?var={your_source_id}",
+  "https://multicoloredsister.com/a7gvfy"
+];
+
+function getNextAd(userId: string): string {
+    if (typeof window === 'undefined') return ads[0].replace('{your_source_id}', userId);
+    let i = parseInt(localStorage.getItem("captchaAdIndex") || "0");
+    const link = ads[i].replace('{your_source_id}', userId);
+    localStorage.setItem("captchaAdIndex", String((i + 1) % ads.length));
+    return link;
+}
+
 function generateCaptcha() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
@@ -88,7 +102,7 @@ export default function CaptchaListPage() {
       return newState;
     });
     
-    const adUrl = 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
+    const adUrl = getNextAd(user.uid);
     window.open(adUrl, '_blank');
 
     let currentCountdown = SUBMIT_DELAY;
