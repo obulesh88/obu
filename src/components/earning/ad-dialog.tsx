@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,50 +15,35 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
 
 const REWARD_AMOUNT = 10;
-const WATCH_DELAY = 15; // 15 seconds to watch
-const COOLDOWN_DELAY = 60; // 60 seconds cooldown
+const WATCH_DELAY = 15; // 15 seconds
+const DAILY_AD_LIMIT = 10;
 
-// Ad rotation setup from user's script
+// Ad rotation setup
 const ads = [
-  { name: "monetag", url: "https://otieu.com/4/10481723" },
-  { name: "propeller", url: "//djxh1.com/4/10481073?var={your_source_id}" },
-  { name: "hilltop", url: "https://multicoloredsister.com/a7gvfy" }
+  "https://otieu.com/4/10481723",                // Monetag
+  "//djxh1.com/4/10481073?var={your_source_id}", // PropellerAds
+  "https://multicoloredsister.com/a7gvfy"        // HilltopAds
 ];
 
-// Helper functions from user's script
-function getFingerprint() {
-  if (typeof window === 'undefined') return '';
-  return btoa(
-    navigator.userAgent +
-    screen.width +
-    screen.height +
-    Intl.DateTimeFormat().resolvedOptions().timeZone
-  );
+function getNextAd(userId: string): string {
+    if (typeof window === 'undefined') return ads[0].replace('{your_source_id}', userId);
+    let i = parseInt(localStorage.getItem("adIndex") || "0");
+    const link = ads[i].replace('{your_source_id}', userId);
+    localStorage.setItem("adIndex", String((i + 1) % ads.length));
+    return link;
 }
 
-async function getIP() {
-  try {
-    const res = await fetch("https://api.ipify.org?format=json");
-    const data = await res.json();
-    return data.ip;
-  } catch {
-    return "unknown";
-  }
+function fingerprint(): string {
+    if (typeof window === 'undefined') return '';
+    return btoa(
+        navigator.userAgent +
+        screen.width +
+        screen.height +
+        Intl.DateTimeFormat().resolvedOptions().timeZone
+    );
 }
 
-function getNextAd(userId: string) {
-    let url = "//djxh1.com/4/10481073?var={your_source_id}"; // default
-    if (typeof window !== 'undefined') {
-        let i = localStorage.getItem("ad_index");
-        i = i ? parseInt(i) : 0;
-        const ad = ads[i];
-        localStorage.setItem("ad_index", ((i + 1) % ads.length).toString());
-        url = ad.url.replace('{your_source_id}', userId);
-        return { ...ad, url };
-    }
-    return { name: 'propeller', url: url.replace('{your_source_id}', userId) };
-}
-
+let adStartTime = 0;
 
 export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
@@ -66,104 +51,79 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const firestore = useFirestore();
 
   const [status, setStatus] = useState('Click "Watch Ad" to begin.');
-  const [isWatching, setIsWatching] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
-  const [countdown, setCountdown] = useState(0);
+  const [showClaimButton, setShowClaimButton] = useState(false);
+  const [isWatchButtonDisabled, setIsWatchButtonDisabled] = useState(false);
 
-  // Reset state when dialog opens/closes
+  // 1. Daily Reset
   useEffect(() => {
     if (open) {
-      setIsWatching(false);
-      setIsClaiming(false);
-      setCountdown(0);
-      setStatus('Click "Watch Ad" to begin.');
-
-      const lastWatch = localStorage.getItem("last_watch");
-      if(lastWatch && (Date.now() - parseInt(lastWatch)) < COOLDOWN_DELAY * 1000) {
-        setIsWatching(true); // Effectively disables the button
-        const remaining = Math.ceil((COOLDOWN_DELAY * 1000 - (Date.now() - parseInt(lastWatch))) / 1000);
-        setStatus(`Cooldown active. Please wait ${remaining}s.`);
+      const today = new Date().toDateString();
+      if (localStorage.getItem("lastDay") !== today) {
+        localStorage.setItem("lastDay", today);
+        localStorage.setItem("dailyAds", "0");
       }
+      // Reset dialog state
+      setStatus('Click "Watch Ad" to begin.');
+      setShowClaimButton(false);
+      setIsClaiming(false);
+      setIsWatchButtonDisabled(false);
     }
   }, [open]);
 
-  // Countdown timer effect
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    } else if (isWatching && countdown === 0 && status.startsWith('Ad opened')) {
-      setStatus('You can now claim your reward.');
+
+  // 4. Limits Check
+  const canWatch = useCallback(() => {
+    const dailyAds = parseInt(localStorage.getItem("dailyAds") || "0");
+    if (dailyAds >= DAILY_AD_LIMIT) {
+      toast({ variant: 'destructive', title: "Daily limit reached", description: "You have watched the maximum number of ads for today." });
+      return false;
     }
-    return () => clearTimeout(timer);
-  }, [countdown, isWatching, status]);
+    return true;
+  }, [toast]);
 
-
+  // 5. Watch Ad
   const handleWatchAd = async () => {
     if (!user) {
         toast({ variant: 'destructive', title: 'Not Authenticated' });
         return;
     }
+    if (!canWatch()) return;
+
+    adStartTime = Date.now();
+    localStorage.setItem('ad_fp', fingerprint()); // Store fingerprint on watch
     
-    const lastWatch = localStorage.getItem("last_watch");
-    if (lastWatch && (Date.now() - parseInt(lastWatch)) < COOLDOWN_DELAY * 1000) {
-        const remaining = Math.ceil((COOLDOWN_DELAY * 1000 - (Date.now() - parseInt(lastWatch))) / 1000);
-        toast({ title: `Cooldown active. Please wait ${remaining} seconds.` });
-        return;
-    }
+    setStatus(`Watching ad... please wait ${WATCH_DELAY} seconds.`);
+    setShowClaimButton(false);
+    setIsWatchButtonDisabled(true);
 
-    setIsWatching(true);
-    
-    const ad = getNextAd(user.uid);
-    const ip = await getIP();
-    const fp = getFingerprint();
+    const link = getNextAd(user.uid);
+    window.open(link, "_blank");
 
-    localStorage.setItem("ad_start", Date.now().toString());
-    localStorage.setItem("last_watch", Date.now().toString());
-    localStorage.setItem("ad_ip", ip);
-    localStorage.setItem("ad_fp", fp);
-
-    setStatus(`Ad opened (${ad.name}). Wait ${WATCH_DELAY} seconds.`);
-    setCountdown(WATCH_DELAY);
-    
-    window.open(ad.url, "_blank");
-
-    setTimeout(() => setIsWatching(false), COOLDOWN_DELAY * 1000);
+    setTimeout(() => {
+      setShowClaimButton(true);
+      setStatus("You can now claim your reward.");
+      setIsWatchButtonDisabled(false);
+    }, WATCH_DELAY * 1000);
   };
 
+  // 6. Claim Reward
   const handleClaimReward = async () => {
     if (!user || !firestore) {
-        toast({ variant: 'destructive', title: 'Not Authenticated or Firebase not ready' });
+        toast({ variant: 'destructive', title: 'Authentication or Database error' });
         return;
     }
-    
-    setIsClaiming(true);
-
-    const start = localStorage.getItem("ad_start");
-    if (!start) {
-        toast({ variant: 'destructive', title: "Please watch an ad first." });
-        setIsClaiming(false);
+    if (Date.now() - adStartTime < WATCH_DELAY * 1000) {
+        toast({ variant: 'destructive', title: "Please wait full ad time" });
         return;
     }
-
-    const diff = (Date.now() - parseInt(start)) / 1000;
-    if (diff < WATCH_DELAY) {
-        toast({ variant: 'destructive', title: "Ad not completed", description: `Please wait ${Math.ceil(WATCH_DELAY - diff)} more seconds.` });
-        setIsClaiming(false);
-        return;
-    }
-
-    const ipNow = await getIP();
-    const fpNow = getFingerprint();
-
-    if (
-        ipNow !== localStorage.getItem("ad_ip") ||
-        fpNow !== localStorage.getItem("ad_fp")
-    ) {
+    // Anti-cheat check
+    if (fingerprint() !== localStorage.getItem('ad_fp')) {
         toast({ variant: 'destructive', title: "Cheat Detected", description: "Your session information changed." });
-        setIsClaiming(false);
         return;
     }
+
+    setIsClaiming(true);
     
     try {
       const userDocRef = doc(firestore, 'users', user.uid);
@@ -178,16 +138,15 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
 
         transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
       });
-
+      
+      const adsWatched = parseInt(localStorage.getItem("dailyAds") || "0");
+      localStorage.setItem("dailyAds", String(adsWatched + 1));
+      
       toast({
         title: 'Success!',
         description: `You have earned ${REWARD_AMOUNT} OR coins.`,
       });
-
-      localStorage.removeItem("ad_start");
-      localStorage.removeItem("ad_ip");
-      localStorage.removeItem("ad_fp");
-      
+      setStatus(`✅ Reward added! Ads watched today: ${adsWatched + 1}/${DAILY_AD_LIMIT}`);
       onOpenChange(false);
 
     } catch (error: any) {
@@ -195,36 +154,39 @@ export function AdDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
       toast({
         variant: 'destructive',
         title: 'An error occurred',
-        description: 'Could not award points. Please try again.',
+        description: error.message || 'Could not award points.',
       });
+      setStatus(`❌ Error: ${error.message || "Server error"}`);
     } finally {
       setIsClaiming(false);
+      setShowClaimButton(false);
     }
   };
-
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Watch Ad to Earn</DialogTitle>
+          <DialogTitle>🎥 Watch Ad & Earn</DialogTitle>
           <DialogDescription>
-            Watch an ad for {WATCH_DELAY} seconds, then claim your reward. There is a {COOLDOWN_DELAY} second cooldown between ads.
+            Watch an ad for {WATCH_DELAY} seconds, then claim your reward of {REWARD_AMOUNT} OR coins.
+            You can watch up to {DAILY_AD_LIMIT} ads per day.
           </DialogDescription>
         </DialogHeader>
         
         <div className="text-center font-semibold p-4 border rounded-md bg-muted">
             {status}
-            {countdown > 0 && ` (${countdown}s)`}
         </div>
 
-        <DialogFooter className='grid grid-cols-2 gap-4'>
-          <Button type="button" onClick={handleWatchAd} disabled={isWatching}>
+        <DialogFooter className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+          <Button type="button" onClick={handleWatchAd} disabled={isWatchButtonDisabled}>
              ▶ Watch Ad
           </Button>
-          <Button type="button" onClick={handleClaimReward} disabled={isClaiming || countdown > 0}>
-             ✔ Claim Reward
-          </Button>
+          {showClaimButton && (
+            <Button type="button" onClick={handleClaimReward} disabled={isClaiming}>
+                ✔ Submit / Claim
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
