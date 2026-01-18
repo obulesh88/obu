@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
 const SUBMIT_DELAY = 15; // 15 seconds
+const CAPTCHA_STORAGE_KEY = 'or_wallet_completed_captchas';
+const CAPTCHA_DAY_KEY = 'or_wallet_captchas_last_day';
 
 const ads = [
   "https://otieu.com/4/10481723",
@@ -46,9 +48,32 @@ export default function CaptchaListPage() {
   const [captchas, setCaptchas] = useState<CaptchaItem[]>([]);
   const [userInputs, setUserInputs] = useState<string[]>(Array(NUM_CAPTCHAS).fill(''));
   const [submitting, setSubmitting] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
-  const [completed, setCompleted] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
+  const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_CAPTCHAS).fill(false));
   const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
   const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
+
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const lastDay = localStorage.getItem(CAPTCHA_DAY_KEY);
+
+    if (lastDay !== today) {
+      localStorage.setItem(CAPTCHA_DAY_KEY, today);
+      localStorage.removeItem(CAPTCHA_STORAGE_KEY);
+      setCompleted(Array(NUM_CAPTCHAS).fill(false));
+    } else {
+      const storedCompleted = localStorage.getItem(CAPTCHA_STORAGE_KEY);
+      if (storedCompleted) {
+          try {
+            const parsed = JSON.parse(storedCompleted);
+            if(Array.isArray(parsed) && parsed.length === NUM_CAPTCHAS) {
+                setCompleted(parsed);
+            }
+          } catch(e) {
+              console.error("Failed to parse completed captchas from storage", e);
+          }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const newCaptchas = Array.from({ length: NUM_CAPTCHAS }, (_, i) => ({
@@ -159,6 +184,7 @@ export default function CaptchaListPage() {
         setCompleted(prev => {
             const newState = [...prev];
             newState[index] = true;
+            localStorage.setItem(CAPTCHA_STORAGE_KEY, JSON.stringify(newState));
             return newState;
         });
         setReadyToClaim(prev => {
