@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
@@ -51,37 +51,46 @@ export default function CaptchaListPage() {
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_CAPTCHAS).fill(false));
   const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
   const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
+  const [allCaptchasCompleted, setAllCaptchasCompleted] = useState(false);
 
   useEffect(() => {
     const today = new Date().toDateString();
     const lastDay = localStorage.getItem(CAPTCHA_DAY_KEY);
+    let initialCompleted = Array(NUM_CAPTCHAS).fill(false);
 
     if (lastDay !== today) {
       localStorage.setItem(CAPTCHA_DAY_KEY, today);
       localStorage.removeItem(CAPTCHA_STORAGE_KEY);
-      setCompleted(Array(NUM_CAPTCHAS).fill(false));
     } else {
       const storedCompleted = localStorage.getItem(CAPTCHA_STORAGE_KEY);
       if (storedCompleted) {
           try {
             const parsed = JSON.parse(storedCompleted);
             if(Array.isArray(parsed) && parsed.length === NUM_CAPTCHAS) {
-                setCompleted(parsed);
+                initialCompleted = parsed;
             }
           } catch(e) {
               console.error("Failed to parse completed captchas from storage", e);
           }
       }
     }
-  }, []);
+    setCompleted(initialCompleted);
+    if(initialCompleted.every(c => c)) {
+        setAllCaptchasCompleted(true);
+    }
 
-  useEffect(() => {
     const newCaptchas = Array.from({ length: NUM_CAPTCHAS }, (_, i) => ({
       id: i,
       text: generateCaptcha(),
     }));
     setCaptchas(newCaptchas);
   }, []);
+
+  useEffect(() => {
+    if (captchas.length > 0 && completed.every(c => c)) {
+        setAllCaptchasCompleted(true);
+    }
+  }, [completed, captchas]);
 
   const refreshCaptcha = (index: number) => {
     if (submitting[index] || completed[index] || readyToClaim[index]) return;
@@ -226,45 +235,55 @@ export default function CaptchaListPage() {
         <CardTitle>Solve the Captchas</CardTitle>
         <CardDescription>Enter the characters for each captcha, click submit, wait {SUBMIT_DELAY} seconds, then claim your reward of {REWARD_PER_CAPTCHA} OR coins.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-8">
-        {captchas.map((captcha, index) => (
-          <div key={captcha.id} className={cn(
-            "grid grid-cols-1 md:grid-cols-3 gap-4 items-end pb-4 border-b last:border-0 last:pb-0",
-            completed[index] && "opacity-50"
-          )}>
-            <div className="flex flex-col gap-2">
-                <Label htmlFor={`captcha-display-${index}`}>Captcha #{index + 1}</Label>
-                <div id={`captcha-display-${index}`} className="flex items-center gap-2">
-                    <div className="select-none rounded-md border bg-muted p-3 text-center font-mono text-xl tracking-widest flex-grow">
-                    {captcha.text}
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => refreshCaptcha(index)} disabled={submitting[index] || completed[index] || readyToClaim[index]}>
-                        <RefreshCw className="h-5 w-5" />
-                        <span className="sr-only">Refresh Captcha</span>
-                    </Button>
+      <CardContent>
+          {allCaptchasCompleted ? (
+            <div className="flex flex-col items-center justify-center text-center p-8 gap-4">
+              <CheckCircle2 className="h-16 w-16 text-green-500" />
+              <h3 className="text-xl font-bold">All Captchas Solved for Today!</h3>
+              <p className="text-muted-foreground">Come back tomorrow for more rewards.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-8">
+              {captchas.map((captcha, index) => (
+                <div key={captcha.id} className={cn(
+                  "grid grid-cols-1 md:grid-cols-3 gap-4 items-end pb-4 border-b last:border-0 last:pb-0",
+                  completed[index] && "opacity-50"
+                )}>
+                  <div className="flex flex-col gap-2">
+                      <Label htmlFor={`captcha-display-${index}`}>Captcha #{index + 1}</Label>
+                      <div id={`captcha-display-${index}`} className="flex items-center gap-2">
+                          <div className="select-none rounded-md border bg-muted p-3 text-center font-mono text-xl tracking-widest flex-grow">
+                          {captcha.text}
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={() => refreshCaptcha(index)} disabled={submitting[index] || completed[index] || readyToClaim[index]}>
+                              <RefreshCw className="h-5 w-5" />
+                              <span className="sr-only">Refresh Captcha</span>
+                          </Button>
+                      </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor={`captcha-input-${index}`}>Your Answer</Label>
+                    <Input
+                      id={`captcha-input-${index}`}
+                      value={userInputs[index]}
+                      onChange={(e) => handleInputChange(index, e.target.value)}
+                      placeholder="Enter text"
+                      autoComplete="off"
+                      disabled={submitting[index] || completed[index] || readyToClaim[index]}
+                      className="font-mono"
+                    />
+                  </div>
+                  <Button 
+                      onClick={getButtonAction(index)}
+                      disabled={submitting[index] || completed[index] || (!userInputs[index] && !readyToClaim[index])} 
+                      className="w-full"
+                  >
+                    {getButtonContent(index)}
+                  </Button>
                 </div>
+              ))}
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={`captcha-input-${index}`}>Your Answer</Label>
-              <Input
-                id={`captcha-input-${index}`}
-                value={userInputs[index]}
-                onChange={(e) => handleInputChange(index, e.target.value)}
-                placeholder="Enter text"
-                autoComplete="off"
-                disabled={submitting[index] || completed[index] || readyToClaim[index]}
-                className="font-mono"
-              />
-            </div>
-            <Button 
-                onClick={getButtonAction(index)}
-                disabled={submitting[index] || completed[index] || (!userInputs[index] && !readyToClaim[index])} 
-                className="w-full"
-            >
-              {getButtonContent(index)}
-            </Button>
-          </div>
-        ))}
+          )}
       </CardContent>
     </Card>
   );
