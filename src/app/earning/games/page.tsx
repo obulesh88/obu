@@ -190,7 +190,7 @@ export default function GamesListPage() {
                 <Card key={index} className={cn(completed[index] && "opacity-50")}>
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                     <Gamepad2 className="h-10 w-10 text-primary mb-4" />
-                    <p className="font-semibold mb-2">{index === 0 ? 'Count Rush' : `Game #${index + 1}`}</p>
+                    <p className="font-semibold mb-2">{index === 0 ? 'Count Rush' : index === 1 ? 'Line Color Puzzle' : `Game #${index + 1}`}</p>
                     <p className="text-sm text-muted-foreground mb-4">Earn {REWARD_PER_GAME} OR</p>
                     <Button 
                         onClick={getButtonAction(index)}
