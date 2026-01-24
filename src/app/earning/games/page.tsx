@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Gamepad2 } from 'lucide-react';
+import { CheckCircle2, Gamepad2, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const NUM_GAMES = 8;
@@ -17,7 +17,7 @@ const games = [
     { name: "Count Rush", url: "https://html5.gamemonetize.co/a2n82o95m2g0c8v0c6j10j5j1j3j0j/" },
     { name: "Line Color Puzzle", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
     { name: "Bubble Shooter Relaxing Puzzle", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
-    { name: "My Cat Restaurant", url: "https://html5.gamemonetize.co/u2jrg92s6j58y9p9j6r2d6v0v5v4v2/" },
+    { name: "My Cat Restaurant", url: "https://html5.gamemonetize.co/zro5d0oom4aubos4mlka610s5mla0zt3/" },
     { name: "Game #5", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
     { name: "Game #6", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
     { name: "Game #7", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
@@ -32,6 +32,7 @@ export default function GamesPage() {
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_GAMES).fill(false));
   const [allGamesCompleted, setAllGamesCompleted] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<{ game: any; index: number } | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -73,6 +74,11 @@ export default function GamesPage() {
         return;
       }
       
+      if (games[index].name === 'My Cat Restaurant') {
+        setSelectedGame({ game: games[index], index });
+        return;
+      }
+
       setSubmitting(prev => {
         const newState = [...prev];
         newState[index] = true;
@@ -98,6 +104,37 @@ export default function GamesPage() {
           return newState;
       });
   };
+
+  const handleGoBackFromGame = () => {
+    if (!selectedGame) return;
+
+    const { index } = selectedGame;
+
+    setSubmitting(prev => {
+        const newState = [...prev];
+        newState[index] = true;
+        return newState;
+    });
+
+    setCompleted(prev => {
+        const newState = [...prev];
+        newState[index] = true;
+        localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(newState));
+        return newState;
+    });
+
+    toast({
+        title: 'Game Completed',
+    });
+    
+    setSubmitting(prev => {
+        const newState = [...prev];
+        newState[index] = false;
+        return newState;
+    });
+
+    setSelectedGame(null);
+  };
   
   const getButtonContent = (index: number) => {
       if(completed[index]) return 'Completed';
@@ -108,6 +145,24 @@ export default function GamesPage() {
   const getButtonAction = (index: number) => {
       return () => handlePlayGame(index);
   };
+  
+  if (selectedGame) {
+    return (
+        <div className="w-full h-[calc(100vh-10rem)] flex flex-col">
+            <div className="flex items-center p-2 border-b">
+                <Button variant="ghost" size="icon" onClick={handleGoBackFromGame}>
+                    <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <span className="ml-2 font-semibold">{selectedGame.game.name}</span>
+            </div>
+            <iframe
+                src={selectedGame.game.url}
+                className="w-full h-full border-0"
+                allow="fullscreen; autoplay"
+            />
+        </div>
+    );
+  }
 
   if (!isClient) {
     return (
