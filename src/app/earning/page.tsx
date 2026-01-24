@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, Key, Tv } from 'lucide-react';
+import { Key, Tv } from 'lucide-react';
 import { useEffect } from 'react';
 import Link from 'next/link';
 
@@ -25,7 +25,6 @@ export default function EarningPage() {
 
 
   const earningOptions = [
-    { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8" />, href: '/earning/games' },
     { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, href: '/earning/captcha-list' },
     { name: 'Watch Ads', icon: <Tv className="h-8 w-8" />, href: '/earning/ad-list' },
   ];
