@@ -15,7 +15,7 @@ const PLAY_DELAY = 60; // 60 seconds
 const GAMES_STORAGE_KEY = 'or_wallet_completed_games';
 const GAMES_DAY_KEY = 'or_wallet_games_last_day';
 
-const GAME_URL = "https://html5.gamemonetize.com/tgk6lgg35qdv812vbu1ze3e62fpex1n0/";
+const GAME_URL = "https://html5.gamemonetize.com/5u84alj5z5n3h0qtu9w6yty328jbtj3f/";
 
 export default function GamesListPage() {
   const { toast } = useToast();
