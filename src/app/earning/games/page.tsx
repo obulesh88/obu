@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
-import { Gamepad2 } from 'lucide-react';
+import { Gamepad2, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const NUM_GAMES = 8;
@@ -53,7 +53,16 @@ export default function GamesPage() {
   
   if (selectedGame) {
     return (
-        <div className="w-full h-[calc(100vh-10rem)] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black">
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute top-4 left-4 z-[60] rounded-full bg-black/50 text-white hover:bg-black/75 hover:text-white"
+                onClick={() => setSelectedGame(null)}
+            >
+                <ArrowLeft className="h-6 w-6" />
+                <span className="sr-only">Back to games</span>
+            </Button>
             <iframe
                 src={selectedGame.game.url}
                 className="w-full h-full border-0"
