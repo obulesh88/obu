@@ -25,7 +25,7 @@ export default function EarningPage() {
 
 
   const earningOptions = [
-    { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8" />, action: () => {} },
+    { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8" />, href: '/earning/games' },
     { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, href: '/earning/captcha-list' },
     { name: 'Watch Ads', icon: <Tv className="h-8 w-8" />, href: '/earning/ad-list' },
   ];
