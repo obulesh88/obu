@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
@@ -52,8 +53,10 @@ export default function CaptchaListPage() {
   const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
   const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [allCaptchasCompleted, setAllCaptchasCompleted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     const today = new Date().toDateString();
     const lastDay = localStorage.getItem(CAPTCHA_DAY_KEY);
     let initialCompleted = Array(NUM_CAPTCHAS).fill(false);
@@ -228,6 +231,39 @@ export default function CaptchaListPage() {
       if(readyToClaim[index]) return () => handleClaim(index);
       return () => handleStart(index);
   };
+
+  if (!isClient) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Solve the Captchas</CardTitle>
+          <CardDescription>Enter the characters for each captcha, click submit, wait {SUBMIT_DELAY} seconds, then claim your reward of {REWARD_PER_CAPTCHA} OR coins.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-8">
+            {Array.from({ length: NUM_CAPTCHAS }).map((_, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pb-4 border-b last:border-0 last:pb-0">
+                <div className="flex flex-col gap-2">
+                    <Label>Captcha #{index + 1}</Label>
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="h-12 w-full" />
+                        <Button variant="ghost" size="icon" disabled>
+                            <RefreshCw className="h-5 w-5" />
+                        </Button>
+                    </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label>Your Answer</Label>
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
