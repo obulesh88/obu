@@ -12,7 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const REWARD_PER_GAME = 10;
 const NUM_GAMES = 8;
-const PLAY_DELAY = 60; // 60 seconds
 const GAMES_STORAGE_KEY = 'or_wallet_completed_games';
 const GAMES_DAY_KEY = 'or_wallet_games_last_day';
 
@@ -32,10 +31,8 @@ export default function GamesPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const [playing, setPlaying] = useState<boolean[]>(Array(NUM_GAMES).fill(false));
+  const [submitting, setSubmitting] = useState<boolean[]>(Array(NUM_GAMES).fill(false));
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_GAMES).fill(false));
-  const [countdown, setCountdown] = useState<number[]>(Array(NUM_GAMES).fill(0));
-  const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_GAMES).fill(false));
   const [allGamesCompleted, setAllGamesCompleted] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
@@ -73,58 +70,19 @@ export default function GamesPage() {
     }
   }, [completed]);
 
-  const handlePlayGame = (index: number) => {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Not Authenticated' });
-      return;
-    }
-
-    setPlaying(prev => {
-      const newState = [...prev];
-      newState[index] = true;
-      return newState;
-    });
-    setCountdown(prev => {
-      const newState = [...prev];
-      newState[index] = PLAY_DELAY;
-      return newState;
-    });
-    
-    window.open(games[index].url, '_blank');
-
-    let currentCountdown = PLAY_DELAY;
-    const timer = setInterval(() => {
-        currentCountdown -= 1;
-        setCountdown(prev => {
-            const newState = [...prev];
-            newState[index] = currentCountdown;
-            return newState;
-        });
-
-        if (currentCountdown <= 0) {
-            clearInterval(timer);
-            setReadyToClaim(prev => {
-                const newState = [...prev];
-                newState[index] = true;
-                return newState;
-            });
-            setPlaying(prev => {
-                const newState = [...prev];
-                newState[index] = false;
-                return newState;
-            });
-        }
-    }, 1000);
-  };
-
-  const handleClaim = async (index: number) => {
-      if (!user || !firestore) return;
-
-      setPlaying(prev => {
+  const handlePlayGame = async (index: number) => {
+      if (!user || !firestore) {
+        toast({ variant: 'destructive', title: 'Not Authenticated' });
+        return;
+      }
+      
+      setSubmitting(prev => {
         const newState = [...prev];
         newState[index] = true;
         return newState;
       });
+      
+      window.open(games[index].url, '_blank');
 
       try {
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -148,11 +106,6 @@ export default function GamesPage() {
             localStorage.setItem(GAMES_STORAGE_KEY, JSON.stringify(newState));
             return newState;
         });
-        setReadyToClaim(prev => {
-            const newState = [...prev];
-            newState[index] = false;
-            return newState;
-        });
 
       } catch (error: any) {
         toast({
@@ -161,7 +114,7 @@ export default function GamesPage() {
           description: 'Could not award points.',
         });
       } finally {
-        setPlaying(prev => {
+        setSubmitting(prev => {
             const newState = [...prev];
             newState[index] = false;
             return newState;
@@ -171,13 +124,11 @@ export default function GamesPage() {
   
   const getButtonContent = (index: number) => {
       if(completed[index]) return 'Completed';
-      if(readyToClaim[index]) return `Claim ${REWARD_PER_GAME} OR`;
-      if(playing[index]) return `Waiting... ${countdown[index]}s`;
-      return 'Play Game';
+      if(submitting[index]) return 'Processing...';
+      return 'Play & Earn';
   };
 
   const getButtonAction = (index: number) => {
-      if(readyToClaim[index]) return () => handleClaim(index);
       return () => handlePlayGame(index);
   };
 
@@ -186,7 +137,7 @@ export default function GamesPage() {
       <Card>
         <CardHeader>
             <CardTitle>Play Games & Earn</CardTitle>
-            <CardDescription>Play a game for {PLAY_DELAY} seconds to earn {REWARD_PER_GAME} OR coins.</CardDescription>
+            <CardDescription>Play a game to earn {REWARD_PER_GAME} OR coins.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -208,7 +159,7 @@ export default function GamesPage() {
     <Card>
         <CardHeader>
             <CardTitle>Play Games & Earn</CardTitle>
-            <CardDescription>Play a game for {PLAY_DELAY} seconds to earn {REWARD_PER_GAME} OR coins.</CardDescription>
+            <CardDescription>Play a game to earn {REWARD_PER_GAME} OR coins.</CardDescription>
         </CardHeader>
         <CardContent>
             {allGamesCompleted ? (
@@ -226,7 +177,7 @@ export default function GamesPage() {
                             <p className="text-sm text-muted-foreground mb-4">Earn {REWARD_PER_GAME} OR</p>
                             <Button 
                                 onClick={getButtonAction(index)}
-                                disabled={playing[index] || completed[index]}
+                                disabled={submitting[index] || completed[index]}
                                 className="w-full"
                             >
                                 {getButtonContent(index)}
