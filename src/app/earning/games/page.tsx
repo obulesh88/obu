@@ -10,7 +10,7 @@ import { doc, runTransaction } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
 const REWARD_PER_GAME = 10;
-const NUM_GAMES = 5;
+const NUM_GAMES = 1;
 const PLAY_DELAY = 60; // 60 seconds
 const GAMES_STORAGE_KEY = 'or_wallet_completed_games';
 const GAMES_DAY_KEY = 'or_wallet_games_last_day';
@@ -173,7 +173,7 @@ export default function GamesListPage() {
     <Card>
       <CardHeader>
         <CardTitle>Play Games & Earn</CardTitle>
-        <CardDescription>Play a game for {PLAY_DELAY} seconds to earn {REWARD_PER_GAME} OR coins. You can play up to {NUM_GAMES} games per day.</CardDescription>
+        <CardDescription>Play a game for {PLAY_DELAY} seconds to earn {REWARD_PER_GAME} OR coins. You can play up to {NUM_GAMES} {NUM_GAMES === 1 ? 'game' : 'games'} per day.</CardDescription>
       </CardHeader>
       <CardContent>
           {allGamesCompleted ? (
@@ -183,12 +183,12 @@ export default function GamesListPage() {
               <p className="text-muted-foreground">Come back tomorrow for more rewards.</p>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-1">
               {Array.from({ length: NUM_GAMES }).map((_, index) => (
                 <Card key={index} className={cn(completed[index] && "opacity-50")}>
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                     <Gamepad2 className="h-10 w-10 text-primary mb-4" />
-                    <p className="font-semibold mb-2">Game #{index + 1}</p>
+                    <p className="font-semibold mb-2">Play Game & Earn</p>
                     <p className="text-sm text-muted-foreground mb-4">Earn {REWARD_PER_GAME} OR</p>
                     <Button 
                         onClick={getButtonAction(index)}
