@@ -15,8 +15,6 @@ const PLAY_DELAY = 60; // 60 seconds
 const GAMES_STORAGE_KEY = 'or_wallet_completed_games';
 const GAMES_DAY_KEY = 'or_wallet_games_last_day';
 
-const GAME_URL = "https://html5.gamemonetize.com/5u84alj5z5n3h0qtu9w6yty328jbtj3f/";
-
 export default function GamesListPage() {
   const { toast } = useToast();
   const { user } = useUser();
@@ -67,6 +65,10 @@ export default function GamesListPage() {
       return;
     }
 
+    const gameUrl = index === 0 
+      ? "https://html5.gamemonetize.com/5u84alj5z5n3h0qtu9w6yty328jbtj3f/" 
+      : "https://html5.gamemonetize.com/26hfgx893q2swrjw0j85zbhajd4qn7pq/";
+
     setSubmitting(prev => {
       const newState = [...prev];
       newState[index] = true;
@@ -78,7 +80,7 @@ export default function GamesListPage() {
       return newState;
     });
     
-    window.open(GAME_URL, '_blank');
+    window.open(gameUrl, '_blank');
 
     let currentCountdown = PLAY_DELAY;
     const timer = setInterval(() => {
@@ -188,7 +190,7 @@ export default function GamesListPage() {
                 <Card key={index} className={cn(completed[index] && "opacity-50")}>
                   <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                     <Gamepad2 className="h-10 w-10 text-primary mb-4" />
-                    <p className="font-semibold mb-2">Game #{index + 1}</p>
+                    <p className="font-semibold mb-2">{index === 0 ? 'Count Rush' : `Game #${index + 1}`}</p>
                     <p className="text-sm text-muted-foreground mb-4">Earn {REWARD_PER_GAME} OR</p>
                     <Button 
                         onClick={getButtonAction(index)}
