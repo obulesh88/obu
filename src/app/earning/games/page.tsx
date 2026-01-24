@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
-import { Gamepad2, ArrowLeft } from 'lucide-react';
+import { Gamepad2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const NUM_GAMES = 8;
@@ -50,26 +50,10 @@ export default function GamesPage() {
         description: 'The game has been opened in a new tab.',
       });
   };
-
-  const handleGoBackFromGame = () => {
-    if (!selectedGame) return;
-    
-    toast({
-        title: 'Thanks for playing!',
-    });
-
-    setSelectedGame(null);
-  };
   
   if (selectedGame) {
     return (
         <div className="w-full h-[calc(100vh-10rem)] flex flex-col">
-            <div className="flex items-center p-2 border-b">
-                <Button variant="ghost" size="icon" onClick={handleGoBackFromGame}>
-                    <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <span className="ml-2 font-semibold">{selectedGame.game.name}</span>
-            </div>
             <iframe
                 src={selectedGame.game.url}
                 className="w-full h-full border-0"
