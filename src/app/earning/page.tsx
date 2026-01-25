@@ -3,27 +3,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Key, Tv, Gamepad2 } from 'lucide-react';
-import { useEffect } from 'react';
 import Link from 'next/link';
 
 export default function EarningPage() {
-
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.settings = {};
-    script.src = "//frail-benefit.com/cQD/9M6.bC2/5llISRWHQ-9YNIjYcx0uNij_k/4SNViV0a2QN/z/Qi2dOwTvgc3F";
-    script.async = true;
-    script.referrerPolicy = 'no-referrer-when-downgrade';
-
-    const lastScript = document.scripts[document.scripts.length - 1];
-    if(lastScript && lastScript.parentNode) {
-      lastScript.parentNode.insertBefore(script, lastScript);
-    } else {
-      document.body.appendChild(script);
-    }
-  }, []);
-
-
   const earningOptions = [
     { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, href: '/earning/captcha-list' },
     { name: 'Watch Ads', icon: <Tv className="h-8 w-8" />, href: '/earning/ad-list' },

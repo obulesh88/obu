@@ -98,8 +98,8 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
     setShowClaimButton(false);
     setIsWatchButtonDisabled(true);
 
-    const link = getNextAd(user.uid);
-    window.open(link, "_blank");
+    // const link = getNextAd(user.uid);
+    // window.open(link, "_blank");
 
     setTimeout(() => {
       setShowClaimButton(true);

@@ -21,8 +21,6 @@ export default function RootLayout({
       <head>
         <title>OR-wallet</title>
         <meta name="description" content="Complete tasks and earn rewards with AI-powered recommendations." />
-        <meta name="monetag" content="48959e64e74cd9b476a2" />
-        <meta name="5d0fc7ff33c9296008d648959e64e74cd9b476a2" content="5d0fc7ff33c9296008d648959e64e74cd9b476a2" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

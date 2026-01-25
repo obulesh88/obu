@@ -24,25 +24,6 @@ export default function WalletHomePage() {
     }
   }, [user, loading, router]);
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    const l = document.scripts[document.scripts.length - 1];
-    script.src = "//pristineproblem.com/bFXJVqs_d.GslE0hYkWrcv/QeIm/9nu/ZaUWlDklP/T/Y-2wNQz/MCxcNATGUEtQN/j/Y-3/MtzrEj1cNNgD";
-    script.async = true;
-    script.referrerPolicy = 'no-referrer-when-downgrade';
-    
-    // Using a container div to ensure the script has a parent to be inserted before.
-    const container = document.getElementById('ad-container');
-    if (container && l.parentNode) {
-      l.parentNode.insertBefore(script, l);
-    } else {
-      // Fallback if the container or parent script isn't found
-       document.body.appendChild(script);
-    }
-
-  }, []);
-
-
   const copyToClipboard = () => {
     if (!userProfile?.wallet.walletAddress) return;
     navigator.clipboard.writeText(userProfile.wallet.walletAddress);
@@ -68,11 +49,6 @@ export default function WalletHomePage() {
         <span className="text-primary">OR</span>
         <span className="text-foreground">-wallet</span>
       </h1>
-       <Card className="md:col-span-2">
-        <CardContent id="ad-container" className="flex justify-center p-4">
-          {/* Ad script will inject the banner here */}
-        </CardContent>
-      </Card>
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">

@@ -140,8 +140,8 @@ export default function CaptchaListPage() {
       return newState;
     });
     
-    const adUrl = getNextAd(user.uid);
-    window.open(adUrl, '_blank');
+    // const adUrl = getNextAd(user.uid);
+    // window.open(adUrl, '_blank');
 
     let currentCountdown = SUBMIT_DELAY;
     const timer = setInterval(() => {
