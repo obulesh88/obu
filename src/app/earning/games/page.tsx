@@ -226,10 +226,10 @@ export default function GamesPage() {
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
                     <li>Choose any game to start a 5-minute session.</li>
-                    <li>Earn 6 OR for every minute you play.</li>
-                    <li>Your earnings will be shown on the play button.</li>
-                    <li>Do not close or refresh the game to ensure you get your reward.</li>
-                    <li>You can play more games to earn more.</li>
+                    <li>You will accumulate 6 OR for every minute you play during the session.</li>
+                    <li>Your total earnings for the session will be shown on the play button.</li>
+                    <li>After the session ends, you must solve a captcha to claim your earnings.</li>
+                    <li>Do not close or refresh the game to ensure you can claim your reward.</li>
                 </ul>
             </CardDescription>
         </CardHeader>
@@ -256,10 +256,10 @@ export default function GamesPage() {
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
                     <li>Choose any game to start a 5-minute session.</li>
-                    <li>Earn 6 OR for every minute you play.</li>
-                    <li>Your earnings will be shown on the play button.</li>
-                    <li>Do not close or refresh the game to ensure you get your reward.</li>
-                    <li>You can play more games to earn more.</li>
+                    <li>You will accumulate 6 OR for every minute you play during the session.</li>
+                    <li>Your total earnings for the session will be shown on the play button.</li>
+                    <li>After the session ends, you must solve a captcha to claim your earnings.</li>
+                    <li>Do not close or refresh the game to ensure you can claim your reward.</li>
                 </ul>
             </CardDescription>
         </CardHeader>
