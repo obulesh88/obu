@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +17,7 @@ const GAME_DURATION = 1800; // 30 minutes in seconds
 const games = [
     { name: "Count Rush", url: "https://html5.gamemonetize.co/a2n82o95m2g0c8v0c6j10j5j1j3j0j/" },
     { name: "Line Color Puzzle", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
-    { name: "Bubble Shooter Relaxing Puzzle", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
+    { name: "Bubble Shooter Relaxing Puzzle", url: "https://html5.gamemonetize.co/9vj6k8jp3a0g4g5f3h0c7i6j5f2h5g/" },
     { name: "My Cat Restaurant", url: "https://html5.gamemonetize.co/zro5d0oom4aubos4mlka610s5mla0zt3/" },
     { name: "Game #5", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
     { name: "Game #6", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
@@ -94,7 +94,7 @@ export default function GamesPage() {
     };
   }, [selectedGame, setBottomNavVisible]);
 
-  const handleAwardMinutePoints = async (index: number) => {
+  const handleAwardMinutePoints = useCallback(async (index: number) => {
     if (!user || !firestore) return;
 
     try {
@@ -135,7 +135,7 @@ export default function GamesPage() {
       });
       console.error(error);
     }
-  };
+  }, [user, firestore, toast]);
 
   const handlePlayGame = (index: number) => {
     if (!user) {
@@ -171,11 +171,16 @@ export default function GamesPage() {
       window.open(games[index].url, '_blank');
     }
 
+    if (intervalRefs.current[index]) {
+      clearInterval(intervalRefs.current[index]!);
+    }
+
     intervalRefs.current[index] = setInterval(() => {
       setTimers(prevTimers => {
-        const currentTime = prevTimers[index];
+        const newTimers = [...prevTimers];
+        const currentTime = newTimers[index];
 
-        if (currentTime === 0) {
+        if (currentTime <= 0) {
             if (intervalRefs.current[index]) {
                 clearInterval(intervalRefs.current[index]!);
                 intervalRefs.current[index] = null;
@@ -189,10 +194,9 @@ export default function GamesPage() {
                 title: 'Game Session Finished!',
                 description: `You can play again to earn more.`,
             });
-            return prevTimers;
+            return newTimers;
         }
         
-        const newTimers = [...prevTimers];
         const newTime = currentTime - 1;
         newTimers[index] = newTime;
         
@@ -223,6 +227,9 @@ export default function GamesPage() {
                 <ArrowLeft className="h-6 w-6" />
                 <span className="sr-only">Back to games</span>
             </Button>
+            <div className="absolute top-4 right-4 z-[60] rounded-full bg-black/50 px-4 py-2 text-white font-mono text-lg">
+                {formatTime(timers[selectedGame.index])}
+            </div>
             <iframe
                 src={selectedGame.game.url}
                 className="w-full h-full border-0"
