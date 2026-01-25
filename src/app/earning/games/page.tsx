@@ -12,7 +12,7 @@ import { doc, runTransaction } from 'firebase/firestore';
 
 const NUM_GAMES = 8;
 const REWARD_PER_MINUTE = 6;
-const GAME_DURATION = 1800; // 30 minutes in seconds
+const GAME_DURATION = 300; // 5 minutes in seconds
 
 const games = [
     { name: "Count Rush", url: "https://html5.gamemonetize.co/a2n82o95m2g0c8v0c6j10j5j1j3j0j/" },
@@ -212,7 +212,7 @@ export default function GamesPage() {
             <CardTitle>Play Games & Earn</CardTitle>
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
-                    <li>Choose any game to start a 30-minute session.</li>
+                    <li>Choose any game to start a 5-minute session.</li>
                     <li>Earn 6 OR for every minute you play.</li>
                     <li>Your earnings will be shown on the play button.</li>
                     <li>Do not close or refresh the game to ensure you get your reward.</li>
@@ -241,7 +241,7 @@ export default function GamesPage() {
             <CardTitle>Play Games & Earn</CardTitle>
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
-                    <li>Choose any game to start a 30-minute session.</li>
+                    <li>Choose any game to start a 5-minute session.</li>
                     <li>Earn 6 OR for every minute you play.</li>
                     <li>Your earnings will be shown on the play button.</li>
                     <li>Do not close or refresh the game to ensure you get your reward.</li>
