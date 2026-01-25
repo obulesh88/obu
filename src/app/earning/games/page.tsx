@@ -28,25 +28,24 @@ const games = [
 
 // --- Verification Logic ---
 const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA';
+const CLAIM_COINS_URL = 'https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/claim-coins';
 
 /**
  * Calls a protected API to verify the reward claim.
- * This is based on your provided snippet and may need to be adapted for your actual API.
  */
-const callProtectedApi = async () => {
+const callProtectedApi = async (rewardAmount: number) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
   try {
-    // This endpoint is a placeholder based on your JWT. You should replace it with your actual API endpoint.
-    const response = await fetch('https://wupwbyzlgdlgwbdqluw.supabase.co/rest/v1/rpc/claim_reward', {
+    const response = await fetch(CLAIM_COINS_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${BEARER_TOKEN}`,
-        'apikey': BEARER_TOKEN, // Supabase requires the apikey header for REST calls
         'Content-Type': 'application/json',
       },
-      // Adjust body as needed for your API. Sending an empty object for now.
-      body: JSON.stringify({}),
+      body: JSON.stringify({
+        coins: rewardAmount,
+      }),
       signal: controller.signal,
     });
 
@@ -205,7 +204,7 @@ export default function GamesPage() {
 
     try {
       // API verification step
-      await callProtectedApi();
+      await callProtectedApi(rewardAmount);
         
       const userDocRef = doc(firestore, 'users', user.uid);
       await runTransaction(firestore, async (transaction) => {
