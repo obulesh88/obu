@@ -49,48 +49,14 @@ export default function GamesPage() {
   }, []);
 
   useEffect(() => {
-    const gameElement = gameContainerRef.current;
-
-    const lockAndFullscreen = async () => {
-      if (!gameElement) return;
-      try {
-        if (gameElement.requestFullscreen) {
-          await gameElement.requestFullscreen();
-        }
-        if (screen.orientation && screen.orientation.lock) {
-          await screen.orientation.lock('landscape').catch(() => {});
-        }
-      } catch (e) {
-        console.warn('Could not enter fullscreen or lock orientation.', e);
-      }
-    };
-
-    const unlockAndExitFullscreen = async () => {
-      try {
-        if (screen.orientation && screen.orientation.unlock) {
-          screen.orientation.unlock();
-        }
-        if (document.fullscreenElement && document.exitFullscreen) {
-          await document.exitFullscreen();
-        }
-      } catch (e) {
-        console.warn('Could not exit fullscreen or unlock orientation.', e);
-      }
-    };
-
     if (selectedGame) {
       setBottomNavVisible(false);
-      if (selectedGame.game.name === 'My Cat Restaurant') {
-        lockAndFullscreen();
-      }
     } else {
       setBottomNavVisible(true);
-      unlockAndExitFullscreen();
     }
 
     return () => {
       setBottomNavVisible(true);
-      unlockAndExitFullscreen();
     };
   }, [selectedGame, setBottomNavVisible]);
 
@@ -217,7 +183,7 @@ export default function GamesPage() {
 
   if (selectedGame) {
     return (
-        <div ref={gameContainerRef} className="fixed inset-0 z-50 bg-black">
+        <div ref={gameContainerRef} className="relative w-full h-[calc(100vh-120px)] bg-black">
             <Button 
                 variant="ghost" 
                 size="icon" 
@@ -233,7 +199,7 @@ export default function GamesPage() {
             <iframe
                 src={selectedGame.game.url}
                 className="w-full h-full border-0"
-                allow="fullscreen; autoplay"
+                allow="autoplay"
             />
         </div>
     );
