@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -29,18 +29,56 @@ export default function GamesPage() {
 
   const [isClient, setIsClient] = useState(false);
   const [selectedGame, setSelectedGame] = useState<{ game: any; index: number } | null>(null);
+  const gameContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
+    const gameElement = gameContainerRef.current;
+
+    const lockAndFullscreen = async () => {
+      if (!gameElement) return;
+      try {
+        if (gameElement.requestFullscreen) {
+          await gameElement.requestFullscreen();
+        }
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('landscape').catch(() => {});
+        }
+      } catch (e) {
+        console.warn('Could not enter fullscreen or lock orientation.', e);
+      }
+    };
+
+    const unlockAndExitFullscreen = async () => {
+      try {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+        if (document.fullscreenElement && document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      } catch (e) {
+        console.warn('Could not exit fullscreen or unlock orientation.', e);
+      }
+    };
+
     if (selectedGame) {
       setBottomNavVisible(false);
+      if (selectedGame.game.name === 'My Cat Restaurant') {
+        lockAndFullscreen();
+      }
     } else {
       setBottomNavVisible(true);
+      unlockAndExitFullscreen();
     }
-    return () => setBottomNavVisible(true);
+
+    return () => {
+      setBottomNavVisible(true);
+      unlockAndExitFullscreen();
+    };
   }, [selectedGame, setBottomNavVisible]);
 
   const handlePlayGame = (index: number) => {
@@ -64,7 +102,7 @@ export default function GamesPage() {
   
   if (selectedGame) {
     return (
-        <div className="fixed inset-0 z-50 bg-black">
+        <div ref={gameContainerRef} className="fixed inset-0 z-50 bg-black">
             <Button 
                 variant="ghost" 
                 size="icon" 
