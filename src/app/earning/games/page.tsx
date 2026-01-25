@@ -26,6 +26,46 @@ const games = [
     { name: "Game #8", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
 ];
 
+// --- Verification Logic ---
+const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA';
+
+/**
+ * Calls a protected API to verify the reward claim.
+ * This is based on your provided snippet and may need to be adapted for your actual API.
+ */
+const callProtectedApi = async () => {
+  try {
+    // This endpoint is a placeholder based on your JWT. You should replace it with your actual API endpoint.
+    const response = await fetch('https://wupwbyzlgdlgwbdqluw.supabase.co/rest/v1/rpc/claim_reward', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${BEARER_TOKEN}`,
+        'apikey': BEARER_TOKEN, // Supabase requires the apikey header for REST calls
+        'Content-Type': 'application/json',
+      },
+      // Adjust body as needed for your API. Sending an empty object for now.
+      body: JSON.stringify({}),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API verification failed! status: ${response.status}`);
+    }
+    
+    console.log('API verification successful');
+    // Handle empty response body for success cases (e.g., HTTP 204 No Content)
+    if (response.status === 204 || response.headers.get("content-length") === "0") {
+      return {};
+    }
+    
+    return await response.json();
+
+  } catch (error) {
+    console.error('Error calling protected API:', error);
+    throw error; // Re-throw to be handled by the caller
+  }
+};
+// --- End of Verification Logic ---
+
 export default function GamesPage() {
   const { toast } = useToast();
   const { user } = useUser();
@@ -154,6 +194,9 @@ export default function GamesPage() {
     }
 
     try {
+      // API verification step
+      await callProtectedApi();
+        
       const userDocRef = doc(firestore, 'users', user.uid);
       await runTransaction(firestore, async (transaction) => {
         const userDoc = await transaction.get(userDocRef);
@@ -171,8 +214,8 @@ export default function GamesPage() {
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'An error occurred',
-        description: 'Could not award points. Please try again.',
+        title: 'Verification Failed',
+        description: 'Could not claim reward. Please try again.',
       });
       console.error(error);
     } finally {
