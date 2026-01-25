@@ -12,8 +12,8 @@ import { doc, runTransaction } from 'firebase/firestore';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
 
 const NUM_GAMES = 8;
-const REWARD_PER_MINUTE = 6;
-const GAME_DURATION = 300; // 5 minutes in seconds
+const REWARD_PER_SESSION = 3;
+const GAME_DURATION = 30; // 30 seconds
 
 const games = [
     { name: "Count Rush", url: "https://html5.gamemonetize.co/a2n82o95m2g0c8v0c6j10j5j1j3j0j/" },
@@ -27,57 +27,54 @@ const games = [
 ];
 
 // --- Verification Logic ---
-const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA';
 const CLAIM_COINS_URL = 'https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/claim-coins';
+const CREATE_RAZORPAY_CONTACT_URL = 'https://nwxgjyamiborsgfnzqcj.supabase.co/functions/v1/create-razorpay-contact';
+const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA';
 
-/**
- * Calls a protected API to verify the reward claim.
- */
-const callProtectedApi = async (rewardAmount: number) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
-  try {
-    const response = await fetch(CLAIM_COINS_URL, {
-      method: 'POST',
+const createRazorpayContact = async (userData: any) => {
+  const response = await fetch(
+    CREATE_RAZORPAY_CONTACT_URL,
+    {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${BEARER_TOKEN}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${BEARER_TOKEN}`
       },
-      body: JSON.stringify({
-        coins: rewardAmount,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`API verification failed! status: ${response.status}`);
+      body: JSON.stringify(userData),
     }
-    
-    console.log('API verification successful');
-    // Handle empty response body for success cases (e.g., HTTP 204 No Content)
-    if (response.status === 204 || response.headers.get("content-length") === "0") {
-      return {};
-    }
-    
-    return await response.json();
+  );
 
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-        console.error('API call timed out.');
-        throw new Error('Verification request timed out. Please try again.');
-    }
-    console.error('Error calling protected API:', error);
-    throw error; // Re-throw to be handled by the caller
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Failed to create Razorpay contact. Status: ${response.status}`);
   }
+  return response.json();
+};
+
+const claimCoinsAfterTimer = async (claimData: any) => {
+  const response = await fetch(
+    CLAIM_COINS_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${BEARER_TOKEN}`
+      },
+      body: JSON.stringify(claimData),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Failed to claim coins. Status: ${response.status}`);
+  }
+  return response.json();
 };
 // --- End of Verification Logic ---
 
 export default function GamesPage() {
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
   const firestore = useFirestore();
   const { setBottomNavVisible } = useLayout();
 
@@ -170,6 +167,11 @@ export default function GamesPage() {
             if (selectedGame?.index === index) {
                 setSelectedGame(null);
             }
+            setSessionEarnings(prev => {
+                const newEarnings = [...prev];
+                newEarnings[index] = REWARD_PER_SESSION;
+                return newEarnings;
+            });
             setVerifyingGameIndex(index);
             setIsCaptchaOpen(true);
             return newTimers;
@@ -178,21 +180,13 @@ export default function GamesPage() {
         const newTime = currentTime - 1;
         newTimers[index] = newTime;
         
-        if ((GAME_DURATION - newTime) % 60 === 0 && newTime < GAME_DURATION) {
-             setSessionEarnings(prev => {
-                const newEarnings = [...prev];
-                newEarnings[index] += REWARD_PER_MINUTE;
-                return newEarnings;
-            });
-        }
-        
         return newTimers;
       });
     }, 1000);
   };
 
   const handleClaimReward = async () => {
-    if (!user || !firestore || verifyingGameIndex === null) return;
+    if (!user || !firestore || verifyingGameIndex === null || !userProfile) return;
     
     const rewardAmount = sessionEarnings[verifyingGameIndex];
     if (rewardAmount <= 0) {
@@ -204,7 +198,14 @@ export default function GamesPage() {
 
     try {
       // API verification step
-      await callProtectedApi(rewardAmount);
+      await createRazorpayContact({
+        name: userProfile.profile.displayName,
+        email: userProfile.email,
+      });
+
+      await claimCoinsAfterTimer({
+        coins: rewardAmount,
+      });
         
       const userDocRef = doc(firestore, 'users', user.uid);
       await runTransaction(firestore, async (transaction) => {
@@ -277,10 +278,8 @@ export default function GamesPage() {
             <CardTitle>Play Games & Earn</CardTitle>
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
-                    <li>Choose any game to start a 5-minute session.</li>
-                    <li>You will accumulate 6 OR for every minute you play during the session.</li>
-                    <li>Your total earnings for the session will be shown on the play button.</li>
-                    <li>After the session ends, you must solve a captcha to claim your earnings.</li>
+                    <li>Choose any game to start a 30-second session.</li>
+                    <li>After the session ends, you must solve a captcha to claim your 3 OR reward.</li>
                     <li>Do not close or refresh the game to ensure you can claim your reward.</li>
                 </ul>
             </CardDescription>
@@ -307,10 +306,8 @@ export default function GamesPage() {
             <CardTitle>Play Games & Earn</CardTitle>
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
-                    <li>Choose any game to start a 5-minute session.</li>
-                    <li>You will accumulate 6 OR for every minute you play during the session.</li>
-                    <li>Your total earnings for the session will be shown on the play button.</li>
-                    <li>After the session ends, you must solve a captcha to claim your earnings.</li>
+                    <li>Choose any game to start a 30-second session.</li>
+                    <li>After the session ends, you must solve a captcha to claim your 3 OR reward.</li>
                     <li>Do not close or refresh the game to ensure you can claim your reward.</li>
                 </ul>
             </CardDescription>
@@ -326,7 +323,7 @@ export default function GamesPage() {
                             className="w-full mt-4"
                             disabled={isPlaying[index]}
                         >
-                            {isPlaying[index] ? `Playing... (${formatTime(timers[index])}) | ${sessionEarnings[index]} OR` : 'Play Game'}
+                            {isPlaying[index] ? `Playing... (${formatTime(timers[index])})` : 'Play Game'}
                         </Button>
                     </Card>
                 ))}
