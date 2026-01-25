@@ -34,6 +34,8 @@ const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
  * This is based on your provided snippet and may need to be adapted for your actual API.
  */
 const callProtectedApi = async () => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
   try {
     // This endpoint is a placeholder based on your JWT. You should replace it with your actual API endpoint.
     const response = await fetch('https://wupwbyzlgdlgwbdqluw.supabase.co/rest/v1/rpc/claim_reward', {
@@ -45,7 +47,10 @@ const callProtectedApi = async () => {
       },
       // Adjust body as needed for your API. Sending an empty object for now.
       body: JSON.stringify({}),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`API verification failed! status: ${response.status}`);
@@ -59,7 +64,12 @@ const callProtectedApi = async () => {
     
     return await response.json();
 
-  } catch (error) {
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+        console.error('API call timed out.');
+        throw new Error('Verification request timed out. Please try again.');
+    }
     console.error('Error calling protected API:', error);
     throw error; // Re-throw to be handled by the caller
   }
@@ -215,7 +225,7 @@ export default function GamesPage() {
       toast({
         variant: 'destructive',
         title: 'Verification Failed',
-        description: 'Could not claim reward. Please try again.',
+        description: error.message || 'Could not claim reward. Please try again.',
       });
       console.error(error);
     } finally {
