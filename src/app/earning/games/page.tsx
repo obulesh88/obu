@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +9,7 @@ import { Gamepad2, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';
 import { doc, runTransaction } from 'firebase/firestore';
+import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
 
 const NUM_GAMES = 8;
 const REWARD_PER_MINUTE = 6;
@@ -39,6 +40,9 @@ export default function GamesPage() {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const intervalRefs = useRef<(NodeJS.Timeout | null)[]>(Array(NUM_GAMES).fill(null));
 
+  const [isCaptchaOpen, setIsCaptchaOpen] = useState(false);
+  const [verifyingGameIndex, setVerifyingGameIndex] = useState<number | null>(null);
+
   useEffect(() => {
     setIsClient(true);
     return () => {
@@ -60,48 +64,6 @@ export default function GamesPage() {
     };
   }, [selectedGame, setBottomNavVisible]);
 
-  const handleAwardMinutePoints = useCallback(async (index: number) => {
-    if (!user || !firestore) return;
-
-    try {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await runTransaction(firestore, async (transaction) => {
-        const userDoc = await transaction.get(userDocRef);
-        if (!userDoc.exists()) {
-          throw 'User document does not exist!';
-        }
-        const newOrBalance = (userDoc.data().wallet?.orBalance || 0) + REWARD_PER_MINUTE;
-        transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
-      });
-
-      setSessionEarnings(prev => {
-        const newEarnings = [...prev];
-        newEarnings[index] += REWARD_PER_MINUTE;
-        return newEarnings;
-      });
-
-      toast({
-        title: `+${REWARD_PER_MINUTE} OR Earned!`,
-        description: `You've earned coins for playing ${games[index].name}.`,
-      });
-    } catch (error: any) {
-      if (intervalRefs.current[index]) {
-        clearInterval(intervalRefs.current[index]!);
-        intervalRefs.current[index] = null;
-      }
-      setIsPlaying(prevIsPlaying => {
-        const newIsPlaying = [...prevIsPlaying];
-        newIsPlaying[index] = false;
-        return newIsPlaying;
-      });
-      toast({
-        variant: 'destructive',
-        title: 'An error occurred',
-        description: 'Could not award points. Game session stopped.',
-      });
-      console.error(error);
-    }
-  }, [user, firestore, toast]);
 
   const handlePlayGame = (index: number) => {
     if (!user) {
@@ -156,10 +118,11 @@ export default function GamesPage() {
                 newIsPlaying[index] = false;
                 return newIsPlaying;
             });
-            toast({
-                title: 'Game Session Finished!',
-                description: `You can play again to earn more.`,
-            });
+            if (selectedGame?.index === index) {
+                setSelectedGame(null);
+            }
+            setVerifyingGameIndex(index);
+            setIsCaptchaOpen(true);
             return newTimers;
         }
         
@@ -167,12 +130,62 @@ export default function GamesPage() {
         newTimers[index] = newTime;
         
         if ((GAME_DURATION - newTime) % 60 === 0 && newTime < GAME_DURATION) {
-            handleAwardMinutePoints(index);
+             setSessionEarnings(prev => {
+                const newEarnings = [...prev];
+                newEarnings[index] += REWARD_PER_MINUTE;
+                return newEarnings;
+            });
         }
         
         return newTimers;
       });
     }, 1000);
+  };
+
+  const handleClaimReward = async () => {
+    if (!user || !firestore || verifyingGameIndex === null) return;
+    
+    const rewardAmount = sessionEarnings[verifyingGameIndex];
+    if (rewardAmount <= 0) {
+        toast({ variant: 'destructive', title: "No reward to claim." });
+        setIsCaptchaOpen(false);
+        setVerifyingGameIndex(null);
+        return;
+    }
+
+    try {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await runTransaction(firestore, async (transaction) => {
+        const userDoc = await transaction.get(userDocRef);
+        if (!userDoc.exists()) {
+          throw 'User document does not exist!';
+        }
+        const newOrBalance = (userDoc.data().wallet?.orBalance || 0) + rewardAmount;
+        transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
+      });
+
+      toast({
+        title: 'Reward Claimed!',
+        description: `You've earned ${rewardAmount} OR for playing ${games[verifyingGameIndex].name}.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'An error occurred',
+        description: 'Could not award points. Please try again.',
+      });
+      console.error(error);
+    } finally {
+        setIsCaptchaOpen(false);
+        if (verifyingGameIndex !== null) {
+            setSessionEarnings(prev => {
+                const newEarnings = [...prev];
+                newEarnings[verifyingGameIndex] = 0;
+                return newEarnings;
+            });
+        }
+        setVerifyingGameIndex(null);
+    }
   };
   
   const formatTime = (seconds: number) => {
@@ -236,6 +249,7 @@ export default function GamesPage() {
   }
 
   return (
+    <>
     <Card>
         <CardHeader>
             <CardTitle>Play Games & Earn</CardTitle>
@@ -267,5 +281,11 @@ export default function GamesPage() {
             </div>
         </CardContent>
     </Card>
+    <GameCaptchaDialog
+        open={isCaptchaOpen}
+        onOpenChange={setIsCaptchaOpen}
+        onVerify={handleClaimReward}
+    />
+    </>
   );
 }
