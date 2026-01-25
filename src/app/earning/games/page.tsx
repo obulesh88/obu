@@ -173,40 +173,34 @@ export default function GamesPage() {
 
     intervalRefs.current[index] = setInterval(() => {
       setTimers(prevTimers => {
-        const newTimers = [...prevTimers];
-        const currentTime = newTimers[index];
+        const currentTime = prevTimers[index];
 
-        if (currentTime > 0) {
-            newTimers[index] -= 1;
-            
-            // Award points every 60 seconds (1 minute)
-            if ((GAME_DURATION - newTimers[index]) % 60 === 0 && newTimers[index] < GAME_DURATION) {
-                handleAwardMinutePoints(index);
-            }
-            
-            return newTimers;
-        } else { // Timer finished
+        if (currentTime === 0) {
             if (intervalRefs.current[index]) {
                 clearInterval(intervalRefs.current[index]!);
                 intervalRefs.current[index] = null;
             }
-
-            // Award points for the last minute
-            handleAwardMinutePoints(index);
-
             setIsPlaying(prevIsPlaying => {
                 const newIsPlaying = [...prevIsPlaying];
                 newIsPlaying[index] = false;
                 return newIsPlaying;
             });
-            
             toast({
                 title: 'Game Session Finished!',
                 description: `You can play again to earn more.`,
             });
-            
-            return newTimers;
+            return prevTimers;
         }
+        
+        const newTimers = [...prevTimers];
+        const newTime = currentTime - 1;
+        newTimers[index] = newTime;
+        
+        if ((GAME_DURATION - newTime) % 60 === 0 && newTime < GAME_DURATION) {
+            handleAwardMinutePoints(index);
+        }
+        
+        return newTimers;
       });
     }, 1000);
   };
