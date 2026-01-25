@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import { Gamepad2, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLayout } from '@/context/layout-context';
 
 const NUM_GAMES = 8;
 
@@ -24,6 +25,7 @@ const games = [
 export default function GamesPage() {
   const { toast } = useToast();
   const { user } = useUser();
+  const { setBottomNavVisible } = useLayout();
 
   const [isClient, setIsClient] = useState(false);
   const [selectedGame, setSelectedGame] = useState<{ game: any; index: number } | null>(null);
@@ -31,6 +33,15 @@ export default function GamesPage() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (selectedGame) {
+      setBottomNavVisible(false);
+    } else {
+      setBottomNavVisible(true);
+    }
+    return () => setBottomNavVisible(true);
+  }, [selectedGame, setBottomNavVisible]);
 
   const handlePlayGame = (index: number) => {
       if (!user) {

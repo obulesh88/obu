@@ -3,8 +3,15 @@
 import { Home, RefreshCw, Wallet, User, CircleDollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useLayout } from '@/context/layout-context';
 
 export function BottomNav() {
+  const { isBottomNavVisible } = useLayout();
+
+  if (!isBottomNavVisible) {
+    return null;
+  }
+
   const navItems = [
     { href: '/', icon: <Home />, label: 'Home' },
     { href: '/earning', icon: <CircleDollarSign />, label: 'Earn' },

@@ -1,4 +1,3 @@
-
 'use client';
 
 import './globals.css';
@@ -9,6 +8,7 @@ import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
+import { LayoutProvider } from '@/context/layout-context';
 
 export default function RootLayout({
   children,
@@ -37,18 +37,20 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <FirebaseClientProvider>
-            <SidebarProvider>
-                <div className="flex min-h-screen w-full flex-col">
-                  <Header />
-                  <SidebarInset>
-                    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-                     {children}
-                    </main>
-                  </SidebarInset>
-                  <BottomNav />
-                </div>
-            </SidebarProvider>
-            <Toaster />
+            <LayoutProvider>
+              <SidebarProvider>
+                  <div className="flex min-h-screen w-full flex-col">
+                    <Header />
+                    <SidebarInset>
+                      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+                       {children}
+                      </main>
+                    </SidebarInset>
+                    <BottomNav />
+                  </div>
+              </SidebarProvider>
+              <Toaster />
+            </LayoutProvider>
           </FirebaseClientProvider>
         </ThemeProvider>
       </body>
