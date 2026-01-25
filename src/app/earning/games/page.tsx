@@ -210,7 +210,6 @@ export default function GamesPage() {
                     <li>Choose any game from the Games section.</li>
                     <li>Play the game continuously for 5 minutes.</li>
                     <li>Do not close or refresh the game during play.</li>
-                    <li>After 5 minutes, {REWARD_PER_GAME} are automatically added to your account.</li>
                     <li>You can play more games to earn more.</li>
                 </ul>
             </CardDescription>
@@ -239,7 +238,6 @@ export default function GamesPage() {
                     <li>Choose any game from the Games section.</li>
                     <li>Play the game continuously for 5 minutes.</li>
                     <li>Do not close or refresh the game during play.</li>
-                    <li>After 5 minutes, {REWARD_PER_GAME} are automatically added to your account.</li>
                     <li>You can play more games to earn more.</li>
                 </ul>
             </CardDescription>
