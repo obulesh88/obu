@@ -11,7 +11,7 @@ import { useLayout } from '@/context/layout-context';
 import { doc, runTransaction } from 'firebase/firestore';
 
 const NUM_GAMES = 8;
-const REWARD_PER_GAME = 50;
+const REWARD_PER_MINUTE = 6;
 const GAME_DURATION = 300; // 5 minutes in seconds
 
 const games = [
@@ -35,6 +35,7 @@ export default function GamesPage() {
   const [selectedGame, setSelectedGame] = useState<{ game: any; index: number } | null>(null);
   const [timers, setTimers] = useState<number[]>(Array(NUM_GAMES).fill(0));
   const [isPlaying, setIsPlaying] = useState<boolean[]>(Array(NUM_GAMES).fill(false));
+  const [sessionEarnings, setSessionEarnings] = useState<number[]>(Array(NUM_GAMES).fill(0));
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const intervalRefs = useRef<(NodeJS.Timeout | null)[]>(Array(NUM_GAMES).fill(null));
 
@@ -93,7 +94,7 @@ export default function GamesPage() {
     };
   }, [selectedGame, setBottomNavVisible]);
 
-  const handleAwardPoints = async (index: number) => {
+  const handleAwardMinutePoints = async (index: number) => {
     if (!user || !firestore) return;
 
     try {
@@ -103,27 +104,36 @@ export default function GamesPage() {
         if (!userDoc.exists()) {
           throw 'User document does not exist!';
         }
-        const newOrBalance = (userDoc.data().wallet?.orBalance || 0) + REWARD_PER_GAME;
+        const newOrBalance = (userDoc.data().wallet?.orBalance || 0) + REWARD_PER_MINUTE;
         transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
       });
 
+      setSessionEarnings(prev => {
+        const newEarnings = [...prev];
+        newEarnings[index] += REWARD_PER_MINUTE;
+        return newEarnings;
+      });
+
       toast({
-        title: 'Reward Claimed!',
-        description: `You earned ${REWARD_PER_GAME} OR for playing ${games[index].name}.`,
+        title: `+${REWARD_PER_MINUTE} OR Earned!`,
+        description: `You've earned coins for playing ${games[index].name}.`,
       });
     } catch (error: any) {
+      if (intervalRefs.current[index]) {
+        clearInterval(intervalRefs.current[index]!);
+        intervalRefs.current[index] = null;
+      }
+      setIsPlaying(prevIsPlaying => {
+        const newIsPlaying = [...prevIsPlaying];
+        newIsPlaying[index] = false;
+        return newIsPlaying;
+      });
       toast({
         variant: 'destructive',
         title: 'An error occurred',
-        description: 'Could not award points.',
+        description: 'Could not award points. Game session stopped.',
       });
       console.error(error);
-    } finally {
-        setIsPlaying(prev => {
-            const newIsPlaying = [...prev];
-            newIsPlaying[index] = false;
-            return newIsPlaying;
-        });
     }
   };
 
@@ -138,6 +148,12 @@ export default function GamesPage() {
       return;
     }
     
+    setSessionEarnings(prev => {
+        const newEarnings = [...prev];
+        newEarnings[index] = 0;
+        return newEarnings;
+    });
+
     setIsPlaying(prev => {
         const newIsPlaying = [...prev];
         newIsPlaying[index] = true;
@@ -156,17 +172,39 @@ export default function GamesPage() {
     }
 
     intervalRefs.current[index] = setInterval(() => {
-      setTimers(prev => {
-        const newTimers = [...prev];
-        if (newTimers[index] > 0) {
+      setTimers(prevTimers => {
+        const newTimers = [...prevTimers];
+        const currentTime = newTimers[index];
+
+        if (currentTime > 0) {
             newTimers[index] -= 1;
+            
+            // Award points every 60 seconds (1 minute)
+            if ((GAME_DURATION - newTimers[index]) % 60 === 0 && newTimers[index] < GAME_DURATION) {
+                handleAwardMinutePoints(index);
+            }
+            
             return newTimers;
-        } else {
+        } else { // Timer finished
             if (intervalRefs.current[index]) {
                 clearInterval(intervalRefs.current[index]!);
                 intervalRefs.current[index] = null;
             }
-            handleAwardPoints(index);
+
+            // Award points for the last minute
+            handleAwardMinutePoints(index);
+
+            setIsPlaying(prevIsPlaying => {
+                const newIsPlaying = [...prevIsPlaying];
+                newIsPlaying[index] = false;
+                return newIsPlaying;
+            });
+            
+            toast({
+                title: 'Game Session Finished!',
+                description: `You can play again to earn more.`,
+            });
+            
             return newTimers;
         }
       });
@@ -207,9 +245,10 @@ export default function GamesPage() {
             <CardTitle>Play Games & Earn</CardTitle>
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
-                    <li>Choose any game from the Games section.</li>
-                    <li>Play the game continuously for 5 minutes.</li>
-                    <li>Do not close or refresh the game during play.</li>
+                    <li>Choose any game to start a 5-minute session.</li>
+                    <li>Earn 6 OR for every minute you play.</li>
+                    <li>Your earnings will be shown on the play button.</li>
+                    <li>Do not close or refresh the game to ensure you get your reward.</li>
                     <li>You can play more games to earn more.</li>
                 </ul>
             </CardDescription>
@@ -235,9 +274,10 @@ export default function GamesPage() {
             <CardTitle>Play Games & Earn</CardTitle>
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
-                    <li>Choose any game from the Games section.</li>
-                    <li>Play the game continuously for 5 minutes.</li>
-                    <li>Do not close or refresh the game during play.</li>
+                    <li>Choose any game to start a 5-minute session.</li>
+                    <li>Earn 6 OR for every minute you play.</li>
+                    <li>Your earnings will be shown on the play button.</li>
+                    <li>Do not close or refresh the game to ensure you get your reward.</li>
                     <li>You can play more games to earn more.</li>
                 </ul>
             </CardDescription>
@@ -253,7 +293,7 @@ export default function GamesPage() {
                             className="w-full mt-4"
                             disabled={isPlaying[index]}
                         >
-                            {isPlaying[index] ? `Playing... (${formatTime(timers[index])})` : 'Play Game'}
+                            {isPlaying[index] ? `Playing... (${formatTime(timers[index])}) | ${sessionEarnings[index]} OR` : 'Play Game'}
                         </Button>
                     </Card>
                 ))}
