@@ -44,6 +44,36 @@
         }
       },
       "required": ["uid", "email", "profile", "wallet"]
+    },
+    "earningTransaction": {
+      "title": "Earning Transaction",
+      "description": "Represents a transaction where a user earned rewards.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who earned the reward."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of OR coins earned."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of activity that generated the earning.",
+          "enum": ["ad", "captcha", "game"]
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the earning activity."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the transaction."
+        }
+      },
+      "required": ["userId", "amount", "type", "description", "createdAt"]
     }
   },
   "auth": {
@@ -57,6 +87,12 @@
         "$ref": "#/entities/user"
       },
       "description": "Stores user profile information."
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": {
+        "$ref": "#/entities/earningTransaction"
+      },
+      "description": "Stores a user's earning transactions."
     }
   }
 }

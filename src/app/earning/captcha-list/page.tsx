@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, runTransaction } from 'firebase/firestore';
+import { doc, runTransaction, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -186,6 +186,16 @@ export default function CaptchaListPage() {
           }
           const newOrBalance = (userDoc.data().wallet?.orBalance || 0) + REWARD_PER_CAPTCHA;
           transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
+        });
+
+        // Log the transaction
+        const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
+        await addDoc(transactionsColRef, {
+            userId: user.uid,
+            amount: REWARD_PER_CAPTCHA,
+            type: 'captcha',
+            description: `Solved Captcha #${index + 1}`,
+            createdAt: serverTimestamp(),
         });
 
         toast({

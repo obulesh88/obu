@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, runTransaction } from 'firebase/firestore';
+import { doc, runTransaction, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const REWARD_AMOUNT = 5;
 const WATCH_DELAY = 15; // 15 seconds
@@ -143,6 +143,16 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
       const adsWatched = parseInt(localStorage.getItem("dailyAds") || "0");
       localStorage.setItem("dailyAds", String(adsWatched + 1));
       
+      // Log the transaction
+      const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
+      await addDoc(transactionsColRef, {
+        userId: user.uid,
+        amount: REWARD_AMOUNT,
+        type: 'ad',
+        description: 'Watched an ad',
+        createdAt: serverTimestamp(),
+      });
+
       toast({
         title: 'Success!',
         description: `You have earned ${REWARD_AMOUNT} OR coins.`,

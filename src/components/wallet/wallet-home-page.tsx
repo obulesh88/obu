@@ -58,9 +58,11 @@ export default function WalletHomePage() {
           <CardContent>
             <div className="text-4xl font-bold">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
             <p className="text-xs text-muted-foreground">Available to withdraw</p>
-            <Button variant="secondary" className="mt-4">
-              <History className="mr-2 h-4 w-4" />
-              History
+            <Button variant="secondary" className="mt-4" asChild>
+              <Link href="/wallet/history">
+                <History className="mr-2 h-4 w-4" />
+                History
+              </Link>
             </Button>
           </CardContent>
         </Card>

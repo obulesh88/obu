@@ -13,3 +13,12 @@ export type UserProfile = {
   };
   createdAt: Timestamp;
 };
+
+export type EarningTransaction = {
+  id: string;
+  userId: string;
+  amount: number;
+  type: 'ad' | 'captcha' | 'game';
+  description: string;
+  createdAt: Timestamp;
+};

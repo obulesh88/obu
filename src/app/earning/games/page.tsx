@@ -8,7 +8,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { Gamepad2, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';
-import { doc, runTransaction } from 'firebase/firestore';
+import { doc, runTransaction, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
 
 const NUM_GAMES = 8;
@@ -190,6 +190,18 @@ export default function GamesPage() {
         const newOrBalance = (userDoc.data().wallet?.orBalance || 0) + rewardAmount;
         transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
       });
+
+      // Log the transaction
+      if (verifyingGameIndex !== null) {
+          const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
+          await addDoc(transactionsColRef, {
+              userId: user.uid,
+              amount: rewardAmount,
+              type: 'game',
+              description: `Played ${games[verifyingGameIndex].name}`,
+              createdAt: serverTimestamp(),
+          });
+      }
 
       toast({
         title: 'Reward Claimed!',

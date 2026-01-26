@@ -7,6 +7,10 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    match /users/{userId}/transactions/{transactionId} {
+      allow read, create: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Default deny for any other collections to keep the database secure.
     // We will add rules for new collections as we build them.
     match /{document=**} {
