@@ -222,12 +222,19 @@ export default function GamesPage() {
         description: `You've earned ${rewardAmount} OR for playing ${games[verifyingGameIndex].name}.`,
       });
     } catch (error: any) {
+      console.error("Verification API call failed:", error);
+      let description = 'Could not claim reward. Please try again.';
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          description = 'A network error occurred. Please check your browser\'s developer console for CORS issues and ensure the backend is configured to accept requests from this domain.';
+      } else if (error.message) {
+          description = error.message;
+      }
+
       toast({
         variant: 'destructive',
         title: 'Verification Failed',
-        description: error.message || 'Could not claim reward. Please try again.',
+        description: description,
       });
-      console.error(error);
     } finally {
         setIsCaptchaOpen(false);
         if (verifyingGameIndex !== null) {
