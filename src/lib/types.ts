@@ -5,7 +5,6 @@ export type UserProfile = {
   email: string;
   profile: {
     displayName: string;
-    photoURL: string;
   };
   wallet: {
     orBalance: number;

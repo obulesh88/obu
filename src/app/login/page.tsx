@@ -66,7 +66,6 @@ export default function LoginPage() {
       email: user.email,
       profile: {
         displayName: displayName || user.displayName || 'Anonymous',
-        photoURL: user.photoURL || '',
       },
       wallet: {
         orBalance: 0,

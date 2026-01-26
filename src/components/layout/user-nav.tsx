@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -21,7 +21,6 @@ interface UserNavProps {
   user: {
     displayName?: string | null;
     email?: string | null;
-    photoURL?: string | null;
   };
 }
 
@@ -39,7 +38,6 @@ export function UserNav({ user }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
             <AvatarFallback>{user.displayName?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
           </Avatar>
         </Button>
