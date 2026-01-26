@@ -28,28 +28,7 @@ const games = [
 
 // --- Verification Logic ---
 const CLAIM_COINS_URL = 'https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/claim-coins';
-const CREATE_RAZORPAY_CONTACT_URL = 'https://nwxgjyamiborsgfnzqcj.supabase.co/functions/v1/create-razorpay-contact';
 const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA';
-
-const createRazorpayContact = async (userData: any) => {
-  const response = await fetch(
-    CREATE_RAZORPAY_CONTACT_URL,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${BEARER_TOKEN}`
-      },
-      body: JSON.stringify(userData),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Failed to create Razorpay contact. Status: ${response.status}`);
-  }
-  return response.json();
-};
 
 const claimCoinsAfterTimer = async (claimData: any) => {
   const response = await fetch(
@@ -198,11 +177,6 @@ export default function GamesPage() {
 
     try {
       // API verification step
-      await createRazorpayContact({
-        name: userProfile.profile.displayName,
-        email: userProfile.email,
-      });
-
       await claimCoinsAfterTimer({
         coins: rewardAmount,
       });
