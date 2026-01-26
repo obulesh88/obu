@@ -23,7 +23,7 @@ const games = [
     { name: "Memory Emoji", url: "https://html5.gamemonetize.co/3s56bhfz1vc2njsrlqzgnfs9m2r9eabf/" },
     { name: "Gear Shift Race", url: "https://html5.gamemonetize.co/bwxvpns0l9v0vxqcsj2v5uw6ummx54zr/" },
     { name: "Cube Merge", url: "https://html5.gamemonetize.co/nkjtibnj0tezzvci3owaf2dtff3hvfvq/" },
-    { name: "Poker", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
+    { name: "Poker", url: "https://html5.gamemonetize.co/f5mv3cltk9bjta0h3t54c1isiqwlxgf3/" },
 ];
 
 // --- Verification Logic ---
@@ -118,7 +118,7 @@ export default function GamesPage() {
         return newTimers;
     });
 
-    if (games[index].name === 'My Cat Restaurant' || games[index].name === "Line Color Puzzle" || games[index].name === "Bubble Shooter Relaxing Puzzle" || games[index].name === "Count Rush" || games[index].name === "Memory Emoji" || games[index].name === "Gear Shift Race" || games[index].name === "Cube Merge") {
+    if (games[index].name === 'My Cat Restaurant' || games[index].name === "Line Color Puzzle" || games[index].name === "Bubble Shooter Relaxing Puzzle" || games[index].name === "Count Rush" || games[index].name === "Memory Emoji" || games[index].name === "Gear Shift Race" || games[index].name === "Cube Merge" || games[index].name === "Poker") {
       setSelectedGame({ game: games[index], index });
     } else {
       window.open(games[index].url, '_blank');
