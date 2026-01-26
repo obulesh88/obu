@@ -13,7 +13,6 @@ import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
 
 const NUM_GAMES = 8;
 const REWARD_PER_SESSION = 3;
-const GAME_DURATION = 30; // 30 seconds
 
 const games = [
     { name: "Count Rush", url: "https://html5.gamemonetize.co/hbvt6ecfxfrtu62sm0km7c1gs23be5c2/" },
@@ -59,22 +58,18 @@ export default function GamesPage() {
 
   const [isClient, setIsClient] = useState(false);
   const [selectedGame, setSelectedGame] = useState<{ game: any; index: number } | null>(null);
-  const [timers, setTimers] = useState<number[]>(Array(NUM_GAMES).fill(0));
   const [isPlaying, setIsPlaying] = useState<boolean[]>(Array(NUM_GAMES).fill(false));
   const [sessionEarnings, setSessionEarnings] = useState<number[]>(Array(NUM_GAMES).fill(0));
   const gameContainerRef = useRef<HTMLDivElement>(null);
-  const intervalRefs = useRef<(NodeJS.Timeout | null)[]>(Array(NUM_GAMES).fill(null));
-
+  
   const [isCaptchaOpen, setIsCaptchaOpen] = useState(false);
   const [verifyingGameIndex, setVerifyingGameIndex] = useState<number | null>(null);
 
+  const [gameStartTimes, setGameStartTimes] = useState<(number | null)[]>(Array(NUM_GAMES).fill(null));
+  const [currentGamePlayTime, setCurrentGamePlayTime] = useState(0);
+
   useEffect(() => {
     setIsClient(true);
-    return () => {
-      intervalRefs.current.forEach(interval => {
-        if (interval) clearInterval(interval);
-      });
-    };
   }, []);
 
   useEffect(() => {
@@ -96,8 +91,8 @@ export default function GamesPage() {
       return;
     }
 
-    if (isPlaying[index]) {
-      toast({ title: "Game in progress", description: "Please wait for the current session to end." });
+    if (isPlaying.some(playing => playing)) {
+      toast({ title: "Game in progress", description: "Please finish your current game session first." });
       return;
     }
     
@@ -112,9 +107,9 @@ export default function GamesPage() {
         newIsPlaying[index] = true;
         return newIsPlaying;
     });
-    setTimers(prev => {
+    setGameStartTimes(prev => {
         const newTimers = [...prev];
-        newTimers[index] = GAME_DURATION;
+        newTimers[index] = Date.now();
         return newTimers;
     });
 
@@ -123,46 +118,30 @@ export default function GamesPage() {
     } else {
       window.open(games[index].url, '_blank');
     }
-
-    if (intervalRefs.current[index]) {
-      clearInterval(intervalRefs.current[index]!);
-    }
-
-    intervalRefs.current[index] = setInterval(() => {
-      setTimers(prevTimers => {
-        const newTimers = [...prevTimers];
-        const currentTime = newTimers[index];
-
-        if (currentTime <= 0) {
-            if (intervalRefs.current[index]) {
-                clearInterval(intervalRefs.current[index]!);
-                intervalRefs.current[index] = null;
-            }
-            setIsPlaying(prevIsPlaying => {
-                const newIsPlaying = [...prevIsPlaying];
-                newIsPlaying[index] = false;
-                return newIsPlaying;
-            });
-            if (selectedGame?.index === index) {
-                setSelectedGame(null);
-            }
-            setSessionEarnings(prev => {
-                const newEarnings = [...prev];
-                newEarnings[index] = REWARD_PER_SESSION;
-                return newEarnings;
-            });
-            setVerifyingGameIndex(index);
-            setIsCaptchaOpen(true);
-            return newTimers;
-        }
-        
-        const newTime = currentTime - 1;
-        newTimers[index] = newTime;
-        
-        return newTimers;
-      });
-    }, 1000);
   };
+
+  const handleEndGameAndClaim = () => {
+      if (!selectedGame) return;
+      const { index } = selectedGame;
+
+      const startTime = gameStartTimes[index];
+      let playTime = 0;
+      if (startTime) {
+          playTime = Math.round((Date.now() - startTime) / 1000);
+      }
+      setCurrentGamePlayTime(playTime);
+
+      setSessionEarnings(prev => {
+          const newEarnings = [...prev];
+          newEarnings[index] = REWARD_PER_SESSION;
+          return newEarnings;
+      });
+
+      setSelectedGame(null);
+      setVerifyingGameIndex(index);
+      setIsCaptchaOpen(true);
+  };
+
 
   const handleClaimReward = async () => {
     if (!user || !firestore || verifyingGameIndex === null) return;
@@ -200,7 +179,7 @@ export default function GamesPage() {
               type: 'game',
               description: `Played ${games[verifyingGameIndex].name}`,
               createdAt: serverTimestamp(),
-              playTimeInSeconds: GAME_DURATION,
+              playTimeInSeconds: currentGamePlayTime,
           });
       }
 
@@ -230,6 +209,16 @@ export default function GamesPage() {
                 newEarnings[verifyingGameIndex] = 0;
                 return newEarnings;
             });
+            setIsPlaying(prev => {
+                const newIsPlaying = [...prev];
+                newIsPlaying[verifyingGameIndex] = false;
+                return newIsPlaying;
+            });
+            setGameStartTimes(prev => {
+                const newTimers = [...prev];
+                newTimers[verifyingGameIndex] = null;
+                return newTimers;
+            });
         }
         setVerifyingGameIndex(null);
     }
@@ -242,7 +231,7 @@ export default function GamesPage() {
                 variant="ghost" 
                 size="icon" 
                 className="absolute top-4 left-4 z-[60] rounded-full bg-black/50 text-white hover:bg-black/75 hover:text-white"
-                onClick={() => setSelectedGame(null)}
+                onClick={handleEndGameAndClaim}
             >
                 <ArrowLeft className="h-6 w-6" />
                 <span className="sr-only">Back to games</span>
@@ -263,8 +252,8 @@ export default function GamesPage() {
             <CardTitle>Play Games & Earn</CardTitle>
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
-                    <li>Choose any game to start a 30-second session.</li>
-                    <li>After the session ends, you must solve a captcha to claim your 3 OR reward.</li>
+                    <li>Choose any game to start playing.</li>
+                    <li>When you are finished, click the back button in the game to solve a captcha and claim your 3 OR reward.</li>
                     <li>Do not close or refresh the game to ensure you can claim your reward.</li>
                 </ul>
             </CardDescription>
@@ -291,8 +280,8 @@ export default function GamesPage() {
             <CardTitle>Play Games & Earn</CardTitle>
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
-                    <li>Choose any game to start a 30-second session.</li>
-                    <li>After the session ends, you must solve a captcha to claim your 3 OR reward.</li>
+                    <li>Choose any game to start playing.</li>
+                    <li>When you are finished, click the back button in the game to solve a captcha and claim your 3 OR reward.</li>
                     <li>Do not close or refresh the game to ensure you can claim your reward.</li>
                 </ul>
             </CardDescription>
