@@ -234,12 +234,6 @@ export default function GamesPage() {
         setVerifyingGameIndex(null);
     }
   };
-  
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-  };
 
   if (selectedGame) {
     return (
@@ -253,9 +247,6 @@ export default function GamesPage() {
                 <ArrowLeft className="h-6 w-6" />
                 <span className="sr-only">Back to games</span>
             </Button>
-            <div className="absolute top-4 right-4 z-[60] rounded-full bg-black/50 px-4 py-2 text-white font-mono text-lg">
-                {formatTime(timers[selectedGame.index])}
-            </div>
             <iframe
                 src={selectedGame.game.url}
                 className="w-full h-full border-0"
@@ -317,7 +308,7 @@ export default function GamesPage() {
                             className="w-full mt-4"
                             disabled={isPlaying[index]}
                         >
-                            {isPlaying[index] ? `Playing... (${formatTime(timers[index])})` : 'Play Game'}
+                            {isPlaying[index] ? 'Playing...' : 'Play Game'}
                         </Button>
                     </Card>
                 ))}
