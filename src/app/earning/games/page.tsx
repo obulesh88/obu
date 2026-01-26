@@ -22,7 +22,7 @@ const games = [
     { name: "My Cat Restaurant", url: "https://html5.gamemonetize.co/zro5d0oom4aubos4mlka610s5mla0zt3/" },
     { name: "Memory Emoji", url: "https://html5.gamemonetize.co/3s56bhfz1vc2njsrlqzgnfs9m2r9eabf/" },
     { name: "Gear Shift Race", url: "https://html5.gamemonetize.co/bwxvpns0l9v0vxqcsj2v5uw6ummx54zr/" },
-    { name: "Colour Wood", url: "https://html5.gamemonetize.co/nkjtibnj0tezzvci3owaf2dtff3hvfvq/" },
+    { name: "Colour Wood", url: "https://html5.gamemonetize.co/aiq299yp6g7oyyqmlmsuemyl8ud8jds9/" },
     { name: "Poker", url: "https://html5.gamemonetize.co/f5mv3cltk9bjta0h3t54c1isiqwlxgf3/" },
 ];
 
@@ -286,7 +286,7 @@ export default function GamesPage() {
                     <li>Do not close or refresh the game to ensure you can claim your reward.</li>
                 </ul>
             </CardDescription>
-        </CardHeader>
+        </Header>
         <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {games.map((game, index) => (
