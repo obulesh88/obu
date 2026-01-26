@@ -165,7 +165,7 @@ export default function GamesPage() {
   };
 
   const handleClaimReward = async () => {
-    if (!user || !firestore || verifyingGameIndex === null || !userProfile) return;
+    if (!user || !firestore || verifyingGameIndex === null) return;
     
     const rewardAmount = sessionEarnings[verifyingGameIndex];
     if (rewardAmount <= 0) {
