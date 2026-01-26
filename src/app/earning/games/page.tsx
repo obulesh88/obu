@@ -20,7 +20,7 @@ const games = [
     { name: "Line Color Puzzle", url: "https://html5.gamemonetize.co/m4o7lueza84sd0qy0wrn991ups3x1l64/" },
     { name: "Bubble Shooter Relaxing Puzzle", url: "https://html5.gamemonetize.co/tv66qo5zdz26osoqx597umvqyuaov0cs/" },
     { name: "My Cat Restaurant", url: "https://html5.gamemonetize.co/zro5d0oom4aubos4mlka610s5mla0zt3/" },
-    { name: "Game #5", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
+    { name: "Memory Emoji", url: "https://html5.gamemonetize.com/f7jzo8go3kpe613y04wm9ncs0y2c9f5q/" },
     { name: "Game #6", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
     { name: "Game #7", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
     { name: "Game #8", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
@@ -118,7 +118,7 @@ export default function GamesPage() {
         return newTimers;
     });
 
-    if (games[index].name === 'My Cat Restaurant' || games[index].name === "Line Color Puzzle" || games[index].name === "Bubble Shooter Relaxing Puzzle" || games[index].name === "Count Rush") {
+    if (games[index].name === 'My Cat Restaurant' || games[index].name === "Line Color Puzzle" || games[index].name === "Bubble Shooter Relaxing Puzzle" || games[index].name === "Count Rush" || games[index].name === "Memory Emoji") {
       setSelectedGame({ game: games[index], index });
     } else {
       window.open(games[index].url, '_blank');
