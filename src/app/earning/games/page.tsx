@@ -18,7 +18,7 @@ const GAME_DURATION = 30; // 30 seconds
 const games = [
     { name: "Count Rush", url: "https://html5.gamemonetize.co/a2n82o95m2g0c8v0c6j10j5j1j3j0j/" },
     { name: "Line Color Puzzle", url: "https://html5.gamemonetize.co/m4o7lueza84sd0qy0wrn991ups3x1l64/" },
-    { name: "Bubble Shooter Relaxing Puzzle", url: "https://html5.gamemonetize.co/9vj6k8jp3a0g4g5f3h0c7i6j5f2h5g/" },
+    { name: "Bubble Shooter Relaxing Puzzle", url: "https://html5.gamemonetize.co/tv66qo5zdz26osoqx597umvqyuaov0cs/" },
     { name: "My Cat Restaurant", url: "https://html5.gamemonetize.co/zro5d0oom4aubos4mlka610s5mla0zt3/" },
     { name: "Game #5", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
     { name: "Game #6", url: "https://html5.gamemonetize.co/lnp25m8d5j5e7f0n3p4g6g2f0g0g5g/" },
@@ -118,7 +118,7 @@ export default function GamesPage() {
         return newTimers;
     });
 
-    if (games[index].name === 'My Cat Restaurant' || games[index].name === "Line Color Puzzle") {
+    if (games[index].name === 'My Cat Restaurant' || games[index].name === "Line Color Puzzle" || games[index].name === "Bubble Shooter Relaxing Puzzle") {
       setSelectedGame({ game: games[index], index });
     } else {
       window.open(games[index].url, '_blank');
