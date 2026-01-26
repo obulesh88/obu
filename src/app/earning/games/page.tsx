@@ -200,6 +200,7 @@ export default function GamesPage() {
               type: 'game',
               description: `Played ${games[verifyingGameIndex].name}`,
               createdAt: serverTimestamp(),
+              playTimeInSeconds: GAME_DURATION,
           });
       }
 

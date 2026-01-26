@@ -56,7 +56,12 @@ export default function HistoryPage() {
             <TableBody>
               {sortedTransactions.map((tx) => (
                 <TableRow key={tx.id}>
-                  <TableCell className="font-medium">{tx.description}</TableCell>
+                  <TableCell className="font-medium">
+                    {tx.description}
+                    {tx.type === 'game' && tx.playTimeInSeconds && (
+                      <span className="text-muted-foreground text-xs ml-2">({tx.playTimeInSeconds}s)</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{tx.type}</Badge>
                   </TableCell>

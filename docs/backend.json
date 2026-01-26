@@ -71,6 +71,10 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp of the transaction."
+        },
+        "playTimeInSeconds": {
+          "type": "number",
+          "description": "The duration in seconds the user played the game for."
         }
       },
       "required": ["userId", "amount", "type", "description", "createdAt"]

@@ -21,4 +21,5 @@ export type EarningTransaction = {
   type: 'ad' | 'captcha' | 'game';
   description: string;
   createdAt: Timestamp;
+  playTimeInSeconds?: number;
 };
