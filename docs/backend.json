@@ -92,7 +92,7 @@
       },
       "description": "Stores user profile information."
     },
-    "/users/{userId}/transactions/{transactionId}": {
+    "/earningTransactions/{transactionId}": {
       "schema": {
         "$ref": "#/entities/earningTransaction"
       },

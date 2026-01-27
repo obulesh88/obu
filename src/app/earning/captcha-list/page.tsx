@@ -189,7 +189,7 @@ export default function CaptchaListPage() {
         });
 
         // Log the transaction
-        const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
+        const transactionsColRef = collection(firestore, 'earningTransactions');
         await addDoc(transactionsColRef, {
             userId: user.uid,
             amount: REWARD_PER_CAPTCHA,

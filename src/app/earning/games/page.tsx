@@ -172,7 +172,7 @@ export default function GamesPage() {
 
       // Log the transaction
       if (verifyingGameIndex !== null) {
-          const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
+          const transactionsColRef = collection(firestore, 'earningTransactions');
           await addDoc(transactionsColRef, {
               userId: user.uid,
               amount: rewardAmount,

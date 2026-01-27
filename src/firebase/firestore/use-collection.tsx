@@ -1,22 +1,26 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { onSnapshot, collection, Query, collectionGroup } from 'firebase/firestore';
+import { onSnapshot, collection, Query, collectionGroup, DocumentData } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 
-export function useCollection<T>(path: string | null, type: 'collection' | 'collectionGroup' = 'collection') {
+export function useCollection<T>(pathOrQuery: string | Query<DocumentData> | null, type: 'collection' | 'collectionGroup' = 'collection') {
   const firestore = useFirestore();
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
   const query: Query<T> | null = useMemo(() => {
-      if (!path) return null;
-      if (type === 'collectionGroup') {
-          return collectionGroup(firestore, path) as Query<T>;
+      if (!pathOrQuery) return null;
+      if (typeof pathOrQuery === 'string') {
+        if (type === 'collectionGroup') {
+            return collectionGroup(firestore, pathOrQuery) as Query<T>;
+        }
+        return collection(firestore, pathOrQuery) as Query<T>;
       }
-      return collection(firestore, path) as Query<T>;
-  }, [firestore, path, type]);
+      // It's a query
+      return pathOrQuery as Query<T>;
+  }, [firestore, pathOrQuery, type]);
 
 
   useEffect(() => {
@@ -31,7 +35,17 @@ export function useCollection<T>(path: string | null, type: 'collection' | 'coll
       (snapshot) => {
         const result: T[] = [];
         snapshot.forEach((doc) => {
-          result.push({ ...doc.data(), id: doc.id } as T);
+          const docData = doc.data();
+          // Ensure createdAt is handled correctly
+          const finalData = { 
+            ...docData, 
+            id: doc.id,
+            // Firestore timestamps need to be checked for existence before using toDate()
+            createdAt: docData.createdAt && typeof docData.createdAt.toDate === 'function' 
+              ? docData.createdAt 
+              : docData.createdAt
+          };
+          result.push(finalData as T);
         });
         setData(result);
         setLoading(false);

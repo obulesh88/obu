@@ -144,7 +144,7 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
       localStorage.setItem("dailyAds", String(adsWatched + 1));
       
       // Log the transaction
-      const transactionsColRef = collection(firestore, 'users', user.uid, 'transactions');
+      const transactionsColRef = collection(firestore, 'earningTransactions');
       await addDoc(transactionsColRef, {
         userId: user.uid,
         amount: REWARD_AMOUNT,

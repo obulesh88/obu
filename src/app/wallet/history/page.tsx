@@ -2,31 +2,36 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useUser, useCollection } from '@/firebase';
+import { useUser, useCollection, useFirestore } from '@/firebase';
 import { EarningTransaction } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 
 export default function HistoryPage() {
   const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   
-  const transactionsPath = user ? `users/${user.uid}/transactions` : null;
-  const { data: transactions, loading: transactionsLoading } = useCollection<EarningTransaction>(transactionsPath);
+  const transactionsQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'earningTransactions'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+  }, [firestore, user]);
+
+  const { data: transactions, loading: transactionsLoading } = useCollection<EarningTransaction>(transactionsQuery);
 
   useEffect(() => {
     if (!userLoading && !user) {
       router.push('/login');
     }
   }, [user, userLoading, router]);
-
-  const sortedTransactions = useMemo(() => {
-    if (!transactions) return [];
-    return [...transactions].sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-  }, [transactions]);
 
   const isLoading = userLoading || transactionsLoading;
 
@@ -43,7 +48,7 @@ export default function HistoryPage() {
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
             </div>
-        ) : sortedTransactions.length > 0 ? (
+        ) : transactions && transactions.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -54,7 +59,7 @@ export default function HistoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedTransactions.map((tx) => (
+              {transactions.map((tx) => (
                 <TableRow key={tx.id}>
                   <TableCell className="font-medium">
                     {tx.description}
@@ -66,7 +71,7 @@ export default function HistoryPage() {
                     <Badge variant="secondary">{tx.type}</Badge>
                   </TableCell>
                   <TableCell className="text-right text-green-500 font-semibold">+ {tx.amount.toFixed(2)} OR</TableCell>
-                  <TableCell className="text-right">{format(tx.createdAt.toDate(), 'PP p')}</TableCell>
+                  <TableCell className="text-right">{tx.createdAt ? format(tx.createdAt.toDate(), 'PP p') : 'No date'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
