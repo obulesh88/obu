@@ -11,11 +11,5 @@ service cloud.firestore {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
-
-    // Default deny for any other collections to keep the database secure.
-    // We will add rules for new collections as we build them.
-    match /{document=**} {
-      allow read, write: if false;
-    }
   }
 }
