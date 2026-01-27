@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -286,7 +285,7 @@ export default function GamesPage() {
                     <li>Do not close or refresh the game to ensure you can claim your reward.</li>
                 </ul>
             </CardDescription>
-        </Header>
+        </CardHeader>
         <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {games.map((game, index) => (
