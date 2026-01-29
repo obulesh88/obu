@@ -26,27 +26,36 @@ const games = [
 ];
 
 // --- Verification Logic ---
-const CLAIM_COINS_URL = 'https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/claim-coins';
+const VERIFY_SESSION_URL = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/verify_session_time";
 const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA';
 
-const claimCoinsAfterTimer = async (claimData: any) => {
-  const response = await fetch(
-    CLAIM_COINS_URL,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${BEARER_TOKEN}`
-      },
-      body: JSON.stringify(claimData),
-    }
-  );
+const verifySessionTime = async (userData: any) => {
+  try {
+    const response = await fetch(
+      VERIFY_SESSION_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${BEARER_TOKEN}`
+        },
+        body: JSON.stringify(userData)
+      }
+    );
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Failed to claim coins. Status: ${response.status}`);
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to verify session. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("verify_session_time response:", data);
+    return data;
+
+  } catch (error) {
+    console.error("verify_session_time error:", error);
+    throw error;
   }
-  return response.json();
 };
 // --- End of Verification Logic ---
 
@@ -156,7 +165,9 @@ export default function GamesPage() {
 
     try {
       // API verification step
-      await claimCoinsAfterTimer({
+      await verifySessionTime({
+        userId: user.uid,
+        playTime: currentGamePlayTime,
         coins: rewardAmount,
       });
         
