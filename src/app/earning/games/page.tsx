@@ -155,8 +155,8 @@ export default function GamesPage() {
   const handleClaimReward = async () => {
     if (!user || !firestore || verifyingGameIndex === null) return;
     
-    const rewardAmount = sessionEarnings[verifyingGameIndex];
-    if (rewardAmount <= 0) {
+    const potentialReward = sessionEarnings[verifyingGameIndex];
+    if (potentialReward <= 0) {
         toast({ variant: 'destructive', title: "No reward to claim." });
         setIsCaptchaOpen(false);
         setVerifyingGameIndex(null);
@@ -165,11 +165,17 @@ export default function GamesPage() {
 
     try {
       // API verification step
-      await verifySessionTime({
+      const verificationResult = await verifySessionTime({
         userId: user.uid,
         playTime: currentGamePlayTime,
-        coins: rewardAmount,
+        coins: potentialReward,
       });
+
+      const rewardAmount = verificationResult?.coins;
+
+      if (!rewardAmount || rewardAmount <= 0) {
+        throw new Error(verificationResult?.message || "Verification did not result in a reward.");
+      }
         
       const userDocRef = doc(firestore, 'users', user.uid);
       await runTransaction(firestore, async (transaction) => {
@@ -199,7 +205,7 @@ export default function GamesPage() {
         description: `You've earned ${rewardAmount} OR for playing ${games[verifyingGameIndex].name}.`,
       });
     } catch (error: any) {
-      console.error("Verification API call failed:", error);
+      console.error("Claim failed:", error);
       let description = 'Could not claim reward. Please try again.';
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
           description = 'A network error occurred. Please check your browser\'s developer console for CORS issues and ensure the backend is configured to accept requests from this domain.';
@@ -209,7 +215,7 @@ export default function GamesPage() {
 
       toast({
         variant: 'destructive',
-        title: 'Verification Failed',
+        title: 'Claim Failed',
         description: description,
       });
     } finally {
