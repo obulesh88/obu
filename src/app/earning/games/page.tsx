@@ -4,11 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { Gamepad2, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';
-import { doc, runTransaction, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
 
 const NUM_GAMES = 8;
@@ -61,8 +60,7 @@ const verifySessionTime = async (userData: any) => {
 
 export default function GamesPage() {
   const { toast } = useToast();
-  const { user, userProfile } = useUser();
-  const firestore = useFirestore();
+  const { user } = useUser();
   const { setBottomNavVisible } = useLayout();
 
   const [isClient, setIsClient] = useState(false);
@@ -153,7 +151,7 @@ export default function GamesPage() {
 
 
   const handleClaimReward = async () => {
-    if (!user || !firestore || verifyingGameIndex === null) return;
+    if (!user || verifyingGameIndex === null) return;
     
     const potentialReward = sessionEarnings[verifyingGameIndex];
     if (potentialReward <= 0) {
@@ -177,29 +175,6 @@ export default function GamesPage() {
         throw new Error(verificationResult?.message || "Verification did not result in a reward.");
       }
         
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await runTransaction(firestore, async (transaction) => {
-        const userDoc = await transaction.get(userDocRef);
-        if (!userDoc.exists()) {
-          throw 'User document does not exist!';
-        }
-        const newOrBalance = (userDoc.data().wallet?.orBalance || 0) + rewardAmount;
-        transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
-      });
-
-      // Log the transaction
-      if (verifyingGameIndex !== null) {
-          const transactionsColRef = collection(firestore, 'earningTransactions');
-          await addDoc(transactionsColRef, {
-              userId: user.uid,
-              amount: rewardAmount,
-              type: 'game',
-              description: `Played ${games[verifyingGameIndex].name}`,
-              createdAt: serverTimestamp(),
-              playTimeInSeconds: currentGamePlayTime,
-          });
-      }
-
       toast({
         title: 'Reward Claimed!',
         description: `You've earned ${rewardAmount} OR for playing ${games[verifyingGameIndex].name}.`,

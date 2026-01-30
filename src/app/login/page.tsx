@@ -2,9 +2,6 @@
 
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { useAuth, useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -13,7 +10,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -30,16 +27,19 @@ type SignInSchemaType = z.infer<typeof SignInSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
   const { toast } = useToast();
-  const { user, loading } = useUser();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
+    // This is a mock auth check
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    setUser(isLoggedIn);
+    setLoading(false);
+    if (isLoggedIn) {
       router.push('/');
     }
-  }, [user, loading, router]);
+  }, [router]);
 
 
   const {
@@ -58,52 +58,27 @@ export default function LoginPage() {
     resolver: zodResolver(SignInSchema),
   });
 
-  const handleUserCreation = async (user: any, displayName?: string | null) => {
-    if (!user || !firestore) return;
-    const userRef = doc(firestore, 'users', user.uid);
-    await setDoc(userRef, {
-      uid: user.uid,
-      email: user.email,
-      profile: {
-        displayName: displayName || user.displayName || 'Anonymous',
-      },
-      wallet: {
-        orBalance: 0,
-        inrBalance: 0,
-        walletAddress: `0x${user.uid.substring(0,10)}...${user.uid.slice(-4)}`,
-      },
-      createdAt: serverTimestamp(),
-    }, { merge: true });
+  const onSignUp: SubmitHandler<SignUpSchemaType> = (data) => {
+    console.log('Sign up data:', data);
+    toast({
+      title: 'Sign Up Successful',
+      description: 'You can now sign in.',
+    });
+    localStorage.setItem('isLoggedIn', 'true');
     router.push('/');
   };
 
-  const onSignUp: SubmitHandler<SignUpSchemaType> = async (data) => {
-    if (!auth) return;
-    try {
-      const result = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      await handleUserCreation(result.user, data.name);
-    } catch (error: any) {
-      console.error("Sign up failed: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Sign Up Failed',
-        description: error.message,
-      });
-    }
-  };
-
-  const onSignIn: SubmitHandler<SignInSchemaType> = async (data) => {
-    if (!auth) return;
-    try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
-      router.push('/');
-    } catch (error: any) {
-      console.error("Sign in failed: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Sign In Failed',
-        description: error.message,
-      });
+  const onSignIn: SubmitHandler<SignInSchemaType> = (data) => {
+    console.log('Sign in data:', data);
+    if (data.email && data.password) {
+        localStorage.setItem('isLoggedIn', 'true');
+        router.push('/');
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Sign In Failed',
+            description: 'Invalid credentials',
+        });
     }
   };
 

@@ -7,7 +7,7 @@ import { Copy, History, Link as LinkIcon, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
-import { useUser } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';

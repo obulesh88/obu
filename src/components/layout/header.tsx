@@ -5,7 +5,7 @@ import { UserNav } from '@/components/layout/user-nav';
 import { Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from '../ui/sidebar';
 import Link from 'next/link';
 import { Home, RefreshCw, User as UserIcon, Wallet, CircleDollarSign } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 
 export function Header() {
   const { user } = useUser();

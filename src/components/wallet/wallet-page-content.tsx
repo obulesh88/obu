@@ -6,7 +6,7 @@ import { DollarSign, Download, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
-import { useUser } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 
 export default function WalletPageContent() {
   const [showWithdraw, setShowWithdraw] = useState(true);

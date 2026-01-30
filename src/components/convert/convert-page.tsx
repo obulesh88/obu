@@ -8,15 +8,13 @@ import { useToast } from '@/hooks/use-toast';
 import { RefreshCw, ArrowRightLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '../ui/skeleton';
-import { useUser, useFirestore } from '@/firebase';
-import { doc, runTransaction } from 'firebase/firestore';
+import { useUser } from '@/hooks/use-user';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 
 export default function ConvertPage() {
   const { toast } = useToast();
   const { user, userProfile, loading } = useUser();
-  const firestore = useFirestore();
 
   const [orAmount, setOrAmount] = useState('');
   const [inrAmount, setInrAmount] = useState('');
@@ -63,23 +61,7 @@ export default function ConvertPage() {
 
     setIsConverting(true);
     try {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await runTransaction(firestore, async (transaction) => {
-        const userDoc = await transaction.get(userDocRef);
-        if (!userDoc.exists()) {
-          throw 'User document does not exist!';
-        }
-        
-        const currentData = userDoc.data();
-        const newOrBalance = (currentData.wallet?.orBalance || 0) - orToConvert;
-        const newInrBalance = (currentData.wallet?.inrBalance || 0) + orToConvert / CONVERSION_RATE;
-
-        transaction.update(userDocRef, {
-          'wallet.orBalance': newOrBalance,
-          'wallet.inrBalance': newInrBalance,
-        });
-      });
-
+      // Mock conversion
       toast({
         title: 'Conversion Successful',
         description: `${orToConvert} OR coins have been converted to ₹${(orToConvert / CONVERSION_RATE).toFixed(2)} INR.`,

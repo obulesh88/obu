@@ -2,35 +2,29 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useUser, useCollection, useFirestore } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { EarningTransaction } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 
 export default function HistoryPage() {
   const { user, loading: userLoading } = useUser();
-  const firestore = useFirestore();
   const router = useRouter();
-  
-  const transactionsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(
-      collection(firestore, 'earningTransactions'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
-  }, [firestore, user]);
-
-  const { data: transactions, loading: transactionsLoading } = useCollection<EarningTransaction>(transactionsQuery);
+  const [transactions, setTransactions] = useState<EarningTransaction[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
 
   useEffect(() => {
     if (!userLoading && !user) {
       router.push('/login');
     }
+    // Mock fetching transactions
+    setTimeout(() => {
+        setTransactions([]); // No transactions since we removed persistence
+        setTransactionsLoading(false);
+    }, 500);
   }, [user, userLoading, router]);
 
   const isLoading = userLoading || transactionsLoading;
@@ -71,7 +65,7 @@ export default function HistoryPage() {
                     <Badge variant="secondary">{tx.type}</Badge>
                   </TableCell>
                   <TableCell className="text-right text-green-500 font-semibold">+ {tx.amount.toFixed(2)} OR</TableCell>
-                  <TableCell className="text-right">{tx.createdAt ? format(tx.createdAt.toDate(), 'PP p') : 'No date'}</TableCell>
+                  <TableCell className="text-right">{tx.createdAt ? format(tx.createdAt, 'PP p') : 'No date'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

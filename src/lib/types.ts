@@ -1,4 +1,3 @@
-import { Timestamp } from "firebase/firestore";
 
 export type UserProfile = {
   uid: string;
@@ -11,7 +10,7 @@ export type UserProfile = {
     inrBalance: number;
     walletAddress: string;
   };
-  createdAt: Timestamp;
+  createdAt: Date;
 };
 
 export type EarningTransaction = {
@@ -20,6 +19,6 @@ export type EarningTransaction = {
   amount: number;
   type: 'ad' | 'captcha' | 'game';
   description: string;
-  createdAt: Timestamp;
+  createdAt: Date;
   playTimeInSeconds?: number;
 };

@@ -10,8 +10,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import { signOut } from 'firebase/auth';
-import { useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 
 
@@ -25,11 +23,10 @@ interface UserNavProps {
 }
 
 export function UserNav({ user }: UserNavProps) {
-  const auth = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {
-    await signOut(auth);
+    localStorage.removeItem('isLoggedIn');
     router.push('/login');
   }
 

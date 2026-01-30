@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore } from '@/firebase';
-import { doc, runTransaction, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useUser } from '@/hooks/use-user';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -25,7 +24,7 @@ const ads = [
 ];
 
 function getNextAd(userId: string): string {
-    if (typeof window === 'undefined') return ads[0].replace('{your_source_id}', userId);
+    if (typeof window === 'undefined' || !userId) return ads[0].replace('{your_source_id}', 'test-user');
     let i = parseInt(localStorage.getItem("captchaAdIndex") || "0");
     const link = ads[i].replace('{your_source_id}', userId);
     localStorage.setItem("captchaAdIndex", String((i + 1) % ads.length));
@@ -44,7 +43,6 @@ type CaptchaItem = {
 export default function CaptchaListPage() {
   const { toast } = useToast();
   const { user } = useUser();
-  const firestore = useFirestore();
 
   const [captchas, setCaptchas] = useState<CaptchaItem[]>([]);
   const [userInputs, setUserInputs] = useState<string[]>(Array(NUM_CAPTCHAS).fill(''));
@@ -169,7 +167,7 @@ export default function CaptchaListPage() {
   };
 
   const handleClaim = async (index: number) => {
-      if (!user || !firestore) return;
+      if (!user) return;
 
       setSubmitting(prev => {
         const newState = [...prev];
@@ -178,26 +176,7 @@ export default function CaptchaListPage() {
       });
 
       try {
-        const userDocRef = doc(firestore, 'users', user.uid);
-        await runTransaction(firestore, async (transaction) => {
-          const userDoc = await transaction.get(userDocRef);
-          if (!userDoc.exists()) {
-            throw 'User document does not exist!';
-          }
-          const newOrBalance = (userDoc.data().wallet?.orBalance || 0) + REWARD_PER_CAPTCHA;
-          transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
-        });
-
-        // Log the transaction
-        const transactionsColRef = collection(firestore, 'earningTransactions');
-        await addDoc(transactionsColRef, {
-            userId: user.uid,
-            amount: REWARD_PER_CAPTCHA,
-            type: 'captcha',
-            description: `Solved Captcha #${index + 1}`,
-            createdAt: serverTimestamp(),
-        });
-
+        // MOCK: Award points
         toast({
           title: 'Success!',
           description: `You earned ${REWARD_PER_CAPTCHA} OR coins.`,

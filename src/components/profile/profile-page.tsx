@@ -5,14 +5,23 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { useUser } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Moon, Sun } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function ProfilePage() {
   const { user, userProfile, loading } = useUser();
   const { setTheme } = useTheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    if(!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   if (loading) {
     return (

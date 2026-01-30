@@ -11,8 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore } from '@/firebase';
-import { doc, runTransaction, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useUser } from '@/hooks/use-user';
 
 const REWARD_AMOUNT = 5;
 const WATCH_DELAY = 15; // 15 seconds
@@ -26,7 +25,7 @@ const ads = [
 ];
 
 function getNextAd(userId: string): string {
-    if (typeof window === 'undefined') return ads[0].replace('{your_source_id}', userId);
+    if (typeof window === 'undefined' || !userId) return ads[0].replace('{your_source_id}', 'test-user');
     let i = parseInt(localStorage.getItem("adIndex") || "0");
     const link = ads[i].replace('{your_source_id}', userId);
     localStorage.setItem("adIndex", String((i + 1) % ads.length));
@@ -48,7 +47,6 @@ let adStartTime = 0;
 export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; onOpenChange: (open: boolean) => void; onComplete: () => void; }) {
   const { toast } = useToast();
   const { user } = useUser();
-  const firestore = useFirestore();
 
   const [status, setStatus] = useState('Click "Watch Ad" to begin.');
   const [isClaiming, setIsClaiming] = useState(false);
@@ -109,8 +107,8 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
 
   // 6. Claim Reward
   const handleClaimReward = async () => {
-    if (!user || !firestore) {
-        toast({ variant: 'destructive', title: 'Authentication or Database error' });
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Authentication error' });
         return;
     }
     if (Date.now() - adStartTime < WATCH_DELAY * 1000) {
@@ -127,32 +125,10 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
     setIsClaiming(true);
     
     try {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await runTransaction(firestore, async (transaction) => {
-        const userDoc = await transaction.get(userDocRef);
-        if (!userDoc.exists()) {
-          throw 'User document does not exist!';
-        }
-
-        const currentData = userDoc.data();
-        const newOrBalance = (currentData.wallet?.orBalance || 0) + REWARD_AMOUNT;
-
-        transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
-      });
-      
+      // Mock earning points
       const adsWatched = parseInt(localStorage.getItem("dailyAds") || "0");
       localStorage.setItem("dailyAds", String(adsWatched + 1));
       
-      // Log the transaction
-      const transactionsColRef = collection(firestore, 'earningTransactions');
-      await addDoc(transactionsColRef, {
-        userId: user.uid,
-        amount: REWARD_AMOUNT,
-        type: 'ad',
-        description: 'Watched an ad',
-        createdAt: serverTimestamp(),
-      });
-
       toast({
         title: 'Success!',
         description: `You have earned ${REWARD_AMOUNT} OR coins.`,
