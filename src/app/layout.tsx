@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { ThemeProvider } from '@/components/theme-provider';
 import { LayoutProvider } from '@/context/layout-context';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export default function RootLayout({
   children,
@@ -33,6 +34,7 @@ export default function RootLayout({
         )}
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <FirebaseClientProvider>
             <LayoutProvider>
               <SidebarProvider>
                   <div className="flex min-h-screen w-full flex-col">
@@ -47,6 +49,7 @@ export default function RootLayout({
               </SidebarProvider>
               <Toaster />
             </LayoutProvider>
+          </FirebaseClientProvider>
         </ThemeProvider>
       </body>
     </html>

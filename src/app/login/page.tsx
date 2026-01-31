@@ -11,6 +11,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { useUser } from '@/hooks/use-user';
+import { doc, setDoc, getFirestore, serverTimestamp } from 'firebase/firestore';
+import { firebaseConfig } from '@/firebase/config';
+import { initializeApp } from 'firebase/app';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -28,24 +34,20 @@ type SignInSchemaType = z.infer<typeof SignInSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(false);
+  const auth = useAuth();
+  const { user, loading } = useUser();
 
   useEffect(() => {
-    // This is a mock auth check
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    setUser(isLoggedIn);
-    setLoading(false);
-    if (isLoggedIn) {
+    if (!loading && user) {
       router.push('/');
     }
-  }, [router]);
+  }, [user, loading, router]);
 
 
   const {
     register: registerSignUp,
     handleSubmit: handleSubmitSignUp,
-    formState: { errors: errorsSignUp },
+    formState: { errors: errorsSignUp, isSubmitting: isSubmittingSignUp },
   } = useForm<SignUpSchemaType>({
     resolver: zodResolver(SignUpSchema),
   });
@@ -53,31 +55,68 @@ export default function LoginPage() {
   const {
     register: registerSignIn,
     handleSubmit: handleSubmitSignIn,
-    formState: { errors: errorsSignIn },
+    formState: { errors: errorsSignIn, isSubmitting: isSubmittingSignIn },
   } = useForm<SignInSchemaType>({
     resolver: zodResolver(SignInSchema),
   });
 
-  const onSignUp: SubmitHandler<SignUpSchemaType> = (data) => {
-    console.log('Sign up data:', data);
-    toast({
-      title: 'Sign Up Successful',
-      description: 'You can now sign in.',
-    });
-    localStorage.setItem('isLoggedIn', 'true');
-    router.push('/');
+  const onSignUp: SubmitHandler<SignUpSchemaType> = async (data) => {
+    if (!auth) return;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      await updateProfile(userCredential.user, { displayName: data.name });
+
+      // Create user profile in Firestore
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      
+      const newProfile = {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          profile: {
+              displayName: data.name,
+          },
+          wallet: {
+              orBalance: 0,
+              inrBalance: 0,
+              walletAddress: `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+          },
+          createdAt: serverTimestamp(),
+      };
+
+      await setDoc(userDocRef, newProfile);
+
+      toast({
+        title: 'Sign Up Successful',
+        description: "You're now logged in.",
+      });
+      router.push('/');
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'Sign Up Failed',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    }
   };
 
-  const onSignIn: SubmitHandler<SignInSchemaType> = (data) => {
-    console.log('Sign in data:', data);
-    if (data.email && data.password) {
-        localStorage.setItem('isLoggedIn', 'true');
-        router.push('/');
-    } else {
+  const onSignIn: SubmitHandler<SignInSchemaType> = async (data) => {
+    if (!auth) return;
+    try {
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      toast({
+        title: 'Sign In Successful',
+        description: "Welcome back!",
+      });
+      router.push('/');
+    } catch (error: any) {
+        console.error(error);
         toast({
             variant: 'destructive',
             title: 'Sign In Failed',
-            description: 'Invalid credentials',
+            description: error.message || 'Invalid credentials',
         });
     }
   };
@@ -114,7 +153,9 @@ export default function LoginPage() {
                   <Input id="signin-password" type="password" {...registerSignIn('password')} />
                   {errorsSignIn.password && <p className="text-destructive text-xs">{errorsSignIn.password.message}</p>}
                 </div>
-                <Button type="submit" className="w-full">Sign In</Button>
+                <Button type="submit" className="w-full" disabled={isSubmittingSignIn}>
+                    {isSubmittingSignIn ? 'Signing In...' : 'Sign In'}
+                </Button>
               </form>
             </TabsContent>
             <TabsContent value="signup">
@@ -134,7 +175,9 @@ export default function LoginPage() {
                   <Input id="signup-password" type="password" {...registerSignUp('password')} />
                   {errorsSignUp.password && <p className="text-destructive text-xs">{errorsSignUp.password.message}</p>}
                 </div>
-                <Button type="submit" className="w-full">Create Account</Button>
+                <Button type="submit" className="w-full" disabled={isSubmittingSignUp}>
+                    {isSubmittingSignUp ? 'Creating Account...' : 'Create Account'}
+                </Button>
               </form>
             </TabsContent>
           </Tabs>

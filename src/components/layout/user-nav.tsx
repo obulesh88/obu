@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 
 // This component is now simplified as auth is removed.
@@ -24,9 +26,11 @@ interface UserNavProps {
 
 export function UserNav({ user }: UserNavProps) {
   const router = useRouter();
+  const auth = useAuth();
 
   const handleSignOut = async () => {
-    localStorage.removeItem('isLoggedIn');
+    if (!auth) return;
+    await signOut(auth);
     router.push('/login');
   }
 
