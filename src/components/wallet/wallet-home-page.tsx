@@ -83,7 +83,7 @@ export default function WalletHomePage() {
             <CardTitle className="text-sm font-medium">Your OR Wallet Address</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between cursor-pointer" onClick={copyToClipboard}>
               <div className="flex items-center gap-4">
                 <Avatar className="h-10 w-10">
                   <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
@@ -93,9 +93,7 @@ export default function WalletHomePage() {
                   <p className="text-xs text-muted-foreground">Share this address to receive OR coins.</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={copyToClipboard} disabled={!userProfile?.wallet?.walletAddress}>
-                <Copy className="h-5 w-5" />
-              </Button>
+              <Copy className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
