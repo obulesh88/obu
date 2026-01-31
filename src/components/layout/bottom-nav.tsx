@@ -21,7 +21,7 @@ export function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full border-t bg-background/80 backdrop-blur-sm md:hidden">
+    <div className="sticky bottom-0 left-0 z-50 w-full border-t bg-background/80 backdrop-blur-sm">
       <div className="grid h-16 grid-cols-5">
         {navItems.map((item) => (
           <Button

@@ -15,12 +15,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-        <div className="flex min-h-screen w-full flex-col">
+        <div className="flex min-h-full w-full flex-col">
           <Header />
           <SidebarInset>
             <main className={cn(
               "flex flex-1 flex-col",
-              !isPaddingDisabled && "gap-4 p-4 md:gap-8 md:p-8"
+              !isPaddingDisabled && "gap-4 p-4"
             )}>
             {children}
             </main>
@@ -51,17 +51,21 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          'min-h-screen bg-background font-body antialiased'
+          'h-screen overflow-hidden bg-muted/40 font-body antialiased'
         )}
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <FirebaseClientProvider>
-            <LayoutProvider>
-              <AppContent>{children}</AppContent>
-              <Toaster />
-            </LayoutProvider>
-          </FirebaseClientProvider>
-        </ThemeProvider>
+        <div className="flex h-full w-full items-center justify-center">
+          <div className="relative h-full w-full max-w-[420px] overflow-y-auto overflow-x-hidden bg-background shadow-2xl md:h-[90vh] md:max-h-[840px] md:rounded-[32px] md:border-8 md:border-black">
+            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              <FirebaseClientProvider>
+                <LayoutProvider>
+                  <AppContent>{children}</AppContent>
+                  <Toaster />
+                </LayoutProvider>
+              </FirebaseClientProvider>
+            </ThemeProvider>
+          </div>
+        </div>
       </body>
     </html>
   );
