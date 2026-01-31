@@ -61,7 +61,7 @@ const verifySessionTime = async (userData: any) => {
 export default function GamesPage() {
   const { toast } = useToast();
   const { user } = useUser();
-  const { setBottomNavVisible } = useLayout();
+  const { setBottomNavVisible, setPaddingDisabled } = useLayout();
 
   const [isClient, setIsClient] = useState(false);
   const [selectedGame, setSelectedGame] = useState<{ game: any; index: number } | null>(null);
@@ -82,14 +82,17 @@ export default function GamesPage() {
   useEffect(() => {
     if (selectedGame) {
       setBottomNavVisible(false);
+      setPaddingDisabled(true);
     } else {
       setBottomNavVisible(true);
+      setPaddingDisabled(false);
     }
 
     return () => {
       setBottomNavVisible(true);
+      setPaddingDisabled(false);
     };
-  }, [selectedGame, setBottomNavVisible]);
+  }, [selectedGame, setBottomNavVisible, setPaddingDisabled]);
 
 
   const handlePlayGame = (index: number) => {
@@ -218,7 +221,7 @@ export default function GamesPage() {
 
   if (selectedGame) {
     return (
-        <div ref={gameContainerRef} className="relative w-full h-[calc(100vh-120px)] bg-black">
+        <div ref={gameContainerRef} className="relative w-full flex-1 bg-black">
             <Button 
                 variant="ghost" 
                 size="icon" 
