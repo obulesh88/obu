@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -83,17 +82,19 @@ export default function WalletHomePage() {
             <CardTitle className="text-sm font-medium">Your OR Wallet Address</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between cursor-pointer" onClick={copyToClipboard}>
-              <div className="flex items-center gap-4">
-                <Avatar className="h-10 w-10">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-1 items-center gap-4 overflow-hidden">
+                <Avatar className="h-10 w-10 flex-shrink-0">
                   <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
+                <div className="flex flex-col overflow-hidden">
                   <p className="font-mono text-lg truncate">{userProfile?.wallet?.walletAddress}</p>
                   <p className="text-xs text-muted-foreground">Share this address to receive OR coins.</p>
                 </div>
               </div>
-              <Copy className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" onClick={copyToClipboard} className="ml-4 flex-shrink-0">
+                <Copy className="h-5 w-5" />
+              </Button>
             </div>
           </CardContent>
         </Card>
