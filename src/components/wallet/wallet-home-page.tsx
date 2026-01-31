@@ -78,22 +78,18 @@ export default function WalletHomePage() {
         </Card>
 
         <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Your OR Wallet Address</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="flex flex-1 items-center gap-4 overflow-hidden">
-                <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col overflow-hidden">
-                  <p className="font-mono text-lg truncate">{userProfile?.wallet?.walletAddress}</p>
-                  <p className="text-xs text-muted-foreground">Share this address to receive OR coins.</p>
-                </div>
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <Avatar className="h-10 w-10 flex-shrink-0">
+                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 gap-1">
+                <p className="font-semibold">Your OR Wallet Address</p>
+                <p className="font-mono text-sm text-muted-foreground break-all">{userProfile?.wallet?.walletAddress}</p>
+                <p className="text-xs text-muted-foreground">Share this address to receive OR coins.</p>
               </div>
-              <Button variant="ghost" size="icon" onClick={copyToClipboard} className="ml-4 flex-shrink-0">
-                <Copy className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={copyToClipboard} className="flex-shrink-0">
+                  <Copy className="h-4 w-4" />
               </Button>
             </div>
           </CardContent>
