@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, History, Link as LinkIcon, ArrowRight } from 'lucide-react';
+import { ShieldCheck, History, Link as LinkIcon, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
@@ -93,7 +93,7 @@ export default function WalletHomePage() {
                 </div>
               </div>
               <Button variant="ghost" size="icon" onClick={copyToClipboard} className="ml-4 flex-shrink-0">
-                <Copy className="h-5 w-5" />
+                <ShieldCheck className="h-5 w-5" />
               </Button>
             </div>
           </CardContent>
