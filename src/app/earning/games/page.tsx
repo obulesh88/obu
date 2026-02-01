@@ -25,35 +25,30 @@ const games = [
 ];
 
 // --- Verification Logic ---
-const VERIFY_SESSION_URL = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/verify_session_time";
-const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA';
-
-const verifySessionTime = async (userData: any) => {
+const verifySessionTime = async (sessionData: { sessionId: string; gameId: string }) => {
   try {
     const response = await fetch(
-      VERIFY_SESSION_URL,
+      "https://verifygamesession-vhsyirldya-uc.a.run.app",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${BEARER_TOKEN}`
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(sessionData),
       }
     );
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || `Failed to verify session. Status: ${response.status}`);
+        throw new Error(errorText || `HTTP ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("verify_session_time response:", data);
+    console.log("Response:", data);
     return data;
-
-  } catch (error) {
-    console.error("verify_session_time error:", error);
-    throw error;
+  } catch (err) {
+    console.error("Error:", err);
+    throw err;
   }
 };
 // --- End of Verification Logic ---
@@ -166,10 +161,11 @@ export default function GamesPage() {
 
     try {
       // API verification step
+      const sessionId = `${user.uid}-${gameStartTimes[verifyingGameIndex]}`;
+      const gameId = games[verifyingGameIndex].name;
       const verificationResult = await verifySessionTime({
-        userId: user.uid,
-        playTime: currentGamePlayTime,
-        coins: potentialReward,
+        sessionId,
+        gameId,
       });
 
       const rewardAmount = verificationResult?.coins;
