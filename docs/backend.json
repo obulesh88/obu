@@ -44,7 +44,8 @@
             "total_play_seconds": { "type": "number" },
             "verifiedAt": { "type": ["string", "null"], "format": "date-time" },
             "claimed": { "type": "boolean" },
-            "reward_comm": { "type": "number" }
+            "reward_comm": { "type": "number" },
+            "game_id": { "type": ["string", "null"] }
           }
         },
         "watchAds": {

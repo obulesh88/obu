@@ -18,14 +18,14 @@ const NUM_GAMES = 8;
 const REWARD_PER_SESSION = 3;
 
 const games = [
-    { name: "Count Rush", url: "https://html5.gamemonetize.co/hbvt6ecfxfrtu62sm0km7c1gs23be5c2/" },
-    { name: "Line Color Puzzle", url: "https://html5.gamemonetize.co/m4o7lueza84sd0qy0wrn991ups3x1l64/" },
-    { name: "Bubble Shooter Relaxing Puzzle", url: "https://html5.gamemonetize.co/tv66qo5zdz26osoqx597umvqyuaov0cs/" },
-    { name: "My Cat Restaurant", url: "https://html5.gamemonetize.co/zro5d0oom4aubos4mlka610s5mla0zt3/" },
-    { name: "Memory Emoji", url: "https://html5.gamemonetize.co/3s56bhfz1vc2njsrlqzgnfs9m2r9eabf/" },
-    { name: "Gear Shift Race", url: "https://html5.gamemonetize.co/bwxvpns0l9v0vxqcsj2v5uw6ummx54zr/" },
-    { name: "Colour Wood", url: "https://html5.gamemonetize.co/aiq299yp6g7oyyqmlmsuemyl8ud8jds9/" },
-    { name: "Poker", url: "https://html5.gamemonetize.co/f5mv3cltk9bjta0h3t54c1isiqwlxgf3/" },
+    { id: "count_rush", name: "Count Rush", url: "https://html5.gamemonetize.co/hbvt6ecfxfrtu62sm0km7c1gs23be5c2/" },
+    { id: "line_color_puzzle", name: "Line Color Puzzle", url: "https://html5.gamemonetize.co/m4o7lueza84sd0qy0wrn991ups3x1l64/" },
+    { id: "bubble_shooter", name: "Bubble Shooter Relaxing Puzzle", url: "https://html5.gamemonetize.co/tv66qo5zdz26osoqx597umvqyuaov0cs/" },
+    { id: "my_cat_restaurant", name: "My Cat Restaurant", url: "https://html5.gamemonetize.co/zro5d0oom4aubos4mlka610s5mla0zt3/" },
+    { id: "memory_emoji", name: "Memory Emoji", url: "https://html5.gamemonetize.co/3s56bhfz1vc2njsrlqzgnfs9m2r9eabf/" },
+    { id: "gear_shift_race", name: "Gear Shift Race", url: "https://html5.gamemonetize.co/bwxvpns0l9v0vxqcsj2v5uw6ummx54zr/" },
+    { id: "colour_wood", name: "Colour Wood", url: "https://html5.gamemonetize.co/aiq299yp6g7oyyqmlmsuemyl8ud8jds9/" },
+    { id: "poker", name: "Poker", url: "https://html5.gamemonetize.co/f5mv3cltk9bjta0h3t54c1isiqwlxgf3/" },
 ];
 
 export default function GamesPage() {
@@ -101,6 +101,7 @@ export default function GamesPage() {
         await updateDoc(userDocRef, {
             'playGames.is_active': true,
             'playGames.play_start': serverTimestamp(),
+            'playGames.game_id': games[index].id,
             'updatedAt': serverTimestamp(),
         });
     } catch (error: any) {
@@ -111,6 +112,7 @@ export default function GamesPage() {
                 requestResourceData: { 
                     'playGames.is_active': true,
                     'playGames.play_start': '(now)',
+                    'playGames.game_id': games[index].id,
                     'updatedAt': '(now)',
                 }
             });
@@ -177,6 +179,7 @@ export default function GamesPage() {
             'playGames.verifiedAt': serverTimestamp(),
             'playGames.claimed': true,
             'playGames.reward_comm': REWARD_PER_SESSION,
+            'playGames.game_id': null,
             'updatedAt': serverTimestamp(),
         });
         
@@ -197,6 +200,7 @@ export default function GamesPage() {
                     'playGames.verifiedAt': '(now)',
                     'playGames.claimed': true,
                     'playGames.reward_comm': REWARD_PER_SESSION,
+                    'playGames.game_id': null,
                     'updatedAt': '(now)',
                 }
             });

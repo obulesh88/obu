@@ -96,6 +96,7 @@ export default function LoginPage() {
             verifiedAt: null,
             claimed: false,
             reward_comm: 0,
+            game_id: null,
           },
           watchAds: {
             ad_provider: 'Monetag',

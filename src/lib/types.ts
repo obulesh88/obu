@@ -26,6 +26,7 @@ export type UserProfile = {
     verifiedAt: any;
     claimed: boolean;
     reward_comm: number;
+    game_id: string | null;
   };
   watchAds: {
     ad_provider: string;
