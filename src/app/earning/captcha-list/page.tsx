@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFirestore } from '@/firebase';
+import { doc, runTransaction } from 'firebase/firestore';
 
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
@@ -43,6 +45,7 @@ type CaptchaItem = {
 export default function CaptchaListPage() {
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
 
   const [captchas, setCaptchas] = useState<CaptchaItem[]>([]);
   const [userInputs, setUserInputs] = useState<string[]>(Array(NUM_CAPTCHAS).fill(''));
@@ -167,7 +170,7 @@ export default function CaptchaListPage() {
   };
 
   const handleClaim = async (index: number) => {
-      if (!user) return;
+      if (!user || !firestore) return;
 
       setSubmitting(prev => {
         const newState = [...prev];
@@ -176,7 +179,17 @@ export default function CaptchaListPage() {
       });
 
       try {
-        // MOCK: Award points
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await runTransaction(firestore, async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
+            if (!userDoc.exists()) {
+                throw new Error("User document does not exist!");
+            }
+            const currentData = userDoc.data();
+            const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_PER_CAPTCHA;
+            transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
+        });
+
         toast({
           title: 'Success!',
           description: `You earned ${REWARD_PER_CAPTCHA} OR coins.`,
@@ -198,7 +211,7 @@ export default function CaptchaListPage() {
         toast({
           variant: 'destructive',
           title: 'An error occurred',
-          description: 'Could not award points.',
+          description: error.message || 'Could not award points.',
         });
       } finally {
         setSubmitting(prev => {
