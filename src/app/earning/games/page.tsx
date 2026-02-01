@@ -100,8 +100,9 @@ export default function GamesPage() {
     try {
         await runTransaction(firestore, async (transaction) => {
             transaction.update(userDocRef, {
-                'Player time.is_active': true,
-                'Player time.play_start': serverTimestamp(),
+                'playGames.is_active': true,
+                'playGames.play_start': serverTimestamp(),
+                'updatedAt': serverTimestamp(),
             });
         });
     } catch (error: any) {
@@ -110,8 +111,9 @@ export default function GamesPage() {
                 path: userDocRef.path,
                 operation: 'update',
                 requestResourceData: { 
-                    'Player time.is_active': true,
-                    'Player time.play_start': '(now)',
+                    'playGames.is_active': true,
+                    'playGames.play_start': '(now)',
+                    'updatedAt': '(now)',
                 }
             });
             errorEmitter.emit('permission-error', permissionError);
@@ -175,15 +177,16 @@ export default function GamesPage() {
             const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_PER_SESSION;
             const startTime = gameStartTimes[verifyingGameIndex!];
             const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
-            const newTotalPlaySeconds = (currentData?.['Player time']?.total_play_seconds || 0) + playDuration;
+            const newTotalPlaySeconds = (currentData?.playGames?.total_play_seconds || 0) + playDuration;
 
             transaction.update(userDocRef, { 
                 'wallet.orBalance': newOrBalance,
-                'Player time.total_play_seconds': newTotalPlaySeconds,
-                'Player time.is_active': false,
-                'Player time.play_start': null,
-                'Rewards.claimed': serverTimestamp(),
-                'Rewards.reward_coins': REWARD_PER_SESSION,
+                'playGames.total_play_seconds': newTotalPlaySeconds,
+                'playGames.is_active': false,
+                'playGames.play_start': null,
+                'rewards.claimed': serverTimestamp(),
+                'rewards.reward_coins': REWARD_PER_SESSION,
+                'updatedAt': serverTimestamp(),
             });
         });
         
@@ -198,11 +201,12 @@ export default function GamesPage() {
                 operation: 'update',
                 requestResourceData: { 
                     'wallet.orBalance': `(balance) + ${REWARD_PER_SESSION}`,
-                    'Player time.total_play_seconds': '(previous) + (duration)',
-                    'Player time.is_active': false,
-                    'Player time.play_start': null,
-                    'Rewards.claimed': '(now)',
-                    'Rewards.reward_coins': REWARD_PER_SESSION,
+                    'playGames.total_play_seconds': '(previous) + (duration)',
+                    'playGames.is_active': false,
+                    'playGames.play_start': null,
+                    'rewards.claimed': '(now)',
+                    'rewards.reward_coins': REWARD_PER_SESSION,
+                    'updatedAt': '(now)',
                 }
             });
             errorEmitter.emit('permission-error', permissionError);

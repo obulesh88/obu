@@ -11,22 +11,23 @@ export type UserProfile = {
     walletAddress: string;
   };
   createdAt: any;
-  Captcha: {
+  updatedAt: any;
+  captcha: {
     captcha_required: boolean;
     captcha_verified: boolean;
     captcha_verified_at: any;
   };
-  'Player time': {
+  playGames: {
     is_active: boolean;
     min_required_seconds: number;
     play_start: any;
     total_play_seconds: number;
   };
-  Rewards: {
+  rewards: {
     claimed: any;
     reward_coins: number;
   };
-  'Watch ads': {
+  watchAds: {
     ad_completed_at: any;
     ad_provider: string;
     ad_required: boolean;

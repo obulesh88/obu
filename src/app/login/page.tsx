@@ -75,6 +75,7 @@ export default function LoginPage() {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
           createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
           profile: {
               displayName: data.name,
               Uid: userCredential.user.uid,
@@ -84,22 +85,22 @@ export default function LoginPage() {
               inrBalance: 0,
               walletAddress: `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
           },
-          Captcha: {
+          captcha: {
             captcha_required: false,
             captcha_verified: false,
             captcha_verified_at: null,
           },
-          'Player time': {
+          playGames: {
             is_active: false,
             min_required_seconds: 300,
             play_start: null,
             total_play_seconds: 0,
           },
-          Rewards: {
+          rewards: {
             claimed: null,
             reward_coins: 0,
           },
-          'Watch ads': {
+          watchAds: {
             ad_completed_at: null,
             ad_provider: 'Monetag',
             ad_required: false,

@@ -191,10 +191,11 @@ export default function CaptchaListPage() {
             const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_PER_CAPTCHA;
             transaction.update(userDocRef, { 
               'wallet.orBalance': newOrBalance,
-              'Rewards.claimed': serverTimestamp(),
-              'Rewards.reward_coins': REWARD_PER_CAPTCHA,
-              'Captcha.captcha_verified': true,
-              'Captcha.captcha_verified_at': serverTimestamp(),
+              'rewards.claimed': serverTimestamp(),
+              'rewards.reward_coins': REWARD_PER_CAPTCHA,
+              'captcha.captcha_verified': true,
+              'captcha.captcha_verified_at': serverTimestamp(),
+              'updatedAt': serverTimestamp(),
             });
         });
 
@@ -223,10 +224,11 @@ export default function CaptchaListPage() {
                 operation: 'update',
                 requestResourceData: { 
                   'wallet.orBalance': `(balance) + ${REWARD_PER_CAPTCHA}`,
-                  'Rewards.claimed': '(now)',
-                  'Rewards.reward_coins': REWARD_PER_CAPTCHA,
-                  'Captcha.captcha_verified': true,
-                  'Captcha.captcha_verified_at': '(now)',
+                  'rewards.claimed': '(now)',
+                  'rewards.reward_coins': REWARD_PER_CAPTCHA,
+                  'captcha.captcha_verified': true,
+                  'captcha.captcha_verified_at': '(now)',
+                  'updatedAt': '(now)',
                 }
             });
             errorEmitter.emit('permission-error', permissionError);

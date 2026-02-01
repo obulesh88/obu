@@ -139,10 +139,11 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
             const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_AMOUNT;
             transaction.update(userDocRef, { 
                 'wallet.orBalance': newOrBalance,
-                'Watch ads.ad_completed_at': serverTimestamp(),
-                'Watch ads.ad_verified': true,
-                'Rewards.claimed': serverTimestamp(),
-                'Rewards.reward_coins': REWARD_AMOUNT,
+                'watchAds.ad_completed_at': serverTimestamp(),
+                'watchAds.ad_verified': true,
+                'rewards.claimed': serverTimestamp(),
+                'rewards.reward_coins': REWARD_AMOUNT,
+                'updatedAt': serverTimestamp(),
             });
         });
 
@@ -163,10 +164,11 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
                 operation: 'update',
                 requestResourceData: { 
                     'wallet.orBalance': `(balance) + ${REWARD_AMOUNT}`,
-                    'Watch ads.ad_completed_at': '(now)',
-                    'Watch ads.ad_verified': true,
-                    'Rewards.claimed': '(now)',
-                    'Rewards.reward_coins': REWARD_AMOUNT,
+                    'watchAds.ad_completed_at': '(now)',
+                    'watchAds.ad_verified': true,
+                    'rewards.claimed': '(now)',
+                    'rewards.reward_coins': REWARD_AMOUNT,
+                    'updatedAt': '(now)',
                 }
             });
             errorEmitter.emit('permission-error', permissionError);
