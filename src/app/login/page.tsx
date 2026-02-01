@@ -74,15 +74,41 @@ export default function LoginPage() {
       const newProfile = {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
+          createdAt: serverTimestamp(),
           profile: {
               displayName: data.name,
+              Uid: userCredential.user.uid,
           },
           wallet: {
               orBalance: 0,
               inrBalance: 0,
               walletAddress: `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
           },
-          createdAt: serverTimestamp(),
+          Captcha: {
+            captcha_required: false,
+            captcha_verified: false,
+            captcha_verified_at: null,
+          },
+          'Player time': {
+            is_active: false,
+            min_required_seconds: 300,
+            play_start: null,
+            total_play_seconds: 0,
+          },
+          Rewards: {
+            claimed: null,
+            reward_coins: 0,
+          },
+          'Watch ads': {
+            ad_completed_at: null,
+            ad_provider: 'Monetag',
+            ad_required: false,
+            ad_start: null,
+            ad_verified: false,
+          },
+          status: {
+            status: 'Active',
+          },
       };
 
       await setDoc(userDocRef, newProfile);
