@@ -11,7 +11,7 @@ import { useUser } from '@/hooks/use-user';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { doc, runTransaction } from 'firebase/firestore';
+import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -189,7 +189,11 @@ export default function CaptchaListPage() {
             }
             const currentData = userDoc.data();
             const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_PER_CAPTCHA;
-            transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
+            transaction.update(userDocRef, { 
+              'wallet.orBalance': newOrBalance,
+              'Rewards.claimed': serverTimestamp(),
+              'Rewards.reward_coins': REWARD_PER_CAPTCHA
+            });
         });
 
         toast({
@@ -215,7 +219,11 @@ export default function CaptchaListPage() {
             const permissionError = new FirestorePermissionError({
                 path: userDocRef.path,
                 operation: 'update',
-                requestResourceData: { 'wallet.orBalance': `(balance) + ${REWARD_PER_CAPTCHA}` }
+                requestResourceData: { 
+                  'wallet.orBalance': `(balance) + ${REWARD_PER_CAPTCHA}`,
+                  'Rewards.claimed': '(now)',
+                  'Rewards.reward_coins': REWARD_PER_CAPTCHA
+                }
             });
             errorEmitter.emit('permission-error', permissionError);
         } else {

@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, runTransaction } from 'firebase/firestore';
+import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -137,7 +137,11 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
             }
             const currentData = userDoc.data();
             const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_AMOUNT;
-            transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
+            transaction.update(userDocRef, { 
+                'wallet.orBalance': newOrBalance,
+                'Watch ads.ad_completed_at': serverTimestamp(),
+                'Watch ads.ad_verified': true,
+            });
         });
 
       const adsWatched = parseInt(localStorage.getItem("dailyAds") || "0");
@@ -155,7 +159,11 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
             const permissionError = new FirestorePermissionError({
                 path: userDocRef.path,
                 operation: 'update',
-                requestResourceData: { 'wallet.orBalance': `(balance) + ${REWARD_AMOUNT}` }
+                requestResourceData: { 
+                    'wallet.orBalance': `(balance) + ${REWARD_AMOUNT}`,
+                    'Watch ads.ad_completed_at': '(now)',
+                    'Watch ads.ad_verified': true,
+                }
             });
             errorEmitter.emit('permission-error', permissionError);
         } else {

@@ -132,7 +132,14 @@ export default function GamesPage() {
             }
             const currentData = userDoc.data();
             const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_PER_SESSION;
-            transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
+            const startTime = gameStartTimes[verifyingGameIndex!];
+            const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+            const newTotalPlaySeconds = (currentData?.['Player time']?.total_play_seconds || 0) + playDuration;
+
+            transaction.update(userDocRef, { 
+                'wallet.orBalance': newOrBalance,
+                'Player time.total_play_seconds': newTotalPlaySeconds,
+            });
         });
         
       toast({
@@ -144,7 +151,10 @@ export default function GamesPage() {
             const permissionError = new FirestorePermissionError({
                 path: userDocRef.path,
                 operation: 'update',
-                requestResourceData: { 'wallet.orBalance': `(balance) + ${REWARD_PER_SESSION}` }
+                requestResourceData: { 
+                    'wallet.orBalance': `(balance) + ${REWARD_PER_SESSION}`,
+                    'Player time.total_play_seconds': '(previous) + (duration)'
+                }
             });
             errorEmitter.emit('permission-error', permissionError);
         } else {

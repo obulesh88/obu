@@ -10,6 +10,8 @@ service cloud.firestore {
       // 1. They are the owner of the document.
       // 2. They are not changing immutable fields like uid, email, or creation date.
       // 3. The 'orBalance' is being incremented correctly by a valid reward amount (3 or 5).
+      // This rule implicitly allows other related fields to be updated in the same transaction,
+      // as long as the balance increment is valid.
       allow update: if request.auth != null && request.auth.uid == userId
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
