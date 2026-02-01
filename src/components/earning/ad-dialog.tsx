@@ -141,6 +141,8 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
                 'wallet.orBalance': newOrBalance,
                 'Watch ads.ad_completed_at': serverTimestamp(),
                 'Watch ads.ad_verified': true,
+                'Rewards.claimed': serverTimestamp(),
+                'Rewards.reward_coins': REWARD_AMOUNT,
             });
         });
 
@@ -163,6 +165,8 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
                     'wallet.orBalance': `(balance) + ${REWARD_AMOUNT}`,
                     'Watch ads.ad_completed_at': '(now)',
                     'Watch ads.ad_verified': true,
+                    'Rewards.claimed': '(now)',
+                    'Rewards.reward_coins': REWARD_AMOUNT,
                 }
             });
             errorEmitter.emit('permission-error', permissionError);

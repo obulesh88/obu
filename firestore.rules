@@ -3,21 +3,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      // Allow users to read and create their own documents.
-      allow read, create: if request.auth != null && request.auth.uid == userId;
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
       
-      // Allow a user to update their document IF:
-      // 1. They are the owner of the document.
-      // 2. They are not changing immutable fields like uid, email, or creation date.
-      // 3. The 'orBalance' is being incremented correctly by a valid reward amount (3 or 5).
-      // This rule implicitly allows other related fields to be updated in the same transaction,
-      // as long as the balance increment is valid.
-      allow update: if request.auth != null && request.auth.uid == userId
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.email == resource.data.email
-        && request.resource.data.createdAt == resource.data.createdAt
-        && (request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 3
-            || request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 5);
+      function areImmutableFieldsUnchanged() {
+        return request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
+      function isValidBalanceUpdate() {
+        let incomingBalance = request.resource.data.wallet.orBalance;
+        let existingBalance = resource.data.wallet.orBalance;
+        // Balance can only be incremented by 3 (captcha/game) or 5 (ad), or stay the same (for game start).
+        return incomingBalance == existingBalance + 3 
+            || incomingBalance == existingBalance + 5
+            || incomingBalance == existingBalance;
+      }
+
+      allow read, create: if isOwner();
+
+      // Allow updates if the user is the owner, immutable fields are not changed,
+      // and the balance update is valid. This implicitly allows other fields 
+      // like timestamps and statuses to be updated in the same transaction.
+      allow update: if isOwner()
+        && areImmutableFieldsUnchanged()
+        && isValidBalanceUpdate();
     }
   }
 }

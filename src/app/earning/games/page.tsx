@@ -9,7 +9,7 @@ import { Gamepad2, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
-import { doc, runTransaction } from 'firebase/firestore';
+import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -65,8 +65,8 @@ export default function GamesPage() {
   }, [selectedGame, setBottomNavVisible, setPaddingDisabled]);
 
 
-  const handlePlayGame = (index: number) => {
-    if (!user) {
+  const handlePlayGame = async (index: number) => {
+    if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
     }
@@ -76,6 +76,7 @@ export default function GamesPage() {
       return;
     }
     
+    // Set state locally first for responsiveness
     setSessionEarnings(prev => {
         const newEarnings = [...prev];
         newEarnings[index] = 0;
@@ -92,8 +93,48 @@ export default function GamesPage() {
         newTimers[index] = Date.now();
         return newTimers;
     });
-
     setSelectedGame({ game: games[index], index });
+
+    // Update firestore
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            transaction.update(userDocRef, {
+                'Player time.is_active': true,
+                'Player time.play_start': serverTimestamp(),
+            });
+        });
+    } catch (error: any) {
+         if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: { 
+                    'Player time.is_active': true,
+                    'Player time.play_start': '(now)',
+                }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Failed to start game',
+                description: error.message || 'Could not update game status.',
+            });
+        }
+        // Revert state if firestore update fails
+        setIsPlaying(prev => {
+            const newIsPlaying = [...prev];
+            newIsPlaying[index] = false;
+            return newIsPlaying;
+        });
+        setGameStartTimes(prev => {
+            const newTimers = [...prev];
+            newTimers[index] = null;
+            return newTimers;
+        });
+        setSelectedGame(null);
+    }
   };
 
   const handleEndGameAndClaim = () => {
@@ -139,6 +180,10 @@ export default function GamesPage() {
             transaction.update(userDocRef, { 
                 'wallet.orBalance': newOrBalance,
                 'Player time.total_play_seconds': newTotalPlaySeconds,
+                'Player time.is_active': false,
+                'Player time.play_start': null,
+                'Rewards.claimed': serverTimestamp(),
+                'Rewards.reward_coins': REWARD_PER_SESSION,
             });
         });
         
@@ -153,7 +198,11 @@ export default function GamesPage() {
                 operation: 'update',
                 requestResourceData: { 
                     'wallet.orBalance': `(balance) + ${REWARD_PER_SESSION}`,
-                    'Player time.total_play_seconds': '(previous) + (duration)'
+                    'Player time.total_play_seconds': '(previous) + (duration)',
+                    'Player time.is_active': false,
+                    'Player time.play_start': null,
+                    'Rewards.claimed': '(now)',
+                    'Rewards.reward_coins': REWARD_PER_SESSION,
                 }
             });
             errorEmitter.emit('permission-error', permissionError);
