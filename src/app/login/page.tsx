@@ -83,6 +83,7 @@ export default function LoginPage() {
               walletAddress: `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
           },
           captcha: {
+            is_active: false,
             verifiedAt: null,
             claimed: false,
             reward_comm: 0,
@@ -98,10 +99,9 @@ export default function LoginPage() {
           },
           watchAds: {
             ad_provider: 'Monetag',
-            ad_required: false,
             ad_start: null,
             verifiedAt: null,
-            claimed: false,
+            ad_completed: false,
             reward_comm: 0,
           },
           status: {

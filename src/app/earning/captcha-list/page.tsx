@@ -120,8 +120,8 @@ export default function CaptchaListPage() {
     setUserInputs(newInputs);
   };
 
-  const handleStart = (index: number) => {
-    if (!user) {
+  const handleStart = async (index: number) => {
+    if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
     }
@@ -130,6 +130,33 @@ export default function CaptchaListPage() {
       toast({ variant: 'destructive', title: 'Incorrect Captcha' });
       refreshCaptcha(index);
       return;
+    }
+
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+        await updateDoc(userDocRef, {
+            'captcha.is_active': true,
+            'updatedAt': serverTimestamp()
+        });
+    } catch (error: any) {
+        if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: { 
+                    'captcha.is_active': true,
+                    'updatedAt': '(now)'
+                }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'An error occurred',
+                description: error.message || 'Could not start captcha.',
+            });
+        }
+        return;
     }
 
     setSubmitting(prev => {
@@ -184,6 +211,7 @@ export default function CaptchaListPage() {
       try {
         await updateDoc(userDocRef, {
             'wallet.orBalance': increment(REWARD_PER_CAPTCHA),
+            'captcha.is_active': false,
             'captcha.verifiedAt': serverTimestamp(),
             'captcha.claimed': true,
             'captcha.reward_comm': REWARD_PER_CAPTCHA,
@@ -215,6 +243,7 @@ export default function CaptchaListPage() {
                 operation: 'update',
                 requestResourceData: { 
                     'wallet.orBalance': `increment(${REWARD_PER_CAPTCHA})`,
+                    'captcha.is_active': false,
                     'captcha.verifiedAt': '(now)',
                     'captcha.claimed': true,
                     'captcha.reward_comm': REWARD_PER_CAPTCHA,

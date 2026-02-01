@@ -29,6 +29,7 @@
         "captcha": {
           "type": "object",
           "properties": {
+            "is_active": { "type": "boolean" },
             "verifiedAt": { "type": ["string", "null"], "format": "date-time" },
             "claimed": { "type": "boolean" },
             "reward_comm": { "type": "number" }
@@ -50,10 +51,9 @@
           "type": "object",
           "properties": {
             "ad_provider": { "type": "string" },
-            "ad_required": { "type": "boolean" },
             "ad_start": { "type": ["string", "null"], "format": "date-time" },
             "verifiedAt": { "type": ["string", "null"], "format": "date-time" },
-            "claimed": { "type": "boolean" },
+            "ad_completed": { "type": "boolean" },
             "reward_comm": { "type": "number" }
           }
         },

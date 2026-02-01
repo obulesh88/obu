@@ -76,7 +76,7 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
         await updateDoc(userDocRef, {
             'wallet.orBalance': increment(REWARD_AMOUNT),
             'watchAds.verifiedAt': serverTimestamp(),
-            'watchAds.claimed': true,
+            'watchAds.ad_completed': true,
             'watchAds.reward_comm': REWARD_AMOUNT,
             'updatedAt': serverTimestamp()
         });
@@ -96,7 +96,7 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
                 requestResourceData: { 
                     'wallet.orBalance': `increment(${REWARD_AMOUNT})`,
                     'watchAds.verifiedAt': '(now)',
-                    'watchAds.claimed': true,
+                    'watchAds.ad_completed': true,
                     'watchAds.reward_comm': REWARD_AMOUNT,
                     'updatedAt': '(now)',
                 }

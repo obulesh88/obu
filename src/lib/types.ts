@@ -13,6 +13,7 @@ export type UserProfile = {
   createdAt: any;
   updatedAt: any;
   captcha: {
+    is_active: boolean;
     verifiedAt: any;
     claimed: boolean;
     reward_comm: number;
@@ -28,10 +29,9 @@ export type UserProfile = {
   };
   watchAds: {
     ad_provider: string;
-    ad_required: boolean;
     ad_start: any;
     verifiedAt: any;
-    claimed: boolean;
+    ad_completed: boolean;
     reward_comm: number;
   };
   status: {
