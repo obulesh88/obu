@@ -34,7 +34,7 @@ const verifyGameSession = async (
   token: string
 ) => {
   const response = await fetch(
-    "https://us-central1-earning-app-ff02b.cloudfunctions.net/verifyGameSessionHttp",
+    "https://us-central1-earning-app-ff02b.cloudfunctions.net/verifyGameSession",
     {
       method: "POST",
       headers: {
