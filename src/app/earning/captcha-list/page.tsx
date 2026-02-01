@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
@@ -178,8 +180,8 @@ export default function CaptchaListPage() {
         return newState;
       });
 
+      const userDocRef = doc(firestore, 'users', user.uid);
       try {
-        const userDocRef = doc(firestore, 'users', user.uid);
         await runTransaction(firestore, async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
             if (!userDoc.exists()) {
@@ -208,11 +210,21 @@ export default function CaptchaListPage() {
         });
 
       } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'An error occurred',
-          description: error.message || 'Could not award points.',
-        });
+        // Firebase permission errors have a specific code.
+        if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: { 'wallet.orBalance': `(balance) + ${REWARD_PER_CAPTCHA}` }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'An error occurred',
+            description: error.message || 'Could not award points.',
+          });
+        }
       } finally {
         setSubmitting(prev => {
             const newState = [...prev];
