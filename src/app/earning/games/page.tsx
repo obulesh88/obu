@@ -33,31 +33,26 @@ const verifyGameSession = async (
   },
   token: string
 ) => {
-  try {
-    const response = await fetch(
-      "https://us-central1-earning-app-ff02b.cloudfunctions.net/verifyGameSessionHttp",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(sessionData),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `HTTP ${response.status}`);
+  const response = await fetch(
+    "https://us-central1-earning-app-ff02b.cloudfunctions.net/verifyGameSessionHttp",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(sessionData),
     }
+  );
 
-    const data = await response.json();
-    console.log("Response:", data);
-    return data;
-  } catch (err) {
-    console.error("Error:", err);
-    throw err;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `HTTP ${response.status}`);
   }
+
+  const data = await response.json();
+  console.log("Response:", data);
+  return data;
 };
 // --- End of Verification Logic ---
 
