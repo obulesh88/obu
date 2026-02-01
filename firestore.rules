@@ -9,12 +9,13 @@ service cloud.firestore {
       // Allow a user to update their document IF:
       // 1. They are the owner of the document.
       // 2. They are not changing immutable fields like uid, email, or creation date.
-      // 3. The 'orBalance' is being incremented correctly and not arbitrarily set.
+      // 3. The 'orBalance' is being incremented correctly by a valid reward amount (3 or 5).
       allow update: if request.auth != null && request.auth.uid == userId
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
         && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 3;
+        && (request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 3
+            || request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 5);
     }
   }
 }

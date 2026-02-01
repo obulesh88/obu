@@ -11,7 +11,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/hooks/use-user';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, runTransaction } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const REWARD_AMOUNT = 5;
 const WATCH_DELAY = 15; // 15 seconds
@@ -47,6 +50,7 @@ let adStartTime = 0;
 export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; onOpenChange: (open: boolean) => void; onComplete: () => void; }) {
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
 
   const [status, setStatus] = useState('Click "Watch Ad" to begin.');
   const [isClaiming, setIsClaiming] = useState(false);
@@ -107,7 +111,7 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
 
   // 6. Claim Reward
   const handleClaimReward = async () => {
-    if (!user) {
+    if (!user || !firestore) {
         toast({ variant: 'destructive', title: 'Authentication error' });
         return;
     }
@@ -123,9 +127,19 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
     }
 
     setIsClaiming(true);
+    const userDocRef = doc(firestore, 'users', user.uid);
     
     try {
-      // Mock earning points
+        await runTransaction(firestore, async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
+            if (!userDoc.exists()) {
+                throw new Error("User document does not exist!");
+            }
+            const currentData = userDoc.data();
+            const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_AMOUNT;
+            transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
+        });
+
       const adsWatched = parseInt(localStorage.getItem("dailyAds") || "0");
       localStorage.setItem("dailyAds", String(adsWatched + 1));
       
@@ -137,12 +151,21 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
       onOpenChange(false);
 
     } catch (error: any) {
-      console.error('Failed to award points: ', error);
-      toast({
-        variant: 'destructive',
-        title: 'An error occurred',
-        description: error.message || 'Could not award points.',
-      });
+        if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: { 'wallet.orBalance': `(balance) + ${REWARD_AMOUNT}` }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
+            console.error('Failed to award points: ', error);
+            toast({
+                variant: 'destructive',
+                title: 'An error occurred',
+                description: error.message || 'Could not award points.',
+            });
+        }
     } finally {
       setIsClaiming(false);
     }
@@ -169,7 +192,7 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
           </Button>
           {showClaimButton && (
             <Button type="button" onClick={handleClaimReward} disabled={isClaiming}>
-                ✔ Submit / Claim
+                {isClaiming ? 'Claiming...' : '✔ Submit / Claim'}
             </Button>
           )}
         </DialogFooter>

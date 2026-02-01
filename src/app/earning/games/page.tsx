@@ -4,11 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/hooks/use-user';
+import { useUser, useFirestore } from '@/firebase';
 import { Gamepad2, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
+import { doc, runTransaction } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 const NUM_GAMES = 8;
 const REWARD_PER_SESSION = 3;
@@ -24,41 +28,10 @@ const games = [
     { name: "Poker", url: "https://html5.gamemonetize.co/f5mv3cltk9bjta0h3t54c1isiqwlxgf3/" },
 ];
 
-// --- Verification Logic ---
-const verifyGameSession = async (
-  sessionData: {
-    sessionId: string;
-    playTime: number;
-    score: number;
-  },
-  token: string
-) => {
-  const response = await fetch(
-    "https://us-central1-earning-app-ff02b.cloudfunctions.net/verifyGameSession",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(sessionData),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `HTTP ${response.status}`);
-  }
-
-  const data = await response.json();
-  console.log("Response:", data);
-  return data;
-};
-// --- End of Verification Logic ---
-
 export default function GamesPage() {
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
   const { setBottomNavVisible, setPaddingDisabled } = useLayout();
 
   const [isClient, setIsClient] = useState(false);
@@ -71,7 +44,6 @@ export default function GamesPage() {
   const [verifyingGameIndex, setVerifyingGameIndex] = useState<number | null>(null);
 
   const [gameStartTimes, setGameStartTimes] = useState<(number | null)[]>(Array(NUM_GAMES).fill(null));
-  const [currentGamePlayTime, setCurrentGamePlayTime] = useState(0);
 
   useEffect(() => {
     setIsClient(true);
@@ -121,24 +93,13 @@ export default function GamesPage() {
         return newTimers;
     });
 
-    if (games[index].name === 'My Cat Restaurant' || games[index].name === "Line Color Puzzle" || games[index].name === "Bubble Shooter Relaxing Puzzle" || games[index].name === "Count Rush" || games[index].name === "Memory Emoji" || games[index].name === "Gear Shift Race" || games[index].name === "Colour Wood" || games[index].name === "Poker") {
-      setSelectedGame({ game: games[index], index });
-    } else {
-      window.open(games[index].url, '_blank');
-    }
+    setSelectedGame({ game: games[index], index });
   };
 
   const handleEndGameAndClaim = () => {
       if (!selectedGame) return;
       const { index } = selectedGame;
-
-      const startTime = gameStartTimes[index];
-      let playTime = 0;
-      if (startTime) {
-          playTime = Math.round((Date.now() - startTime) / 1000);
-      }
-      setCurrentGamePlayTime(playTime);
-
+      
       setSessionEarnings(prev => {
           const newEarnings = [...prev];
           newEarnings[index] = REWARD_PER_SESSION;
@@ -152,7 +113,7 @@ export default function GamesPage() {
 
 
   const handleClaimReward = async () => {
-    if (!user || verifyingGameIndex === null) return;
+    if (!user || verifyingGameIndex === null || !firestore) return;
     
     const potentialReward = sessionEarnings[verifyingGameIndex];
     if (potentialReward <= 0) {
@@ -161,48 +122,38 @@ export default function GamesPage() {
         setVerifyingGameIndex(null);
         return;
     }
+    const userDocRef = doc(firestore, 'users', user.uid);
 
     try {
-      // API verification step
-      const token = await user.getIdToken();
-      console.log("ID Token:", token); // <-- This is your Firebase ID token
-      const sessionId = `${user.uid}-${gameStartTimes[verifyingGameIndex]}`;
-      const playTime = currentGamePlayTime;
-      const score = 1500; // Mock score from prompt example
-
-      const verificationResult = await verifyGameSession(
-        {
-          sessionId,
-          playTime,
-          score,
-        },
-        token
-      );
-
-      const rewardAmount = verificationResult?.coins;
-
-      if (!rewardAmount || rewardAmount <= 0) {
-        throw new Error(verificationResult?.message || "Verification did not result in a reward.");
-      }
+        await runTransaction(firestore, async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
+            if (!userDoc.exists()) {
+                throw new Error("User document does not exist!");
+            }
+            const currentData = userDoc.data();
+            const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_PER_SESSION;
+            transaction.update(userDocRef, { 'wallet.orBalance': newOrBalance });
+        });
         
       toast({
         title: 'Reward Claimed!',
-        description: `You've earned ${rewardAmount} OR for playing ${games[verifyingGameIndex].name}.`,
+        description: `You've earned ${REWARD_PER_SESSION} OR for playing ${games[verifyingGameIndex].name}.`,
       });
     } catch (error: any) {
-      console.error("Claim failed:", error);
-      let description = 'Could not claim reward. Please try again.';
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-          description = 'A network error occurred. Please check your browser\'s developer console for CORS issues and ensure the backend is configured to accept requests from this domain.';
-      } else if (error.message) {
-          description = error.message;
-      }
-
-      toast({
-        variant: 'destructive',
-        title: 'Claim Failed',
-        description: description,
-      });
+        if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: { 'wallet.orBalance': `(balance) + ${REWARD_PER_SESSION}` }
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Claim Failed',
+                description: error.message || 'Could not claim reward. Please try again.',
+            });
+        }
     } finally {
         setIsCaptchaOpen(false);
         if (verifyingGameIndex !== null) {
@@ -241,7 +192,7 @@ export default function GamesPage() {
             <iframe
                 src={selectedGame.game.url}
                 className="w-full h-full border-0"
-                allow="autoplay"
+                allow="autoplay; fullscreen"
             />
         </div>
     );
@@ -297,7 +248,7 @@ export default function GamesPage() {
                         <Button 
                             onClick={() => handlePlayGame(index)}
                             className="w-full mt-4"
-                            disabled={isPlaying[index]}
+                            disabled={isPlaying.some(p=>p) && !isPlaying[index]}
                         >
                             {isPlaying[index] ? 'Playing...' : 'Play Game'}
                         </Button>
