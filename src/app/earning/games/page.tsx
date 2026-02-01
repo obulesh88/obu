@@ -171,6 +171,29 @@ export default function GamesPage() {
         const startTime = gameStartTimes[verifyingGameIndex!];
         const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
         
+        const token = await user.getIdToken();
+        const response = await fetch('https://us-central1-earning-app-ff02b.cloudfunctions.net/verifyGameSession', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                gameId: games[verifyingGameIndex].id,
+                playDuration: playDuration
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Verification request failed.' }));
+            throw new Error(errorData.message || 'Failed to verify game session.');
+        }
+
+        const verificationData = await response.json();
+        if (!verificationData.success) {
+             throw new Error(verificationData.message || 'Game session could not be verified.');
+        }
+
         await updateDoc(userDocRef, {
             'wallet.orBalance': increment(REWARD_PER_SESSION),
             'playGames.total_play_seconds': increment(playDuration),
