@@ -170,6 +170,7 @@ export default function GamesPage() {
     try {
       // API verification step
       const token = await user.getIdToken();
+      console.log("ID Token:", token); // <-- This is your Firebase ID token
       const sessionId = `${user.uid}-${gameStartTimes[verifyingGameIndex]}`;
       const playTime = currentGamePlayTime;
       const score = 1500; // Mock score from prompt example
