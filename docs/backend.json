@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's profile and wallet information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of account creation." },
+        "profile": {
+          "type": "object",
+          "properties": {
+            "displayName": { "type": "string" },
+            "Uid": { "type": "string" }
+          },
+          "required": ["displayName", "Uid"]
+        },
+        "wallet": {
+          "type": "object",
+          "properties": {
+            "orBalance": { "type": "number" },
+            "inrBalance": { "type": "number" },
+            "walletAddress": { "type": "string" }
+          },
+          "required": ["orBalance", "inrBalance", "walletAddress"]
+        },
+        "Captcha": {
+            "type": "object",
+            "properties": {
+                "captcha_required": { "type": "boolean" },
+                "captcha_verified": { "type": "boolean" },
+                "captcha_verified_at": { "type": ["string", "null"], "format": "date-time" }
+            }
+        },
+        "Player time": {
+            "type": "object",
+            "properties": {
+                "is_active": { "type": "boolean" },
+                "min_required_seconds": { "type": "number" },
+                "play_start": { "type": ["string", "null"], "format": "date-time" },
+                "total_play_seconds": { "type": "number" }
+            }
+        },
+        "Rewards": {
+            "type": "object",
+            "properties": {
+                "claimed": { "type": ["string", "null"], "format": "date-time" },
+                "reward_coins": { "type": "number" }
+            }
+        },
+        "Watch ads": {
+            "type": "object",
+            "properties": {
+                "ad_completed_at": { "type": ["string", "null"], "format": "date-time" },
+                "ad_provider": { "type": "string" },
+                "ad_required": { "type": "boolean" },
+                "ad_start": { "type": ["string", "null"], "format": "date-time" },
+                "ad_verified": { "type": "boolean" }
+            }
+        },
+        "status": {
+            "type": "object",
+            "properties": {
+                "status": { "type": "string" }
+            }
+        }
+      },
+      "required": ["uid", "email", "createdAt", "profile", "wallet"]
+    }
+  },
+  "auth": {
+    "providers": ["email"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores individual user profile data."
+    }
+  }
+}
