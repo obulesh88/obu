@@ -14,17 +14,32 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt;
       }
 
+      function isValidBalanceUpdate() {
+        let balanceChange = request.resource.data.wallet.orBalance - resource.data.wallet.orBalance;
+        let isNoChange = balanceChange == 0;
+        let isCaptchaOrGameReward = balanceChange == 3;
+        let isAdReward = balanceChange == 5;
+        // Check if balance update is one of the allowed increments or no change.
+        return isNoChange || isCaptchaOrGameReward || isAdReward;
+      }
+      
+      function areOtherFieldsValid() {
+        // Allow total_play_seconds to only increase or stay the same
+        let validGameTime = request.resource.data.playGames.total_play_seconds >= resource.data.playGames.total_play_seconds;
+        
+        // Critical: Prevent the client from ever changing the INR balance.
+        let inrUnchanged = request.resource.data.wallet.inrBalance == resource.data.wallet.inrBalance;
+        
+        return validGameTime && inrUnchanged;
+      }
+
       allow read, create: if isOwner();
 
-      // Allow updates if the user is the owner, immutable fields aren't changed,
-      // and the balance changes are secure.
+      // Allow updates if the user is the owner and the update is valid.
       allow update: if isOwner()
         && areImmutableFieldsUnchanged()
-        // Allow OR balance to increase or stay the same, but not decrease.
-        // This is a secure way to allow reward claims without overly complex rules.
-        && request.resource.data.wallet.orBalance >= resource.data.wallet.orBalance
-        // Critical: Prevent the client from ever changing the INR balance.
-        && request.resource.data.wallet.inrBalance == resource.data.wallet.inrBalance;
+        && isValidBalanceUpdate()
+        && areOtherFieldsValid();
     }
   }
 }

@@ -10,13 +10,11 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/firebase';
+import { useEffect } from 'react';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
-import { doc, setDoc, getFirestore, serverTimestamp } from 'firebase/firestore';
-import { firebaseConfig } from '@/firebase/config';
-import { initializeApp } from 'firebase/app';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -35,6 +33,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, loading } = useUser();
 
   useEffect(() => {
@@ -61,15 +60,13 @@ export default function LoginPage() {
   });
 
   const onSignUp: SubmitHandler<SignUpSchemaType> = async (data) => {
-    if (!auth) return;
+    if (!auth || !firestore) return;
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await updateProfile(userCredential.user, { displayName: data.name });
 
       // Create user profile in Firestore
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
-      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const userDocRef = doc(firestore, 'users', userCredential.user.uid);
       
       const newProfile = {
           uid: userCredential.user.uid,
