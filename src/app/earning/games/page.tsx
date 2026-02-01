@@ -25,22 +25,30 @@ const games = [
 ];
 
 // --- Verification Logic ---
-const verifySessionTime = async (sessionData: { sessionId: string; gameId: string }) => {
+const verifyGameSession = async (
+  sessionData: {
+    sessionId: string;
+    playTime: number;
+    score: number;
+  },
+  token: string
+) => {
   try {
     const response = await fetch(
-      "https://verifygamesession-vhsyirldya-uc.a.run.app",
+      "https://us-central1-earning-app-ff02b.cloudfunctions.net/verifyGameSessionHttp",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(sessionData),
       }
     );
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `HTTP ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(errorText || `HTTP ${response.status}`);
     }
 
     const data = await response.json();
@@ -161,12 +169,19 @@ export default function GamesPage() {
 
     try {
       // API verification step
+      const token = await user.getIdToken();
       const sessionId = `${user.uid}-${gameStartTimes[verifyingGameIndex]}`;
-      const gameId = games[verifyingGameIndex].name;
-      const verificationResult = await verifySessionTime({
-        sessionId,
-        gameId,
-      });
+      const playTime = currentGamePlayTime;
+      const score = 1500; // Mock score from prompt example
+
+      const verificationResult = await verifyGameSession(
+        {
+          sessionId,
+          playTime,
+          score,
+        },
+        token
+      );
 
       const rewardAmount = verificationResult?.coins;
 
