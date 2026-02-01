@@ -8,6 +8,7 @@ service cloud.firestore {
       }
       
       function areImmutableFieldsUnchanged() {
+        // These fields cannot be changed after creation
         return request.resource.data.uid == resource.data.uid
           && request.resource.data.email == resource.data.email
           && request.resource.data.createdAt == resource.data.createdAt;
@@ -15,33 +16,27 @@ service cloud.firestore {
 
       function isValidBalanceUpdate() {
         let incomingBalance = request.resource.data.wallet.orBalance;
+        let existingBalance = resource.data.wallet.orBalance;
         
-        // Handle increment for rewards. It must be a float type.
-        if (incomingBalance is rules.Float) {
-          return incomingBalance == 3.0 || incomingBalance == 5.0;
-        }
+        // This is the key: compare the final value with the initial value + increment.
+        // This handles the `increment()` operation correctly.
+        let isCaptchaOrGameReward = incomingBalance == existingBalance + 3;
+        let isAdReward = incomingBalance == existingBalance + 5;
+        
+        // Also allow updates where the balance doesn't change (e.g., starting a game session)
+        let isUnchanged = incomingBalance == existingBalance;
 
-        // For non-increment updates (like game start), the balance should not change.
-        if (incomingBalance is number) {
-          return incomingBalance == resource.data.wallet.orBalance;
-        }
-
-        return false;
+        return isCaptchaOrGameReward || isAdReward || isUnchanged;
       }
       
-      // Also allow total_play_seconds to be incremented
       function isValidGameTimeUpdate() {
-        let incomingTime = request.resource.data.playGames.total_play_seconds;
-        if (incomingTime is rules.Float) {
-          return incomingTime > 0;
-        }
-        return incomingTime == resource.data.playGames.total_play_seconds;
+        // Allow total_play_seconds to be incremented or stay the same.
+        // This handles both game reward claims and other updates (where it doesn't change).
+        return request.resource.data.playGames.total_play_seconds >= resource.data.playGames.total_play_seconds;
       }
 
       allow read, create: if isOwner();
 
-      // Allow updates if the user is the owner, immutable fields are not changed,
-      // and the balance update is valid. Other fields can be updated implicitly.
       allow update: if isOwner()
         && areImmutableFieldsUnchanged()
         && isValidBalanceUpdate()
