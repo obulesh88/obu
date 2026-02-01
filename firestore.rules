@@ -3,8 +3,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      // Allow users to read and write their own documents.
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow users to read and create their own documents.
+      allow read, create: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow a user to update their document IF:
+      // 1. They are the owner of the document.
+      // 2. They are not changing immutable fields like uid, email, or creation date.
+      // 3. The 'orBalance' is being incremented correctly and not arbitrarily set.
+      allow update: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 3;
     }
   }
 }
