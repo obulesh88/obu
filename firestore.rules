@@ -8,38 +8,45 @@ service cloud.firestore {
       }
       
       function areImmutableFieldsUnchanged() {
-        // These fields cannot be changed by the user after creation
-        return request.resource.data.uid == resource.data.uid
-          && request.resource.data.email == resource.data.email
-          && request.resource.data.createdAt == resource.data.createdAt;
+        // These fields cannot be changed by the user after creation.
+        let isUidSame = request.resource.data.uid == resource.data.uid;
+        let isEmailSame = request.resource.data.email == resource.data.email;
+        let isCreationSame = request.resource.data.createdAt == resource.data.createdAt;
+        
+        return isUidSame && isEmailSame && isCreationSame;
       }
 
       function isValidBalanceUpdate() {
-        let balanceChange = request.resource.data.wallet.orBalance - resource.data.wallet.orBalance;
-        let isNoChange = balanceChange == 0;
-        let isCaptchaOrGameReward = balanceChange == 3;
-        let isAdReward = balanceChange == 5;
-        // Check if balance update is one of the allowed increments or no change.
-        return isNoChange || isCaptchaOrGameReward || isAdReward;
+        // This function validates server-side increments.
+        // It checks if the new balance is equal to the old balance plus an allowed reward amount.
+        let isRewardOf3 = request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 3;
+        let isRewardOf5 = request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 5;
+        // Also allow updates that don't change the balance (e.g., starting a game).
+        let noBalanceChange = request.resource.data.wallet.orBalance == resource.data.wallet.orBalance;
+        
+        return isRewardOf3 || isRewardOf5 || noBalanceChange;
       }
       
-      function areOtherFieldsValid() {
-        // Allow total_play_seconds to only increase or stay the same
+      function areOtherCoreFieldsValid() {
+        // Allow total_play_seconds to only increase or stay the same. This works even with increments.
         let validGameTime = request.resource.data.playGames.total_play_seconds >= resource.data.playGames.total_play_seconds;
         
         // Critical: Prevent the client from ever changing the INR balance.
         let inrUnchanged = request.resource.data.wallet.inrBalance == resource.data.wallet.inrBalance;
+
+        // The user's wallet address should not be changed.
+        let walletAddressUnchanged = request.resource.data.wallet.walletAddress == resource.data.wallet.walletAddress;
         
-        return validGameTime && inrUnchanged;
+        return validGameTime && inrUnchanged && walletAddressUnchanged;
       }
 
       allow read, create: if isOwner();
 
-      // Allow updates if the user is the owner and the update is valid.
+      // Allow updates if the user is the owner and the update adheres to the defined functions.
       allow update: if isOwner()
         && areImmutableFieldsUnchanged()
         && isValidBalanceUpdate()
-        && areOtherFieldsValid();
+        && areOtherCoreFieldsValid();
     }
   }
 }
