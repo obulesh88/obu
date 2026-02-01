@@ -9,7 +9,7 @@ import { Gamepad2, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
-import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -98,12 +98,10 @@ export default function GamesPage() {
     // Update firestore
     const userDocRef = doc(firestore, 'users', user.uid);
     try {
-        await runTransaction(firestore, async (transaction) => {
-            transaction.update(userDocRef, {
-                'playGames.is_active': true,
-                'playGames.play_start': serverTimestamp(),
-                'updatedAt': serverTimestamp(),
-            });
+        await updateDoc(userDocRef, {
+            'playGames.is_active': true,
+            'playGames.play_start': serverTimestamp(),
+            'updatedAt': serverTimestamp(),
         });
     } catch (error: any) {
          if (error.code === 'permission-denied') {
@@ -168,26 +166,18 @@ export default function GamesPage() {
     const userDocRef = doc(firestore, 'users', user.uid);
 
     try {
-        await runTransaction(firestore, async (transaction) => {
-            const userDoc = await transaction.get(userDocRef);
-            if (!userDoc.exists()) {
-                throw new Error("User document does not exist!");
-            }
-            const currentData = userDoc.data();
-            const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_PER_SESSION;
-            const startTime = gameStartTimes[verifyingGameIndex!];
-            const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
-            const newTotalPlaySeconds = (currentData?.playGames?.total_play_seconds || 0) + playDuration;
-
-            transaction.update(userDocRef, { 
-                'wallet.orBalance': newOrBalance,
-                'playGames.total_play_seconds': newTotalPlaySeconds,
-                'playGames.is_active': false,
-                'playGames.play_start': null,
-                'rewards.claimed': serverTimestamp(),
-                'rewards.reward_coins': REWARD_PER_SESSION,
-                'updatedAt': serverTimestamp(),
-            });
+        const startTime = gameStartTimes[verifyingGameIndex!];
+        const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+        
+        await updateDoc(userDocRef, {
+            'wallet.orBalance': increment(REWARD_PER_SESSION),
+            'playGames.total_play_seconds': increment(playDuration),
+            'playGames.is_active': false,
+            'playGames.play_start': null,
+            'playGames.verifiedAt': serverTimestamp(),
+            'playGames.claimed': true,
+            'playGames.reward_comm': REWARD_PER_SESSION,
+            'updatedAt': serverTimestamp(),
         });
         
       toast({
@@ -200,12 +190,13 @@ export default function GamesPage() {
                 path: userDocRef.path,
                 operation: 'update',
                 requestResourceData: { 
-                    'wallet.orBalance': `(balance) + ${REWARD_PER_SESSION}`,
-                    'playGames.total_play_seconds': '(previous) + (duration)',
+                    'wallet.orBalance': `increment(${REWARD_PER_SESSION})`,
+                    'playGames.total_play_seconds': `increment(...)`,
                     'playGames.is_active': false,
                     'playGames.play_start': null,
-                    'rewards.claimed': '(now)',
-                    'rewards.reward_coins': REWARD_PER_SESSION,
+                    'playGames.verifiedAt': '(now)',
+                    'playGames.claimed': true,
+                    'playGames.reward_comm': REWARD_PER_SESSION,
                     'updatedAt': '(now)',
                 }
             });

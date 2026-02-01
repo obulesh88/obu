@@ -15,21 +15,38 @@ service cloud.firestore {
 
       function isValidBalanceUpdate() {
         let incomingBalance = request.resource.data.wallet.orBalance;
-        let existingBalance = resource.data.wallet.orBalance;
-        // Balance can only be incremented by 3 (captcha/game) or 5 (ad), or stay the same (for game start).
-        return incomingBalance == existingBalance + 3 
-            || incomingBalance == existingBalance + 5
-            || incomingBalance == existingBalance;
+        
+        // Handle increment for rewards. It must be a float type.
+        if (incomingBalance is rules.Float) {
+          return incomingBalance == 3.0 || incomingBalance == 5.0;
+        }
+
+        // For non-increment updates (like game start), the balance should not change.
+        if (incomingBalance is number) {
+          return incomingBalance == resource.data.wallet.orBalance;
+        }
+
+        return false;
+      }
+      
+      // Also allow total_play_seconds to be incremented
+      function isValidGameTimeUpdate() {
+        let incomingTime = request.resource.data.playGames.total_play_seconds;
+        if (incomingTime is rules.Float) {
+          return incomingTime > 0;
+        }
+        return incomingTime == resource.data.playGames.total_play_seconds;
       }
 
       allow read, create: if isOwner();
 
       // Allow updates if the user is the owner, immutable fields are not changed,
-      // and the balance update is valid. This implicitly allows other fields 
-      // like timestamps and statuses to be updated in the same transaction.
+      // and the balance update is valid. Other fields can be updated implicitly.
       allow update: if isOwner()
         && areImmutableFieldsUnchanged()
-        && isValidBalanceUpdate();
+        && isValidBalanceUpdate()
+        && isValidGameTimeUpdate()
+        && request.resource.data.wallet.inrBalance == resource.data.wallet.inrBalance; // Prevent client from changing INR
     }
   }
 }

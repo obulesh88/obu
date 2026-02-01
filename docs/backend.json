@@ -27,44 +27,41 @@
           "required": ["orBalance", "inrBalance", "walletAddress"]
         },
         "captcha": {
-            "type": "object",
-            "properties": {
-                "captcha_required": { "type": "boolean" },
-                "captcha_verified": { "type": "boolean" },
-                "captcha_verified_at": { "type": ["string", "null"], "format": "date-time" }
-            }
+          "type": "object",
+          "properties": {
+            "verifiedAt": { "type": ["string", "null"], "format": "date-time" },
+            "claimed": { "type": "boolean" },
+            "reward_comm": { "type": "number" }
+          }
         },
         "playGames": {
-            "type": "object",
-            "properties": {
-                "is_active": { "type": "boolean" },
-                "min_required_seconds": { "type": "number" },
-                "play_start": { "type": ["string", "null"], "format": "date-time" },
-                "total_play_seconds": { "type": "number" }
-            }
-        },
-        "rewards": {
-            "type": "object",
-            "properties": {
-                "claimed": { "type": ["string", "null"], "format": "date-time" },
-                "reward_coins": { "type": "number" }
-            }
+          "type": "object",
+          "properties": {
+            "is_active": { "type": "boolean" },
+            "min_required_seconds": { "type": "number" },
+            "play_start": { "type": ["string", "null"], "format": "date-time" },
+            "total_play_seconds": { "type": "number" },
+            "verifiedAt": { "type": ["string", "null"], "format": "date-time" },
+            "claimed": { "type": "boolean" },
+            "reward_comm": { "type": "number" }
+          }
         },
         "watchAds": {
-            "type": "object",
-            "properties": {
-                "ad_completed_at": { "type": ["string", "null"], "format": "date-time" },
-                "ad_provider": { "type": "string" },
-                "ad_required": { "type": "boolean" },
-                "ad_start": { "type": ["string", "null"], "format": "date-time" },
-                "ad_verified": { "type": "boolean" }
-            }
+          "type": "object",
+          "properties": {
+            "ad_provider": { "type": "string" },
+            "ad_required": { "type": "boolean" },
+            "ad_start": { "type": ["string", "null"], "format": "date-time" },
+            "verifiedAt": { "type": ["string", "null"], "format": "date-time" },
+            "claimed": { "type": "boolean" },
+            "reward_comm": { "type": "number" }
+          }
         },
         "status": {
-            "type": "object",
-            "properties": {
-                "status": { "type": "string" }
-            }
+          "type": "object",
+          "properties": {
+            "status": { "type": "string" }
+          }
         }
       },
       "required": ["uid", "email", "createdAt", "profile", "wallet"]

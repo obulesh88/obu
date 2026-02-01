@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -130,21 +130,12 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
     const userDocRef = doc(firestore, 'users', user.uid);
     
     try {
-        await runTransaction(firestore, async (transaction) => {
-            const userDoc = await transaction.get(userDocRef);
-            if (!userDoc.exists()) {
-                throw new Error("User document does not exist!");
-            }
-            const currentData = userDoc.data();
-            const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_AMOUNT;
-            transaction.update(userDocRef, { 
-                'wallet.orBalance': newOrBalance,
-                'watchAds.ad_completed_at': serverTimestamp(),
-                'watchAds.ad_verified': true,
-                'rewards.claimed': serverTimestamp(),
-                'rewards.reward_coins': REWARD_AMOUNT,
-                'updatedAt': serverTimestamp(),
-            });
+        await updateDoc(userDocRef, {
+            'wallet.orBalance': increment(REWARD_AMOUNT),
+            'watchAds.verifiedAt': serverTimestamp(),
+            'watchAds.claimed': true,
+            'watchAds.reward_comm': REWARD_AMOUNT,
+            'updatedAt': serverTimestamp()
         });
 
       const adsWatched = parseInt(localStorage.getItem("dailyAds") || "0");
@@ -163,11 +154,10 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
                 path: userDocRef.path,
                 operation: 'update',
                 requestResourceData: { 
-                    'wallet.orBalance': `(balance) + ${REWARD_AMOUNT}`,
-                    'watchAds.ad_completed_at': '(now)',
-                    'watchAds.ad_verified': true,
-                    'rewards.claimed': '(now)',
-                    'rewards.reward_coins': REWARD_AMOUNT,
+                    'wallet.orBalance': `increment(${REWARD_AMOUNT})`,
+                    'watchAds.verifiedAt': '(now)',
+                    'watchAds.claimed': true,
+                    'watchAds.reward_comm': REWARD_AMOUNT,
                     'updatedAt': '(now)',
                 }
             });

@@ -13,26 +13,26 @@ export type UserProfile = {
   createdAt: any;
   updatedAt: any;
   captcha: {
-    captcha_required: boolean;
-    captcha_verified: boolean;
-    captcha_verified_at: any;
+    verifiedAt: any;
+    claimed: boolean;
+    reward_comm: number;
   };
   playGames: {
     is_active: boolean;
     min_required_seconds: number;
     play_start: any;
     total_play_seconds: number;
-  };
-  rewards: {
-    claimed: any;
-    reward_coins: number;
+    verifiedAt: any;
+    claimed: boolean;
+    reward_comm: number;
   };
   watchAds: {
-    ad_completed_at: any;
     ad_provider: string;
     ad_required: boolean;
     ad_start: any;
-    ad_verified: boolean;
+    verifiedAt: any;
+    claimed: boolean;
+    reward_comm: number;
   };
   status: {
     status: string;

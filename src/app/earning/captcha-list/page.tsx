@@ -11,7 +11,7 @@ import { useUser } from '@/hooks/use-user';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -182,21 +182,12 @@ export default function CaptchaListPage() {
 
       const userDocRef = doc(firestore, 'users', user.uid);
       try {
-        await runTransaction(firestore, async (transaction) => {
-            const userDoc = await transaction.get(userDocRef);
-            if (!userDoc.exists()) {
-                throw new Error("User document does not exist!");
-            }
-            const currentData = userDoc.data();
-            const newOrBalance = (currentData?.wallet?.orBalance || 0) + REWARD_PER_CAPTCHA;
-            transaction.update(userDocRef, { 
-              'wallet.orBalance': newOrBalance,
-              'rewards.claimed': serverTimestamp(),
-              'rewards.reward_coins': REWARD_PER_CAPTCHA,
-              'captcha.captcha_verified': true,
-              'captcha.captcha_verified_at': serverTimestamp(),
-              'updatedAt': serverTimestamp(),
-            });
+        await updateDoc(userDocRef, {
+            'wallet.orBalance': increment(REWARD_PER_CAPTCHA),
+            'captcha.verifiedAt': serverTimestamp(),
+            'captcha.claimed': true,
+            'captcha.reward_comm': REWARD_PER_CAPTCHA,
+            'updatedAt': serverTimestamp()
         });
 
         toast({
@@ -223,12 +214,11 @@ export default function CaptchaListPage() {
                 path: userDocRef.path,
                 operation: 'update',
                 requestResourceData: { 
-                  'wallet.orBalance': `(balance) + ${REWARD_PER_CAPTCHA}`,
-                  'rewards.claimed': '(now)',
-                  'rewards.reward_coins': REWARD_PER_CAPTCHA,
-                  'captcha.captcha_verified': true,
-                  'captcha.captcha_verified_at': '(now)',
-                  'updatedAt': '(now)',
+                    'wallet.orBalance': `increment(${REWARD_PER_CAPTCHA})`,
+                    'captcha.verifiedAt': '(now)',
+                    'captcha.claimed': true,
+                    'captcha.reward_comm': REWARD_PER_CAPTCHA,
+                    'updatedAt': '(now)'
                 }
             });
             errorEmitter.emit('permission-error', permissionError);
