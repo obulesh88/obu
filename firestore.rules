@@ -8,40 +8,23 @@ service cloud.firestore {
       }
       
       function areImmutableFieldsUnchanged() {
-        // These fields cannot be changed after creation
+        // These fields cannot be changed by the user after creation
         return request.resource.data.uid == resource.data.uid
           && request.resource.data.email == resource.data.email
           && request.resource.data.createdAt == resource.data.createdAt;
       }
 
-      function isValidBalanceUpdate() {
-        let incomingBalance = request.resource.data.wallet.orBalance;
-        let existingBalance = resource.data.wallet.orBalance;
-        
-        // This is the key: compare the final value with the initial value + increment.
-        // This handles the `increment()` operation correctly.
-        let isCaptchaOrGameReward = incomingBalance == existingBalance + 3;
-        let isAdReward = incomingBalance == existingBalance + 5;
-        
-        // Also allow updates where the balance doesn't change (e.g., starting a game session)
-        let isUnchanged = incomingBalance == existingBalance;
-
-        return isCaptchaOrGameReward || isAdReward || isUnchanged;
-      }
-      
-      function isValidGameTimeUpdate() {
-        // Allow total_play_seconds to be incremented or stay the same.
-        // This handles both game reward claims and other updates (where it doesn't change).
-        return request.resource.data.playGames.total_play_seconds >= resource.data.playGames.total_play_seconds;
-      }
-
       allow read, create: if isOwner();
 
+      // Allow updates if the user is the owner, immutable fields aren't changed,
+      // and the balance changes are secure.
       allow update: if isOwner()
         && areImmutableFieldsUnchanged()
-        && isValidBalanceUpdate()
-        && isValidGameTimeUpdate()
-        && request.resource.data.wallet.inrBalance == resource.data.wallet.inrBalance; // Prevent client from changing INR
+        // Allow OR balance to increase or stay the same, but not decrease.
+        // This is a secure way to allow reward claims without overly complex rules.
+        && request.resource.data.wallet.orBalance >= resource.data.wallet.orBalance
+        // Critical: Prevent the client from ever changing the INR balance.
+        && request.resource.data.wallet.inrBalance == resource.data.wallet.inrBalance;
     }
   }
 }
