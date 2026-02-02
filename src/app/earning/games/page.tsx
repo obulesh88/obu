@@ -156,7 +156,9 @@ export default function GamesPage() {
 
 
   const handleClaimReward = async () => {
-    if (!user || verifyingGameIndex === null || !firestore) return;
+    if (!user || verifyingGameIndex === null || !firestore) {
+      throw new Error("User not logged in");
+    }
     
     const potentialReward = sessionEarnings[verifyingGameIndex];
     if (potentialReward <= 0) {
@@ -172,22 +174,29 @@ export default function GamesPage() {
         const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
         const minutesPlayed = Math.round(playDuration / 60);
 
-        const token = await user.getIdToken();
-        const response = await fetch('https://us-central1-earning-app-ff02b.cloudfunctions.net/claimGameCoins', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({ minutesPlayed })
-        });
+        // Get a fresh Firebase ID token at runtime
+        const token = await user.getIdToken(); // auto-refreshes if expired
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`API error: ${errorText}`);
+        // Call your Cloud Function
+        const res = await fetch(
+            "https://us-central1-earning-app-ff02b.cloudfunctions.net/claimGameCoins",
+            {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({ minutesPlayed }) // only minutesPlayed needed
+            }
+        );
+
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error("API error: " + err);
         }
 
-        await response.json(); // Assuming you might want to use the response data later
+        const data = await res.json();
+        console.log(data);
 
         await updateDoc(userDocRef, {
             'wallet.orBalance': increment(REWARD_PER_SESSION),
