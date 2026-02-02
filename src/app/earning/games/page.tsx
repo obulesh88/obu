@@ -170,29 +170,24 @@ export default function GamesPage() {
     try {
         const startTime = gameStartTimes[verifyingGameIndex!];
         const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
-        
+        const minutesPlayed = Math.round(playDuration / 60);
+
         const token = await user.getIdToken();
-        const response = await fetch('https://us-central1-earning-app-ff02b.cloudfunctions.net/verifyGameSession', {
+        const response = await fetch('https://us-central1-earning-app-ff02b.cloudfunctions.net/claimGameCoins', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify({
-                gameId: games[verifyingGameIndex].id,
-                playDuration: playDuration
-            })
+            body: JSON.stringify({ minutesPlayed })
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Verification request failed.' }));
-            throw new Error(errorData.message || 'Failed to verify game session.');
+            const errorText = await response.text();
+            throw new Error(`API error: ${errorText}`);
         }
 
-        const verificationData = await response.json();
-        if (!verificationData.success) {
-             throw new Error(verificationData.message || 'Game session could not be verified.');
-        }
+        await response.json(); // Assuming you might want to use the response data later
 
         await updateDoc(userDocRef, {
             'wallet.orBalance': increment(REWARD_PER_SESSION),
