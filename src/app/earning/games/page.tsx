@@ -5,18 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { Gamepad2, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Gamepad2, ArrowLeft, RefreshCw, Timer } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-
+import { Badge } from '@/components/ui/badge';
 
 const NUM_GAMES = 8;
 const REWARD_PER_SESSION = 3;
 const LOADING_TIMER_DURATION = 20;
+const MAX_SESSION_SECONDS = 1800; // 30 minutes
 
 const games = [
     { id: "count_rush", name: "Count Rush", url: "https://html5.gamemonetize.co/hbvt6ecfxfrtu62sm0km7c1gs23be5c2/" },
@@ -44,6 +45,7 @@ export default function GamesPage() {
   const [isCaptchaOpen, setIsCaptchaOpen] = useState(false);
   const [verifyingGameIndex, setVerifyingGameIndex] = useState<number | null>(null);
   const [gameLoadingCountdown, setGameLoadingCountdown] = useState(0);
+  const [sessionTime, setSessionTime] = useState(0);
 
   const [gameStartTimes, setGameStartTimes] = useState<(number | null)[]>(Array(NUM_GAMES).fill(null));
 
@@ -66,6 +68,7 @@ export default function GamesPage() {
     };
   }, [selectedGame, setBottomNavVisible, setPaddingDisabled]);
 
+  // Loading Timer Effect
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (gameLoadingCountdown > 0) {
@@ -76,6 +79,29 @@ export default function GamesPage() {
     return () => clearInterval(timer);
   }, [gameLoadingCountdown]);
 
+  // Session Timer Effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (selectedGame && gameLoadingCountdown === 0) {
+      timer = setInterval(() => {
+        setSessionTime((prev) => {
+          if (prev >= MAX_SESSION_SECONDS) {
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } else {
+      setSessionTime(0);
+    }
+    return () => clearInterval(timer);
+  }, [selectedGame, gameLoadingCountdown]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handlePlayGame = async (index: number) => {
     if (!user || !firestore) {
@@ -88,7 +114,6 @@ export default function GamesPage() {
       return;
     }
     
-    // Set state locally first for responsiveness
     setSessionEarnings(prev => {
         const newEarnings = [...prev];
         newEarnings[index] = 0;
@@ -109,7 +134,6 @@ export default function GamesPage() {
     setGameLoadingCountdown(LOADING_TIMER_DURATION);
     setSelectedGame({ game: games[index], index });
 
-    // Update firestore
     const userDocRef = doc(firestore, 'users', user.uid);
     try {
         await updateDoc(userDocRef, {
@@ -138,7 +162,6 @@ export default function GamesPage() {
                 description: error.message || 'Could not update game status.',
             });
         }
-        // Revert state if firestore update fails
         setIsPlaying(prev => {
             const newIsPlaying = [...prev];
             newIsPlaying[index] = false;
@@ -172,7 +195,7 @@ export default function GamesPage() {
 
   const handleClaimReward = async () => {
     if (!user || verifyingGameIndex === null || !firestore) {
-      throw new Error("User not logged in");
+      return;
     }
     
     const potentialReward = sessionEarnings[verifyingGameIndex];
@@ -189,10 +212,8 @@ export default function GamesPage() {
         const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
         const minutesPlayed = Math.round(playDuration / 60);
 
-        // Get a fresh Firebase ID token at runtime
-        const token = await user.getIdToken(); // auto-refreshes if expired
+        const token = await user.getIdToken();
 
-        // Call your Cloud Function
         const res = await fetch(
             "https://us-central1-earning-app-ff02b.cloudfunctions.net/claimGameCoins",
             {
@@ -201,7 +222,7 @@ export default function GamesPage() {
                 "Content-Type": "application/json",
                 "Authorization": "Bearer " + token
             },
-            body: JSON.stringify({ minutesPlayed }) // only minutesPlayed needed
+            body: JSON.stringify({ minutesPlayed })
             }
         );
 
@@ -289,6 +310,16 @@ export default function GamesPage() {
                     </div>
                 </div>
             )}
+            
+            {gameLoadingCountdown === 0 && (
+                <div className="absolute top-4 right-4 z-[60]">
+                    <Badge variant="secondary" className="flex items-center gap-2 py-1 px-3 bg-black/50 text-white backdrop-blur-sm border-none">
+                        <Timer className="h-4 w-4" />
+                        <span className="font-mono text-sm">{formatTime(sessionTime)}</span>
+                    </Badge>
+                </div>
+            )}
+
             <Button 
                 variant="ghost" 
                 size="icon" 
