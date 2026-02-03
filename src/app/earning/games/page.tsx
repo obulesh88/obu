@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { Gamepad2, ArrowLeft, RefreshCw, Timer } from 'lucide-react';
+import { Gamepad2, ArrowLeft, RefreshCw, Timer, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
@@ -18,6 +18,7 @@ const NUM_GAMES = 8;
 const REWARD_PER_SESSION = 3;
 const LOADING_TIMER_DURATION = 20;
 const MAX_SESSION_SECONDS = 1800; // 30 minutes
+const MIN_PLAY_TIME_SECONDS = 300; // 5 minutes
 
 const games = [
     { id: "count_rush", name: "Count Rush", url: "https://html5.gamemonetize.co/hbvt6ecfxfrtu62sm0km7c1gs23be5c2/" },
@@ -181,6 +182,15 @@ export default function GamesPage() {
       if (!selectedGame) return;
       const { index } = selectedGame;
       
+      if (sessionTime < MIN_PLAY_TIME_SECONDS) {
+          toast({ 
+              variant: 'destructive', 
+              title: "Time requirement not met", 
+              description: `You must play for at least 5 minutes to earn rewards. Current: ${formatTime(sessionTime)}`
+          });
+          return;
+      }
+
       setSessionEarnings(prev => {
           const newEarnings = [...prev];
           newEarnings[index] = REWARD_PER_SESSION;
@@ -192,6 +202,38 @@ export default function GamesPage() {
       setIsCaptchaOpen(true);
   };
 
+  const handleExitEarly = async () => {
+    if (!selectedGame || !user || !firestore) return;
+    const { index } = selectedGame;
+
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+        await updateDoc(userDocRef, {
+            'playGames.is_active': false,
+            'playGames.play_start': null,
+            'playGames.game_id': null,
+            'updatedAt': serverTimestamp(),
+        });
+    } catch (e) {
+        // Silent error
+    }
+
+    setIsPlaying(prev => {
+        const newIsPlaying = [...prev];
+        newIsPlaying[index] = false;
+        return newIsPlaying;
+    });
+    setGameStartTimes(prev => {
+        const newTimers = [...prev];
+        newTimers[index] = null;
+        return newTimers;
+    });
+    setSelectedGame(null);
+    toast({
+        title: "Session Cancelled",
+        description: "Game session ended without reward."
+    });
+  };
 
   const handleClaimReward = async () => {
     if (!user || verifyingGameIndex === null || !firestore) {
@@ -299,6 +341,8 @@ export default function GamesPage() {
   };
 
   if (selectedGame) {
+    const canClaim = sessionTime >= MIN_PLAY_TIME_SECONDS;
+
     return (
         <div ref={gameContainerRef} className="relative w-full flex-1 bg-black">
             {gameLoadingCountdown > 0 && (
@@ -312,7 +356,7 @@ export default function GamesPage() {
             )}
             
             {gameLoadingCountdown === 0 && (
-                <div className="absolute top-4 right-4 z-[60]">
+                <div className="absolute top-4 right-4 z-[60] flex items-center gap-2">
                     <Badge variant="secondary" className="flex items-center gap-2 py-1 px-3 bg-black/50 text-white backdrop-blur-sm border-none">
                         <Timer className="h-4 w-4" />
                         <span className="font-mono text-sm">{formatTime(sessionTime)}</span>
@@ -320,15 +364,32 @@ export default function GamesPage() {
                 </div>
             )}
 
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute top-4 left-4 z-[60] rounded-full bg-black/50 text-white hover:bg-black/75 hover:text-white"
-                onClick={handleEndGameAndClaim}
-            >
-                <ArrowLeft className="h-6 w-6" />
-                <span className="sr-only">Back to games</span>
-            </Button>
+            <div className="absolute top-4 left-4 z-[60] flex gap-2">
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="rounded-full bg-black/50 text-white hover:bg-black/75 hover:text-white"
+                    onClick={handleExitEarly}
+                    title="Exit without reward"
+                >
+                    <X className="h-6 w-6" />
+                    <span className="sr-only">Exit game</span>
+                </Button>
+
+                {canClaim && (
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-full bg-primary text-white hover:bg-primary/90"
+                        onClick={handleEndGameAndClaim}
+                        title="Back to claim reward"
+                    >
+                        <ArrowLeft className="h-6 w-6" />
+                        <span className="sr-only">Back to claim</span>
+                    </Button>
+                )}
+            </div>
+
             <iframe
                 src={selectedGame.game.url}
                 className="w-full h-full border-0"
@@ -346,8 +407,9 @@ export default function GamesPage() {
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
                     <li>Choose any game to start playing.</li>
-                    <li>When you are finished, click the back button in the game to solve a captcha and claim your 3 OR reward.</li>
-                    <li>Do not close or refresh the game to ensure you can claim your reward.</li>
+                    <li>Play for at least 5 minutes to unlock the claim button.</li>
+                    <li>When you are finished, click the claim button to solve a captcha and get your 3 OR reward.</li>
+                    <li>Exiting before 5 minutes will result in no reward.</li>
                 </ul>
             </CardDescription>
         </CardHeader>
@@ -374,8 +436,9 @@ export default function GamesPage() {
             <CardDescription>
                 <ul className="list-disc space-y-2 pl-5 mt-4 text-sm text-muted-foreground">
                     <li>Choose any game to start playing.</li>
-                    <li>When you are finished, click the back button in the game to solve a captcha and claim your 3 OR reward.</li>
-                    <li>Do not close or refresh the game to ensure you can claim your reward.</li>
+                    <li>Play for at least 5 minutes to unlock the claim button.</li>
+                    <li>When you are finished, click the claim button to solve a captcha and get your 3 OR reward.</li>
+                    <li>Exiting before 5 minutes will result in no reward.</li>
                 </ul>
             </CardDescription>
         </CardHeader>
