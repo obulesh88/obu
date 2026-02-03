@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { Gamepad2, ArrowLeft } from 'lucide-react';
+import { Gamepad2, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
@@ -16,6 +16,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 const NUM_GAMES = 8;
 const REWARD_PER_SESSION = 3;
+const LOADING_TIMER_DURATION = 20;
 
 const games = [
     { id: "count_rush", name: "Count Rush", url: "https://html5.gamemonetize.co/hbvt6ecfxfrtu62sm0km7c1gs23be5c2/" },
@@ -42,6 +43,7 @@ export default function GamesPage() {
   
   const [isCaptchaOpen, setIsCaptchaOpen] = useState(false);
   const [verifyingGameIndex, setVerifyingGameIndex] = useState<number | null>(null);
+  const [gameLoadingCountdown, setGameLoadingCountdown] = useState(0);
 
   const [gameStartTimes, setGameStartTimes] = useState<(number | null)[]>(Array(NUM_GAMES).fill(null));
 
@@ -63,6 +65,16 @@ export default function GamesPage() {
       setPaddingDisabled(false);
     };
   }, [selectedGame, setBottomNavVisible, setPaddingDisabled]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (gameLoadingCountdown > 0) {
+      timer = setInterval(() => {
+        setGameLoadingCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [gameLoadingCountdown]);
 
 
   const handlePlayGame = async (index: number) => {
@@ -93,6 +105,8 @@ export default function GamesPage() {
         newTimers[index] = Date.now();
         return newTimers;
     });
+    
+    setGameLoadingCountdown(LOADING_TIMER_DURATION);
     setSelectedGame({ game: games[index], index });
 
     // Update firestore
@@ -136,6 +150,7 @@ export default function GamesPage() {
             return newTimers;
         });
         setSelectedGame(null);
+        setGameLoadingCountdown(0);
     }
   };
 
@@ -265,6 +280,15 @@ export default function GamesPage() {
   if (selectedGame) {
     return (
         <div ref={gameContainerRef} className="relative w-full flex-1 bg-black">
+            {gameLoadingCountdown > 0 && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-4 text-center p-6">
+                        <RefreshCw className="h-12 w-12 animate-spin text-primary" />
+                        <h2 className="text-2xl font-bold">Preparing Game...</h2>
+                        <p className="text-muted-foreground">The game will be ready in {gameLoadingCountdown} seconds.</p>
+                    </div>
+                </div>
+            )}
             <Button 
                 variant="ghost" 
                 size="icon" 
