@@ -252,29 +252,6 @@ export default function GamesPage() {
     try {
         const startTime = gameStartTimes[verifyingGameIndex!];
         const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
-        const minutesPlayed = Math.round(playDuration / 60);
-
-        const token = await user.getIdToken();
-
-        const res = await fetch(
-            "https://us-central1-earning-app-ff02b.cloudfunctions.net/claimGameCoins",
-            {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token
-            },
-            body: JSON.stringify({ minutesPlayed })
-            }
-        );
-
-        if (!res.ok) {
-            const err = await res.text();
-            throw new Error("API error: " + err);
-        }
-
-        const data = await res.json();
-        console.log(data);
 
         await updateDoc(userDocRef, {
             'wallet.orBalance': increment(REWARD_PER_SESSION),
