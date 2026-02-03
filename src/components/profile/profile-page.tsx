@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -64,6 +65,10 @@ export default function ProfilePage() {
              <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
                 <Input id="email" type="email" value={userProfile.email ?? ''} readOnly />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input id="phoneNumber" value={userProfile.phoneNumber ?? ''} readOnly />
             </div>
         </CardContent>
       </Card>

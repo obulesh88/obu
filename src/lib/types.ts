@@ -1,6 +1,8 @@
+
 export type UserProfile = {
   uid: string;
   email: string;
+  phoneNumber: string;
   profile: {
     displayName: string;
     Uid: string;

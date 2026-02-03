@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
+  phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 type SignUpSchemaType = z.infer<typeof SignUpSchema>;
@@ -71,6 +73,7 @@ export default function LoginPage() {
       const newProfile = {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
+          phoneNumber: data.phoneNumber,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           profile: {
@@ -194,6 +197,11 @@ export default function LoginPage() {
                   <Label htmlFor="signup-email">Email</Label>
                   <Input id="signup-email" type="email" {...registerSignUp('email')} />
                   {errorsSignUp.email && <p className="text-destructive text-xs">{errorsSignUp.email.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">Phone Number</Label>
+                  <Input id="signup-phone" type="tel" {...registerSignUp('phoneNumber')} />
+                  {errorsSignUp.phoneNumber && <p className="text-destructive text-xs">{errorsSignUp.phoneNumber.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
