@@ -19,7 +19,46 @@ import { FirestorePermissionError } from '@/firebase/errors';
 const REWARD_AMOUNT = 5;
 const WATCH_DELAY = 15; // 15 seconds
 
-export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; onOpenChange: (open: boolean) => void; onComplete: () => void; }) {
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
+
+async function startAd(gameId: string, userId: string) {
+  try {
+    const res = await fetch(
+      "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${ANON_KEY}`,
+          "apikey": ANON_KEY
+        },
+        body: JSON.stringify({ gameId, userId })
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Error calling start-ad:", data);
+      return null;
+    }
+
+    console.log("start-ad response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error calling start-ad:", error);
+    return null;
+  }
+}
+
+interface AdDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onComplete: () => void;
+  gameId: string;
+}
+
+export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -46,6 +85,9 @@ export function AdDialog({ open, onOpenChange, onComplete }: { open: boolean; on
         toast({ variant: 'destructive', title: 'Not Authenticated' });
         return;
     }
+
+    // Call the Supabase Edge Function to start the ad session
+    await startAd(gameId, user.uid);
 
     setAdStartTime(Date.now());
     

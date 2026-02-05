@@ -102,6 +102,7 @@ export default function AdListPage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onComplete={handleAdComplete}
+        gameId={currentAdIndex !== null ? `ad_${currentAdIndex + 1}` : ''}
       />
     </Card>
   );
