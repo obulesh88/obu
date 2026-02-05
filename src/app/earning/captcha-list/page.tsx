@@ -13,27 +13,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
 const SUBMIT_DELAY = 15; // 15 seconds
 const CAPTCHA_STORAGE_KEY = 'or_wallet_completed_captchas';
 const CAPTCHA_DAY_KEY = 'or_wallet_captchas_last_day';
-
-const ads = [
-  "https://otieu.com/4/10481723",
-  "https://djxh1.com/4/10481073?var={your_source_id}",
-  "https://multicoloredsister.com/a7gvfy"
-];
-
-function getNextAd(userId: string): string {
-    if (typeof window === 'undefined' || !userId) return ads[0].replace('{your_source_id}', 'test-user');
-    let i = parseInt(localStorage.getItem("captchaAdIndex") || "0");
-    const link = ads[i].replace('{your_source_id}', userId);
-    localStorage.setItem("captchaAdIndex", String((i + 1) % ads.length));
-    return link;
-}
 
 function generateCaptcha() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -120,7 +106,7 @@ export default function CaptchaListPage() {
     setUserInputs(newInputs);
   };
 
-  const handleStart = async (index: number) => {
+  const handleStart = (index: number) => {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
@@ -133,31 +119,22 @@ export default function CaptchaListPage() {
     }
 
     const userDocRef = doc(firestore, 'users', user.uid);
-    try {
-        await updateDoc(userDocRef, {
-            'captcha.is_active': true,
-            'updatedAt': serverTimestamp()
+    const updateData = {
+        'captcha.is_active': true,
+        'updatedAt': serverTimestamp()
+    };
+
+    updateDoc(userDocRef, updateData)
+        .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+            }
         });
-    } catch (error: any) {
-        if (error.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: { 
-                    'captcha.is_active': true,
-                    'updatedAt': '(now)'
-                }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        } else {
-             toast({
-                variant: 'destructive',
-                title: 'An error occurred',
-                description: error.message || 'Could not start captcha.',
-            });
-        }
-        return;
-    }
 
     setSubmitting(prev => {
       const newState = [...prev];
@@ -170,9 +147,6 @@ export default function CaptchaListPage() {
       return newState;
     });
     
-    // const adUrl = getNextAd(user.uid);
-    // window.open(adUrl, '_blank');
-
     let currentCountdown = SUBMIT_DELAY;
     const timer = setInterval(() => {
         currentCountdown -= 1;
@@ -198,7 +172,7 @@ export default function CaptchaListPage() {
     }, 1000);
   };
 
-  const handleClaim = async (index: number) => {
+  const handleClaim = (index: number) => {
       if (!user || !firestore) return;
 
       setSubmitting(prev => {
@@ -208,63 +182,48 @@ export default function CaptchaListPage() {
       });
 
       const userDocRef = doc(firestore, 'users', user.uid);
-      try {
-        await updateDoc(userDocRef, {
-            'wallet.orBalance': increment(REWARD_PER_CAPTCHA),
-            'captcha.is_active': false,
-            'captcha.verifiedAt': serverTimestamp(),
-            'captcha.claimed': true,
-            'captcha.reward_comm': REWARD_PER_CAPTCHA,
-            'updatedAt': serverTimestamp()
+      const updateData = {
+          'wallet.orBalance': increment(REWARD_PER_CAPTCHA),
+          'captcha.is_active': false,
+          'captcha.verifiedAt': serverTimestamp(),
+          'captcha.claimed': true,
+          'captcha.reward_comm': REWARD_PER_CAPTCHA,
+          'updatedAt': serverTimestamp()
+      };
+
+      updateDoc(userDocRef, updateData)
+        .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+            }
         });
 
-        toast({
-          title: 'Success!',
-          description: `You earned ${REWARD_PER_CAPTCHA} OR coins.`,
-        });
+    toast({
+        title: 'Success!',
+        description: `You earned ${REWARD_PER_CAPTCHA} OR coins.`,
+    });
 
-        setCompleted(prev => {
-            const newState = [...prev];
-            newState[index] = true;
-            localStorage.setItem(CAPTCHA_STORAGE_KEY, JSON.stringify(newState));
-            return newState;
-        });
-        setReadyToClaim(prev => {
-            const newState = [...prev];
-            newState[index] = false;
-            return newState;
-        });
-
-      } catch (error: any) {
-        // Firebase permission errors have a specific code.
-        if (error.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: { 
-                    'wallet.orBalance': `increment(${REWARD_PER_CAPTCHA})`,
-                    'captcha.is_active': false,
-                    'captcha.verifiedAt': '(now)',
-                    'captcha.claimed': true,
-                    'captcha.reward_comm': REWARD_PER_CAPTCHA,
-                    'updatedAt': '(now)'
-                }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'An error occurred',
-            description: error.message || 'Could not award points.',
-          });
-        }
-      } finally {
-        setSubmitting(prev => {
-            const newState = [...prev];
-            newState[index] = false;
-            return newState;
-        });
-      }
+    setCompleted(prev => {
+        const newState = [...prev];
+        newState[index] = true;
+        localStorage.setItem(CAPTCHA_STORAGE_KEY, JSON.stringify(newState));
+        return newState;
+    });
+    setReadyToClaim(prev => {
+        const newState = [...prev];
+        newState[index] = false;
+        return newState;
+    });
+    setSubmitting(prev => {
+        const newState = [...prev];
+        newState[index] = false;
+        return newState;
+    });
   };
   
   const getButtonContent = (index: number) => {

@@ -11,7 +11,7 @@ import { useLayout } from '@/context/layout-context';
 import { GameCaptchaDialog } from '@/components/earning/game-captcha-dialog';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Badge } from '@/components/ui/badge';
 
 const NUM_GAMES = 8;
@@ -104,7 +104,7 @@ export default function GamesPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handlePlayGame = async (index: number) => {
+  const handlePlayGame = (index: number) => {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
@@ -136,46 +136,24 @@ export default function GamesPage() {
     setSelectedGame({ game: games[index], index });
 
     const userDocRef = doc(firestore, 'users', user.uid);
-    try {
-        await updateDoc(userDocRef, {
-            'playGames.is_active': true,
-            'playGames.play_start': serverTimestamp(),
-            'playGames.game_id': games[index].id,
-            'updatedAt': serverTimestamp(),
+    const updateData = {
+        'playGames.is_active': true,
+        'playGames.play_start': serverTimestamp(),
+        'playGames.game_id': games[index].id,
+        'updatedAt': serverTimestamp(),
+    };
+
+    updateDoc(userDocRef, updateData)
+        .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+            }
         });
-    } catch (error: any) {
-         if (error.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: { 
-                    'playGames.is_active': true,
-                    'playGames.play_start': '(now)',
-                    'playGames.game_id': games[index].id,
-                    'updatedAt': '(now)',
-                }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        } else {
-             toast({
-                variant: 'destructive',
-                title: 'Failed to start game',
-                description: error.message || 'Could not update game status.',
-            });
-        }
-        setIsPlaying(prev => {
-            const newIsPlaying = [...prev];
-            newIsPlaying[index] = false;
-            return newIsPlaying;
-        });
-        setGameStartTimes(prev => {
-            const newTimers = [...prev];
-            newTimers[index] = null;
-            return newTimers;
-        });
-        setSelectedGame(null);
-        setGameLoadingCountdown(0);
-    }
   };
 
   const handleEndGameAndClaim = () => {
@@ -202,21 +180,29 @@ export default function GamesPage() {
       setIsCaptchaOpen(true);
   };
 
-  const handleExitEarly = async () => {
+  const handleExitEarly = () => {
     if (!selectedGame || !user || !firestore) return;
     const { index } = selectedGame;
 
     const userDocRef = doc(firestore, 'users', user.uid);
-    try {
-        await updateDoc(userDocRef, {
-            'playGames.is_active': false,
-            'playGames.play_start': null,
-            'playGames.game_id': null,
-            'updatedAt': serverTimestamp(),
+    const updateData = {
+        'playGames.is_active': false,
+        'playGames.play_start': null,
+        'playGames.game_id': null,
+        'updatedAt': serverTimestamp(),
+    };
+
+    updateDoc(userDocRef, updateData)
+        .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+            }
         });
-    } catch (e) {
-        // Silent error
-    }
 
     setIsPlaying(prev => {
         const newIsPlaying = [...prev];
@@ -235,7 +221,7 @@ export default function GamesPage() {
     });
   };
 
-  const handleClaimReward = async () => {
+  const handleClaimReward = () => {
     if (!user || verifyingGameIndex === null || !firestore) {
       return;
     }
@@ -247,74 +233,59 @@ export default function GamesPage() {
         setVerifyingGameIndex(null);
         return;
     }
+
+    const startTime = gameStartTimes[verifyingGameIndex!];
+    const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
     const userDocRef = doc(firestore, 'users', user.uid);
 
-    try {
-        const startTime = gameStartTimes[verifyingGameIndex!];
-        const playDuration = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+    const updateData = {
+        'wallet.orBalance': increment(REWARD_PER_SESSION),
+        'playGames.total_play_seconds': increment(playDuration),
+        'playGames.is_active': false,
+        'playGames.play_start': null,
+        'playGames.verifiedAt': serverTimestamp(),
+        'playGames.claimed': true,
+        'playGames.reward_comm': REWARD_PER_SESSION,
+        'playGames.game_id': null,
+        'updatedAt': serverTimestamp(),
+    };
 
-        await updateDoc(userDocRef, {
-            'wallet.orBalance': increment(REWARD_PER_SESSION),
-            'playGames.total_play_seconds': increment(playDuration),
-            'playGames.is_active': false,
-            'playGames.play_start': null,
-            'playGames.verifiedAt': serverTimestamp(),
-            'playGames.claimed': true,
-            'playGames.reward_comm': REWARD_PER_SESSION,
-            'playGames.game_id': null,
-            'updatedAt': serverTimestamp(),
+    updateDoc(userDocRef, updateData)
+        .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+            }
         });
         
-      toast({
+    toast({
         title: 'Reward Claimed!',
         description: `You've earned ${REWARD_PER_SESSION} OR for playing ${games[verifyingGameIndex].name}.`,
-      });
-    } catch (error: any) {
-        if (error.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: { 
-                    'wallet.orBalance': `increment(${REWARD_PER_SESSION})`,
-                    'playGames.total_play_seconds': `increment(...)`,
-                    'playGames.is_active': false,
-                    'playGames.play_start': null,
-                    'playGames.verifiedAt': '(now)',
-                    'playGames.claimed': true,
-                    'playGames.reward_comm': REWARD_PER_SESSION,
-                    'playGames.game_id': null,
-                    'updatedAt': '(now)',
-                }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        } else {
-             toast({
-                variant: 'destructive',
-                title: 'Claim Failed',
-                description: error.message || 'Could not claim reward. Please try again.',
-            });
-        }
-    } finally {
-        setIsCaptchaOpen(false);
-        if (verifyingGameIndex !== null) {
-            setSessionEarnings(prev => {
-                const newEarnings = [...prev];
-                newEarnings[verifyingGameIndex] = 0;
-                return newEarnings;
-            });
-            setIsPlaying(prev => {
-                const newIsPlaying = [...prev];
-                newIsPlaying[verifyingGameIndex] = false;
-                return newIsPlaying;
-            });
-            setGameStartTimes(prev => {
-                const newTimers = [...prev];
-                newTimers[verifyingGameIndex] = null;
-                return newTimers;
-            });
-        }
-        setVerifyingGameIndex(null);
+    });
+
+    setIsCaptchaOpen(false);
+    if (verifyingGameIndex !== null) {
+        setSessionEarnings(prev => {
+            const newEarnings = [...prev];
+            newEarnings[verifyingGameIndex] = 0;
+            return newEarnings;
+        });
+        setIsPlaying(prev => {
+            const newIsPlaying = [...prev];
+            newIsPlaying[verifyingGameIndex] = false;
+            return newIsPlaying;
+        });
+        setGameStartTimes(prev => {
+            const newTimers = [...prev];
+            newTimers[verifyingGameIndex] = null;
+            return newTimers;
+        });
     }
+    setVerifyingGameIndex(null);
   };
 
   if (selectedGame) {

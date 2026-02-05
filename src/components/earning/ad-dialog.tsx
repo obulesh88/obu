@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const REWARD_AMOUNT = 5;
 const WATCH_DELAY = 15; // 15 seconds
@@ -22,28 +22,33 @@ const WATCH_DELAY = 15; // 15 seconds
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 async function startAd(gameId: string, userId: string) {
-  const res = await fetch(
-    "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${ANON_KEY}`,
-        "apikey": ANON_KEY
-      },
-      body: JSON.stringify({ gameId, userId })
+  try {
+    const res = await fetch(
+      "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${ANON_KEY}`,
+          "apikey": ANON_KEY
+        },
+        body: JSON.stringify({ gameId, userId })
+      }
+    );
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("Error calling start-ad:", errorText);
+      return null;
     }
-  );
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    console.error("Error calling start-ad:", data);
+    const data = await res.json();
+    console.log("start-ad response:", data);
+    return data;
+  } catch (error) {
+    console.error("Network error starting ad:", error);
     return null;
   }
-
-  console.log("start-ad response:", data);
-  return data;
 }
 
 interface AdDialogProps {
@@ -66,7 +71,6 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
 
   useEffect(() => {
     if (open) {
-      // Reset dialog state on open
       setStatus('Click "Watch Ad" to begin.');
       setShowClaimButton(false);
       setIsClaiming(false);
@@ -81,14 +85,24 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
         return;
     }
 
-    // Call the Supabase Edge Function to start the ad session
-    await startAd(gameId, user.uid);
+    setStatus('Connecting to ad server...');
+    setIsWatchButtonDisabled(true);
+
+    const result = await startAd(gameId, user.uid);
+    
+    if (!result) {
+        setStatus('Failed to start ad. Please try again.');
+        setIsWatchButtonDisabled(false);
+        toast({
+            variant: 'destructive',
+            title: 'Connection Error',
+            description: 'Could not initialize ad session. Check your internet connection.'
+        });
+        return;
+    }
 
     setAdStartTime(Date.now());
-    
     setStatus(`Watching ad... please wait ${WATCH_DELAY} seconds.`);
-    setShowClaimButton(false);
-    setIsWatchButtonDisabled(true);
 
     setTimeout(() => {
       setShowClaimButton(true);
@@ -96,7 +110,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
     }, WATCH_DELAY * 1000);
   };
 
-  const handleClaimReward = async () => {
+  const handleClaimReward = () => {
     if (!user || !firestore) {
         toast({ variant: 'destructive', title: 'Authentication error' });
         return;
@@ -109,47 +123,33 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
     setIsClaiming(true);
     const userDocRef = doc(firestore, 'users', user.uid);
     
-    try {
-        await updateDoc(userDocRef, {
-            'wallet.orBalance': increment(REWARD_AMOUNT),
-            'watchAds.verifiedAt': serverTimestamp(),
-            'watchAds.ad_completed': true,
-            'watchAds.reward_comm': REWARD_AMOUNT,
-            'updatedAt': serverTimestamp()
+    const updateData = {
+        'wallet.orBalance': increment(REWARD_AMOUNT),
+        'watchAds.verifiedAt': serverTimestamp(),
+        'watchAds.ad_completed': true,
+        'watchAds.reward_comm': REWARD_AMOUNT,
+        'updatedAt': serverTimestamp()
+    };
+
+    updateDoc(userDocRef, updateData)
+        .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                } satisfies SecurityRuleContext);
+                errorEmitter.emit('permission-error', permissionError);
+            }
         });
 
-      toast({
+    toast({
         title: 'Success!',
         description: `You have earned ${REWARD_AMOUNT} OR coins.`,
-      });
-      onComplete();
-      onOpenChange(false);
-
-    } catch (error: any) {
-        if (error.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: { 
-                    'wallet.orBalance': `increment(${REWARD_AMOUNT})`,
-                    'watchAds.verifiedAt': '(now)',
-                    'watchAds.ad_completed': true,
-                    'watchAds.reward_comm': REWARD_AMOUNT,
-                    'updatedAt': '(now)',
-                }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        } else {
-            console.error('Failed to award points: ', error);
-            toast({
-                variant: 'destructive',
-                title: 'An error occurred',
-                description: error.message || 'Could not award points.',
-            });
-        }
-    } finally {
-      setIsClaiming(false);
-    }
+    });
+    onComplete();
+    onOpenChange(false);
+    setIsClaiming(false);
   };
 
   return (

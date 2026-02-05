@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,8 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -67,7 +68,6 @@ export default function LoginPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await updateProfile(userCredential.user, { displayName: data.name });
 
-      // Create user profile in Firestore
       const userDocRef = doc(firestore, 'users', userCredential.user.uid);
       
       const newProfile = {
@@ -113,7 +113,17 @@ export default function LoginPage() {
           },
       };
 
-      await setDoc(userDocRef, newProfile);
+      setDoc(userDocRef, newProfile)
+          .catch(async (error: any) => {
+              if (error.code === 'permission-denied') {
+                  const permissionError = new FirestorePermissionError({
+                      path: userDocRef.path,
+                      operation: 'create',
+                      requestResourceData: newProfile,
+                  } satisfies SecurityRuleContext);
+                  errorEmitter.emit('permission-error', permissionError);
+              }
+          });
 
       toast({
         title: 'Sign Up Successful',
@@ -121,7 +131,6 @@ export default function LoginPage() {
       });
       router.push('/');
     } catch (error: any) {
-      console.error(error);
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
@@ -140,7 +149,6 @@ export default function LoginPage() {
       });
       router.push('/');
     } catch (error: any) {
-        console.error(error);
         toast({
             variant: 'destructive',
             title: 'Sign In Failed',
