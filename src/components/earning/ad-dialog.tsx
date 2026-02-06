@@ -19,38 +19,52 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 const REWARD_AMOUNT = 5;
 const WATCH_DELAY = 15; // 15 seconds
 
-const ANON_KEY_A = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
-const ANON_KEY_B = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
+const ANON_KEY = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
 
 async function startAdSession(gameId: string, userId: string, division: 'A' | 'B' | 'C') {
-  const isB = division === 'B';
-  const url = isB 
-    ? "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2" 
-    : "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
-  const key = isB ? ANON_KEY_B : ANON_KEY_A;
+  // Logic for Division A as requested
+  if (division === 'A') {
+    try {
+      const response = await fetch(
+        "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": ANON_KEY,
+            "Authorization": `Bearer ${ANON_KEY}`
+          },
+          body: JSON.stringify({ userId })
+        }
+      );
 
+      const data = await response.json();
+      if (data.success) {
+        return data;
+      }
+      console.error("Failed to start ad session:", data.error);
+      return null;
+    } catch (err) {
+      console.error("Error calling ad function:", err);
+      return null;
+    }
+  }
+
+  // Fallback for B and C
   try {
-    const res = await fetch(url, {
+    const res = await fetch("https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${key}`,
-        "apikey": key
+        "Authorization": `Bearer ${ANON_KEY}`,
+        "apikey": ANON_KEY
       },
       body: JSON.stringify({ gameId, userId })
     });
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error(`Error calling ${division} start-ad:`, errorText);
-      return null;
-    }
-
-    const data = await res.json();
-    console.log(`${division} start-ad response:`, data);
-    return data;
+    if (!res.ok) return null;
+    return await res.json();
   } catch (error) {
-    console.error(`Network error starting ${division} ad:`, error);
     return null;
   }
 }
@@ -101,15 +115,9 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
     
     if (hasStartedWatching && countdown > 0) {
       timer = setInterval(() => {
-        // Only countdown if the app tab is NOT visible (implies user is on ad tab)
+        // Strict timer: user must be on the ad page (implies app tab is hidden)
         if (document.visibilityState === 'hidden') {
-          setCountdown((prev) => {
-            const next = prev - 1;
-            if (next <= 0) {
-               return 0;
-            }
-            return next;
-          });
+          setCountdown((prev) => Math.max(0, prev - 1));
           setStatus("Ad in progress. Keep watching...");
         } else {
           setStatus("Timer Paused. Please return to the ad!");
@@ -130,46 +138,34 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
         return;
     }
 
+    const adWindow = window.open('about:blank', '_blank');
     setStatus('Connecting to ad server...');
     setIsWatchButtonDisabled(true);
 
     const result = await startAdSession(gameId, user.uid, division);
     
-    if (!result) {
+    if (result && (result.adUrl || result.success)) {
+        const adUrl = result.adUrl || 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
+        if (adWindow) adWindow.location.href = adUrl;
+        
+        setHasStartedWatching(true);
+        setCountdown(WATCH_DELAY);
+        setStatus(`Watching ad...`);
+    } else {
+        if (adWindow) adWindow.close();
         setStatus('Failed to start ad. Please try again.');
         setIsWatchButtonDisabled(false);
         toast({
             variant: 'destructive',
             title: 'Connection Error',
-            description: 'Could not initialize ad session. Check your internet connection.'
+            description: 'Could not initialize ad session.'
         });
-        return;
     }
-
-    // Trigger the ad to open in a new window/tab
-    // Use the URL from the response for Division B if it exists
-    const adUrl = (division === 'B' && result.adUrl) 
-      ? result.adUrl 
-      : 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
-    
-    window.open(adUrl, '_blank');
-
-    setHasStartedWatching(true);
-    setCountdown(WATCH_DELAY);
-    setStatus(`Watching ad...`);
   };
 
   const handleClaimReward = () => {
-    if (!user || !firestore) {
-        toast({ variant: 'destructive', title: 'Authentication error' });
-        return;
-    }
+    if (!user || !firestore) return;
     
-    if (countdown > 0) {
-        toast({ variant: 'destructive', title: "Please wait for the timer to complete." });
-        return;
-    }
-
     setIsClaiming(true);
     const userDocRef = doc(firestore, 'users', user.uid);
     
@@ -195,7 +191,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
 
     toast({
         title: 'Success!',
-        description: `You have earned ${REWARD_AMOUNT} OR coins.`,
+        description: `You earned ${REWARD_AMOUNT} OR coins.`,
     });
     
     onComplete();
@@ -209,7 +205,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
         <DialogHeader>
           <DialogTitle>🎥 Watch Ad & Earn</DialogTitle>
           <DialogDescription>
-            Watch an ad for {WATCH_DELAY} seconds. The timer only counts down while you are on the ad page.
+            Watch an ad for {WATCH_DELAY} seconds. The timer only counts down while you are looking at the ad.
           </DialogDescription>
         </DialogHeader>
         

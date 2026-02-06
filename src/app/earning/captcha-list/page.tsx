@@ -14,6 +14,7 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { Separator } from '@/components/ui/separator';
 
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
@@ -29,6 +30,38 @@ type CaptchaItem = {
   id: number;
   text: string;
 };
+
+const ANON_KEY = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
+
+async function callGetAd(userId: string) {
+  try {
+    const response = await fetch(
+      "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": ANON_KEY,
+          "Authorization": `Bearer ${ANON_KEY}`
+        },
+        body: JSON.stringify({ userId })
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log("Ad URL:", data.adUrl);
+      return data.adUrl;
+    } else {
+      console.error("Failed to get ad:", data.error);
+      return null;
+    }
+  } catch (err) {
+    console.error("Error calling ad function:", err);
+    return null;
+  }
+}
 
 export default function CaptchaListPage() {
   const { toast } = useToast();
@@ -106,7 +139,7 @@ export default function CaptchaListPage() {
     setUserInputs(newInputs);
   };
 
-  const handleStart = (index: number) => {
+  const handleStart = async (index: number) => {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
@@ -116,6 +149,18 @@ export default function CaptchaListPage() {
       toast({ variant: 'destructive', title: 'Incorrect Captcha' });
       refreshCaptcha(index);
       return;
+    }
+
+    const division = index < 3 ? 'A' : index < 6 ? 'B' : 'C';
+
+    if (division === 'A') {
+      const adWindow = window.open('about:blank', '_blank');
+      const adUrl = await callGetAd(user.uid);
+      if (adUrl && adWindow) {
+        adWindow.location.href = adUrl;
+      } else if (adWindow) {
+        adWindow.close();
+      }
     }
 
     const userDocRef = doc(firestore, 'users', user.uid);
@@ -233,43 +278,44 @@ export default function CaptchaListPage() {
       return 'Submit';
   };
 
-  const getButtonAction = (index: number) => {
-      if(readyToClaim[index]) return () => handleClaim(index);
-      return () => handleStart(index);
-  };
-
-  if (!isClient) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Solve the Captchas</CardTitle>
-          <CardDescription>Enter the characters for each captcha, click submit, wait {SUBMIT_DELAY} seconds, then claim your reward of {REWARD_PER_CAPTCHA} OR coins.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-8">
-            {Array.from({ length: NUM_CAPTCHAS }).map((_, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pb-4 border-b last:border-0 last:pb-0">
-                <div className="flex flex-col gap-2">
-                    <Label>Captcha #{index + 1}</Label>
-                    <div className="flex items-center gap-2">
-                        <Skeleton className="h-12 w-full" />
-                        <Button variant="ghost" size="icon" disabled>
-                            <RefreshCw className="h-5 w-5" />
-                        </Button>
-                    </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label>Your Answer</Label>
-                  <Skeleton className="h-10 w-full" />
-                </div>
-                <Skeleton className="h-10 w-full" />
+  const renderCaptchaItem = (index: number) => (
+    <div key={captchas[index]?.id || index} className={cn(
+      "grid grid-cols-1 md:grid-cols-3 gap-4 items-end pb-4 border-b last:border-0 last:pb-0",
+      completed[index] && "opacity-50"
+    )}>
+      <div className="flex flex-col gap-2">
+          <Label htmlFor={`captcha-display-${index}`}>Captcha #{index + 1}</Label>
+          <div id={`captcha-display-${index}`} className="flex items-center gap-2">
+              <div className="select-none rounded-md border bg-muted p-3 text-center font-mono text-xl tracking-widest flex-grow">
+              {captchas[index]?.text || '......'}
               </div>
-            ))}
+              <Button variant="ghost" size="icon" onClick={() => refreshCaptcha(index)} disabled={submitting[index] || completed[index] || readyToClaim[index]}>
+                  <RefreshCw className="h-5 w-5" />
+                  <span className="sr-only">Refresh Captcha</span>
+              </Button>
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={`captcha-input-${index}`}>Your Answer</Label>
+        <Input
+          id={`captcha-input-${index}`}
+          value={userInputs[index]}
+          onChange={(e) => handleInputChange(index, e.target.value)}
+          placeholder="Enter text"
+          autoComplete="off"
+          disabled={submitting[index] || completed[index] || readyToClaim[index]}
+          className="font-mono"
+        />
+      </div>
+      <Button 
+          onClick={readyToClaim[index] ? () => handleClaim(index) : () => handleStart(index)}
+          disabled={submitting[index] || completed[index] || (!userInputs[index] && !readyToClaim[index])} 
+          className="w-full"
+      >
+        {getButtonContent(index)}
+      </Button>
+    </div>
+  );
 
   return (
     <Card>
@@ -278,52 +324,52 @@ export default function CaptchaListPage() {
         <CardDescription>Enter the characters for each captcha, click submit, wait {SUBMIT_DELAY} seconds, then claim your reward of {REWARD_PER_CAPTCHA} OR coins.</CardDescription>
       </CardHeader>
       <CardContent>
-          {allCaptchasCompleted ? (
+          {!isClient ? (
+            <div className="space-y-8">
+               {Array.from({ length: 3 }).map((_, i) => (
+                 <Skeleton key={i} className="h-24 w-full" />
+               ))}
+            </div>
+          ) : allCaptchasCompleted ? (
             <div className="flex flex-col items-center justify-center text-center p-8 gap-4">
               <CheckCircle2 className="h-16 w-16 text-green-500" />
               <h3 className="text-xl font-bold">All Captchas Solved for Today!</h3>
               <p className="text-muted-foreground">Come back tomorrow for more rewards.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-8">
-              {captchas.map((captcha, index) => (
-                <div key={captcha.id} className={cn(
-                  "grid grid-cols-1 md:grid-cols-3 gap-4 items-end pb-4 border-b last:border-0 last:pb-0",
-                  completed[index] && "opacity-50"
-                )}>
-                  <div className="flex flex-col gap-2">
-                      <Label htmlFor={`captcha-display-${index}`}>Captcha #{index + 1}</Label>
-                      <div id={`captcha-display-${index}`} className="flex items-center gap-2">
-                          <div className="select-none rounded-md border bg-muted p-3 text-center font-mono text-xl tracking-widest flex-grow">
-                          {captcha.text}
-                          </div>
-                          <Button variant="ghost" size="icon" onClick={() => refreshCaptcha(index)} disabled={submitting[index] || completed[index] || readyToClaim[index]}>
-                              <RefreshCw className="h-5 w-5" />
-                              <span className="sr-only">Refresh Captcha</span>
-                          </Button>
-                      </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor={`captcha-input-${index}`}>Your Answer</Label>
-                    <Input
-                      id={`captcha-input-${index}`}
-                      value={userInputs[index]}
-                      onChange={(e) => handleInputChange(index, e.target.value)}
-                      placeholder="Enter text"
-                      autoComplete="off"
-                      disabled={submitting[index] || completed[index] || readyToClaim[index]}
-                      className="font-mono"
-                    />
-                  </div>
-                  <Button 
-                      onClick={getButtonAction(index)}
-                      disabled={submitting[index] || completed[index] || (!userInputs[index] && !readyToClaim[index])} 
-                      className="w-full"
-                  >
-                    {getButtonContent(index)}
-                  </Button>
+            <div className="flex flex-col gap-10">
+              {/* Division A */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-primary">Division A</h3>
+                  <Separator className="flex-1" />
                 </div>
-              ))}
+                <div className="space-y-6">
+                  {[0, 1, 2].map(index => renderCaptchaItem(index))}
+                </div>
+              </div>
+
+              {/* Division B */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-primary">Division B</h3>
+                  <Separator className="flex-1" />
+                </div>
+                <div className="space-y-6">
+                  {[3, 4, 5].map(index => renderCaptchaItem(index))}
+                </div>
+              </div>
+
+              {/* Division C */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-primary">Division C</h3>
+                  <Separator className="flex-1" />
+                </div>
+                <div className="space-y-6">
+                  {[6, 7, 8, 9].map(index => renderCaptchaItem(index))}
+                </div>
+              </div>
             </div>
           )}
       </CardContent>
