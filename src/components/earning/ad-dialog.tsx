@@ -101,6 +101,10 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
         return;
     }
 
+    // Trigger the ad to open in a new window/tab
+    const adUrl = 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
+    window.open(adUrl, '_blank');
+
     setAdStartTime(Date.now());
     setStatus(`Watching ad... please wait ${WATCH_DELAY} seconds.`);
 
@@ -115,6 +119,8 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
         toast({ variant: 'destructive', title: 'Authentication error' });
         return;
     }
+    
+    // Check if enough time has passed
     if (Date.now() - adStartTime < WATCH_DELAY * 1000) {
         toast({ variant: 'destructive', title: "Please wait full ad time" });
         return;
@@ -133,7 +139,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
 
     updateDoc(userDocRef, updateData)
         .catch(async (error: any) => {
-            if (error.code === 'permission-denied') {
+            if (error.code === 'permission-denied' || error.message?.includes('permissions')) {
                 const permissionError = new FirestorePermissionError({
                     path: userDocRef.path,
                     operation: 'update',
@@ -147,6 +153,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
         title: 'Success!',
         description: `You have earned ${REWARD_AMOUNT} OR coins.`,
     });
+    
     onComplete();
     onOpenChange(false);
     setIsClaiming(false);
