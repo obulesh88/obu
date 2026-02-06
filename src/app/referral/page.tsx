@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,12 +39,17 @@ export default function ReferralPage() {
         console.error('Share failed:', err);
       }
     } else {
-      copyToClipboard(referralLink, 'Referral link copied to clipboard.');
+      // Fallback: Copy to clipboard and suggest WhatsApp manual share
+      copyToClipboard(referralLink, 'Referral link copied. You can now paste it in WhatsApp.');
     }
   };
 
   const handleVerifyReferral = async () => {
-    if (!user) return;
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Not Authenticated' });
+      return;
+    }
+    
     setIsVerifying(true);
     try {
       const response = await fetch(
@@ -63,18 +67,17 @@ export default function ReferralPage() {
       );
 
       const data = await response.json();
-      console.log("Referral Verification Response:", data);
       
       toast({
-        title: "Verification Triggered",
-        description: data.message || "Your referral status is being processed by the system.",
+        title: "Verification Request Sent",
+        description: data.message || "Your referral status is being processed. This may take a moment to reflect in your balance.",
       });
     } catch (err) {
       console.error("Error calling referral function:", err);
       toast({
         variant: "destructive",
         title: "Verification Failed",
-        description: "Could not connect to verification server.",
+        description: "Could not connect to the verification server. Please try again later.",
       });
     } finally {
       setIsVerifying(false);
@@ -96,8 +99,11 @@ export default function ReferralPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card className="bg-primary text-primary-foreground">
-        <CardHeader>
+      <Card className="bg-primary text-primary-foreground border-none shadow-xl overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+          <Gift className="h-32 w-32 rotate-12" />
+        </div>
+        <CardHeader className="relative z-10">
           <CardTitle className="text-2xl flex items-center gap-2">
             <Gift className="h-6 w-6" />
             Refer & Earn
@@ -106,38 +112,36 @@ export default function ReferralPage() {
             Invite your friends and earn bonus OR coins for every active user you refer!
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative z-10">
           <div className="space-y-4">
-            <div className="bg-white/10 rounded-lg p-4 space-y-4">
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-sm font-medium uppercase tracking-wider">Your Referral Code</p>
-                <div className="flex items-center gap-2 w-full max-w-xs">
-                  <Input 
-                    value={referralCode} 
-                    readOnly 
-                    className="bg-white/20 border-white/30 text-white font-mono text-center text-xl font-bold uppercase"
-                  />
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 space-y-6 border border-white/20">
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-xs font-bold uppercase tracking-widest opacity-80">Your Unique Referral Code</p>
+                <div className="flex items-center gap-2 w-full max-w-sm">
+                  <div className="flex-1 bg-white/20 border border-white/30 rounded-lg py-3 px-4 text-white font-mono text-center text-2xl font-black uppercase tracking-tighter">
+                    {referralCode}
+                  </div>
                   <Button 
                     variant="secondary" 
                     size="icon" 
+                    className="h-12 w-12 rounded-lg"
                     onClick={() => copyToClipboard(referralCode, 'Referral code copied.')}
                   >
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
 
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-sm font-medium uppercase tracking-wider">Your Referral Link</p>
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-xs font-bold uppercase tracking-widest opacity-80">Your Sharing Link</p>
                 <div className="flex items-center gap-2 w-full">
-                  <Input 
-                    value={referralLink} 
-                    readOnly 
-                    className="bg-white/20 border-white/30 text-white text-xs"
-                  />
+                  <div className="flex-1 bg-white/20 border border-white/30 rounded-lg py-2 px-3 text-white text-xs truncate font-mono">
+                    {referralLink}
+                  </div>
                   <Button 
                     variant="secondary" 
                     size="icon" 
+                    className="h-10 w-10 rounded-lg"
                     onClick={() => copyToClipboard(referralLink, 'Referral link copied.')}
                   >
                     <LinkIcon className="h-4 w-4" />
@@ -146,18 +150,21 @@ export default function ReferralPage() {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Button className="w-full bg-white text-primary hover:bg-white/90" onClick={handleShare}>
-                <Share2 className="mr-2 h-4 w-4" />
-                Share Link
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Button 
+                className="w-full h-12 bg-white text-primary hover:bg-white/90 font-bold shadow-lg" 
+                onClick={handleShare}
+              >
+                <Share2 className="mr-2 h-5 w-5" />
+                Invite Friends
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full bg-transparent border-white text-white hover:bg-white/10"
+                className="w-full h-12 bg-transparent border-white text-white hover:bg-white/10 font-bold"
                 onClick={handleVerifyReferral}
                 disabled={isVerifying}
               >
-                {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
                 Verify Status
               </Button>
             </div>
@@ -166,46 +173,50 @@ export default function ReferralPage() {
       </Card>
 
       <div className="grid grid-cols-2 gap-4">
-        <Card>
+        <Card className="shadow-md border-none">
           <CardContent className="pt-6 text-center">
-            <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-            <p className="text-2xl font-bold">{userProfile?.referral?.referralCount || 0}</p>
-            <p className="text-xs text-muted-foreground uppercase">Total Referrals</p>
+            <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Users className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-3xl font-black">{userProfile?.referral?.referralCount || 0}</p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Successful Invites</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-md border-none">
           <CardContent className="pt-6 text-center">
-            <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{userProfile?.referral?.totalReferralEarnings || 0} OR</p>
-            <p className="text-xs text-muted-foreground uppercase">Earnings</p>
+            <div className="bg-yellow-500/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Trophy className="h-6 w-6 text-yellow-600" />
+            </div>
+            <p className="text-3xl font-black">{userProfile?.referral?.totalReferralEarnings || 0}</p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Bonus OR Earned</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="shadow-md border-none">
         <CardHeader>
-          <CardTitle>How it works</CardTitle>
+          <CardTitle className="text-lg">How It Works</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div className="flex gap-4">
-            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">1</div>
+            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">1</div>
             <div>
-              <p className="font-semibold">Share your link</p>
-              <p className="text-sm text-muted-foreground">Send your unique referral link to your friends.</p>
+              <p className="font-bold text-sm">Share your link</p>
+              <p className="text-xs text-muted-foreground mt-1">Send your unique link to friends via WhatsApp, Telegram, or SMS.</p>
             </div>
           </div>
           <div className="flex gap-4">
-            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">2</div>
+            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">2</div>
             <div>
-              <p className="font-semibold">Friends sign up</p>
-              <p className="text-sm text-muted-foreground">When they join via your link, they are tracked as your referral.</p>
+              <p className="font-bold text-sm">Friends join & verify</p>
+              <p className="text-xs text-muted-foreground mt-1">When they sign up using your link, they are automatically linked to your account.</p>
             </div>
           </div>
           <div className="flex gap-4">
-            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">3</div>
+            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">3</div>
             <div>
-              <p className="font-semibold">Earn rewards</p>
-              <p className="text-sm text-muted-foreground">Receive bonus OR coins instantly for every active user you refer.</p>
+              <p className="font-bold text-sm">Earn your bonus</p>
+              <p className="text-xs text-muted-foreground mt-1">Both you and your friend receive OR rewards once the referral is verified!</p>
             </div>
           </div>
         </CardContent>
