@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { Copy, Share2, Users, Trophy, Gift, Link as LinkIcon, ShieldCheck, Loader2 } from 'lucide-react';
@@ -18,6 +17,7 @@ export default function ReferralPage() {
 
   const referralCode = userProfile?.referral?.referralCode || '';
   const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/login?ref=${referralCode}` : '';
+  const shareMessage = `Join OR-wallet using my referral code ${referralCode} and start earning rewards! ${referralLink}`;
 
   const copyToClipboard = (text: string, description: string) => {
     navigator.clipboard.writeText(text);
@@ -32,15 +32,16 @@ export default function ReferralPage() {
       try {
         await navigator.share({
           title: 'Join OR-wallet',
-          text: `Use my referral code ${referralCode} to join OR-wallet and start earning rewards!`,
+          text: shareMessage,
           url: referralLink,
         });
       } catch (err) {
         console.error('Share failed:', err);
       }
     } else {
-      // Fallback for desktop: Copy link and show toast
-      copyToClipboard(referralLink, 'Referral link copied. Share it with your friends!');
+      // Fallback: Open WhatsApp directly
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
+      window.open(whatsappUrl, '_blank');
     }
   };
 
