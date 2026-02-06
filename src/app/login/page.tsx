@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -62,6 +63,12 @@ export default function LoginPage() {
     resolver: zodResolver(SignInSchema),
   });
 
+  const generateReferralCode = (name: string) => {
+    const base = name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const random = Math.floor(1000 + Math.random() * 9000);
+    return `${base}${random}`;
+  };
+
   const onSignUp: SubmitHandler<SignUpSchemaType> = async (data) => {
     if (!auth || !firestore) return;
     try {
@@ -84,6 +91,12 @@ export default function LoginPage() {
               orBalance: 0,
               inrBalance: 0,
               walletAddress: `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+          },
+          referral: {
+            referralCode: generateReferralCode(data.name),
+            referredBy: null,
+            referralCount: 0,
+            totalReferralEarnings: 0,
           },
           captcha: {
             is_active: false,

@@ -28,6 +28,16 @@
           },
           "required": ["orBalance", "inrBalance", "walletAddress"]
         },
+        "referral": {
+          "type": "object",
+          "properties": {
+            "referralCode": { "type": "string" },
+            "referredBy": { "type": ["string", "null"] },
+            "referralCount": { "type": "number" },
+            "totalReferralEarnings": { "type": "number" }
+          },
+          "required": ["referralCode", "referralCount", "totalReferralEarnings"]
+        },
         "captcha": {
           "type": "object",
           "properties": {
@@ -67,7 +77,7 @@
           }
         }
       },
-      "required": ["uid", "email", "phoneNumber", "createdAt", "profile", "wallet"]
+      "required": ["uid", "email", "phoneNumber", "createdAt", "profile", "wallet", "referral"]
     }
   },
   "auth": {

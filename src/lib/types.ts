@@ -12,6 +12,12 @@ export type UserProfile = {
     inrBalance: number;
     walletAddress: string;
   };
+  referral: {
+    referralCode: string;
+    referredBy: string | null;
+    referralCount: number;
+    totalReferralEarnings: number;
+  };
   createdAt: any;
   updatedAt: any;
   captcha: {
@@ -46,7 +52,7 @@ export type EarningTransaction = {
   id: string;
   userId: string;
   amount: number;
-  type: 'ad' | 'captcha' | 'game';
+  type: 'ad' | 'captcha' | 'game' | 'referral';
   description: string;
   createdAt: Date;
   playTimeInSeconds?: number;

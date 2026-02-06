@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Home, RefreshCw, Wallet, User, CircleDollarSign } from 'lucide-react';
+import { Home, RefreshCw, Wallet, User, CircleDollarSign, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useLayout } from '@/context/layout-context';
@@ -15,7 +16,7 @@ export function BottomNav() {
   const navItems = [
     { href: '/', icon: <Home />, label: 'Home' },
     { href: '/earning', icon: <CircleDollarSign />, label: 'Earn' },
-    { href: '/convert', icon: <RefreshCw />, label: 'Convert' },
+    { href: '/referral', icon: <Gift />, label: 'Refer' },
     { href: '/wallet', icon: <Wallet />, label: 'Wallet' },
     { href: '/profile', icon: <User />, label: 'Profile' },
   ];
