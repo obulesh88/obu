@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -69,6 +69,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
   const [isWatchButtonDisabled, setIsWatchButtonDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [hasStartedWatching, setHasStartedWatching] = useState(false);
+  const [isTabVisible, setIsTabVisible] = useState(true);
 
   useEffect(() => {
     if (open) {
@@ -82,15 +83,39 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
   }, [open]);
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsTabVisible(document.visibilityState === 'visible');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (countdown > 0) {
+    
+    if (hasStartedWatching && countdown > 0) {
       timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
+        // Strict logic: only countdown if the app tab is HIDDEN
+        // (This implies the user is likely looking at the ad tab)
+        if (document.visibilityState === 'hidden') {
+          setCountdown((prev) => {
+            const next = prev - 1;
+            if (next <= 0) {
+               return 0;
+            }
+            return next;
+          });
+          setStatus("Ad in progress. Keep watching...");
+        } else {
+          setStatus("Timer Paused. Please return to the ad!");
+        }
       }, 1000);
     } else if (hasStartedWatching && countdown === 0) {
       setShowClaimButton(true);
       setStatus("You can now claim your reward.");
     }
+    
     return () => clearInterval(timer);
   }, [countdown, hasStartedWatching]);
 
@@ -132,7 +157,6 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
         return;
     }
     
-    // Safety check for timer
     if (countdown > 0) {
         toast({ variant: 'destructive', title: "Please wait for the timer to complete." });
         return;
@@ -177,14 +201,14 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
         <DialogHeader>
           <DialogTitle>🎥 Watch Ad & Earn</DialogTitle>
           <DialogDescription>
-            Watch an ad for {WATCH_DELAY} seconds, then claim your reward of {REWARD_AMOUNT} OR coins.
+            Watch an ad for {WATCH_DELAY} seconds. The timer only counts down while you are on the ad page.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="text-center font-semibold p-6 border rounded-md bg-muted flex flex-col items-center justify-center gap-2">
-            <span>{status}</span>
+        <div className="text-center font-semibold p-6 border rounded-md bg-muted flex flex-col items-center justify-center gap-2 min-h-[120px]">
+            <span className={!isTabVisible && countdown > 0 ? "text-primary animate-pulse" : ""}>{status}</span>
             {countdown > 0 && (
-              <span className="text-3xl font-mono text-primary animate-pulse">{countdown}s</span>
+              <span className="text-4xl font-mono text-primary">{countdown}s</span>
             )}
         </div>
 
