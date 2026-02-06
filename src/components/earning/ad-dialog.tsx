@@ -67,7 +67,8 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
   const [isClaiming, setIsClaiming] = useState(false);
   const [showClaimButton, setShowClaimButton] = useState(false);
   const [isWatchButtonDisabled, setIsWatchButtonDisabled] = useState(false);
-  const [adStartTime, setAdStartTime] = useState(0);
+  const [countdown, setCountdown] = useState(0);
+  const [hasStartedWatching, setHasStartedWatching] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -75,8 +76,23 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
       setShowClaimButton(false);
       setIsClaiming(false);
       setIsWatchButtonDisabled(false);
+      setCountdown(0);
+      setHasStartedWatching(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (hasStartedWatching && countdown === 0) {
+      setShowClaimButton(true);
+      setStatus("You can now claim your reward.");
+    }
+    return () => clearInterval(timer);
+  }, [countdown, hasStartedWatching]);
 
 
   const handleWatchAd = async () => {
@@ -105,13 +121,9 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
     const adUrl = 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
     window.open(adUrl, '_blank');
 
-    setAdStartTime(Date.now());
-    setStatus(`Watching ad... please wait ${WATCH_DELAY} seconds.`);
-
-    setTimeout(() => {
-      setShowClaimButton(true);
-      setStatus("You can now claim your reward.");
-    }, WATCH_DELAY * 1000);
+    setHasStartedWatching(true);
+    setCountdown(WATCH_DELAY);
+    setStatus(`Watching ad...`);
   };
 
   const handleClaimReward = () => {
@@ -120,9 +132,9 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
         return;
     }
     
-    // Check if enough time has passed
-    if (Date.now() - adStartTime < WATCH_DELAY * 1000) {
-        toast({ variant: 'destructive', title: "Please wait full ad time" });
+    // Safety check for timer
+    if (countdown > 0) {
+        toast({ variant: 'destructive', title: "Please wait for the timer to complete." });
         return;
     }
 
@@ -139,14 +151,12 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
 
     updateDoc(userDocRef, updateData)
         .catch(async (error: any) => {
-            if (error.code === 'permission-denied' || error.message?.includes('permissions')) {
-                const permissionError = new FirestorePermissionError({
-                    path: userDocRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData,
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
-            }
+            const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: updateData,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
         });
 
     toast({
@@ -169,13 +179,16 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
           </DialogDescription>
         </DialogHeader>
         
-        <div className="text-center font-semibold p-4 border rounded-md bg-muted">
-            {status}
+        <div className="text-center font-semibold p-6 border rounded-md bg-muted flex flex-col items-center justify-center gap-2">
+            <span>{status}</span>
+            {countdown > 0 && (
+              <span className="text-3xl font-mono text-primary animate-pulse">{countdown}s</span>
+            )}
         </div>
 
         <DialogFooter className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-          <Button type="button" onClick={handleWatchAd} disabled={isWatchButtonDisabled}>
-             ▶ Watch Ad
+          <Button type="button" onClick={handleWatchAd} disabled={isWatchButtonDisabled || (hasStartedWatching && countdown > 0)}>
+             {hasStartedWatching && countdown > 0 ? 'Ad in Progress...' : '▶ Watch Ad'}
           </Button>
           {showClaimButton && (
             <Button type="button" onClick={handleClaimReward} disabled={isClaiming}>
