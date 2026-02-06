@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -96,8 +96,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
     
     if (hasStartedWatching && countdown > 0) {
       timer = setInterval(() => {
-        // Strict logic: only countdown if the app tab is HIDDEN
-        // (This implies the user is likely looking at the ad tab)
+        // Only countdown if the app tab is NOT visible (implies user is on ad tab)
         if (document.visibilityState === 'hidden') {
           setCountdown((prev) => {
             const next = prev - 1;
@@ -197,7 +196,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>🎥 Watch Ad & Earn</DialogTitle>
           <DialogDescription>

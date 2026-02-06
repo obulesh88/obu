@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { AdDialog } from '@/components/earning/ad-dialog';
 import { Tv, CheckCircle2 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 const NUM_ADS = 10;
 const REWARD_PER_AD = 5;
@@ -66,44 +67,87 @@ export default function AdListPage() {
     }
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Watch Ads & Earn</CardTitle>
-        <CardDescription>
-          Watch a short ad to earn {REWARD_PER_AD} OR coins. You can watch up to {NUM_ADS} ads.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {allAdsCompleted ? (
-          <div className="flex flex-col items-center justify-center text-center p-8 gap-4">
-            <CheckCircle2 className="h-16 w-16 text-green-500" />
-            <h3 className="text-xl font-bold">All Ads Watched for Today!</h3>
-            <p className="text-muted-foreground">Come back tomorrow for more rewards.</p>
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: NUM_ADS }).map((_, index) => (
-              <Card key={index}>
-                <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                  <Tv className="h-10 w-10 text-primary mb-4" />
-                  <p className="font-semibold mb-2">Ad #{index + 1}</p>
-                  <p className="text-sm text-muted-foreground mb-4">Earn {REWARD_PER_AD} OR</p>
-                  <Button onClick={() => handleWatchAdClick(index)} disabled={completed[index]}>
-                    {completed[index] ? 'Completed' : 'Watch Ad'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+  const renderAdCard = (index: number) => (
+    <Card key={index} className="overflow-hidden border-primary/10 transition-colors hover:border-primary/30">
+      <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+        <div className="rounded-full bg-primary/10 p-3 mb-4">
+          <Tv className="h-6 w-6 text-primary" />
+        </div>
+        <p className="font-semibold mb-1">Ad #{index + 1}</p>
+        <p className="text-xs text-muted-foreground mb-4">Reward: {REWARD_PER_AD} OR</p>
+        <Button 
+          onClick={() => handleWatchAdClick(index)} 
+          disabled={completed[index]}
+          variant={completed[index] ? "secondary" : "default"}
+          className="w-full"
+        >
+          {completed[index] ? 'Completed' : 'Watch Ad'}
+        </Button>
       </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Watch Ads & Earn</CardTitle>
+          <CardDescription>
+            Watch short ads to earn OR coins. You can watch up to {NUM_ADS} ads daily.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {allAdsCompleted ? (
+            <div className="flex flex-col items-center justify-center text-center p-8 gap-4">
+              <CheckCircle2 className="h-16 w-16 text-green-500" />
+              <h3 className="text-xl font-bold">All Ads Watched for Today!</h3>
+              <p className="text-muted-foreground">Come back tomorrow for more rewards.</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Division A */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-primary">Division A</h3>
+                  <Separator className="flex-1" />
+                </div>
+                <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+                  {[0, 1, 2].map(index => renderAdCard(index))}
+                </div>
+              </div>
+
+              {/* Division B */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-primary">Division B</h3>
+                  <Separator className="flex-1" />
+                </div>
+                <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+                  {[3, 4, 5].map(index => renderAdCard(index))}
+                </div>
+              </div>
+
+              {/* Division C */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-bold text-primary">Division C</h3>
+                  <Separator className="flex-1" />
+                </div>
+                <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                  {[6, 7, 8, 9].map(index => renderAdCard(index))}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <AdDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onComplete={handleAdComplete}
         gameId={currentAdIndex !== null ? `ad_${currentAdIndex + 1}` : ''}
       />
-    </Card>
+    </div>
   );
 }
