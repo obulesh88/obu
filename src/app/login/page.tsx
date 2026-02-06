@@ -18,6 +18,8 @@ import { doc, setDoc, serverTimestamp, collection, addDoc } from 'firebase/fires
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
+const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
+
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
@@ -32,6 +34,24 @@ const SignInSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 type SignInSchemaType = z.infer<typeof SignInSchema>;
+
+async function verifyReferralBackend(userId: string) {
+  try {
+    await fetch(
+      "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${AUTH_TOKEN}`
+        },
+        body: JSON.stringify({ userId })
+      }
+    );
+  } catch (err) {
+    console.error("Auto-verification error:", err);
+  }
+}
 
 function LoginContent() {
   const router = useRouter();
@@ -75,7 +95,7 @@ function LoginContent() {
   });
 
   const generateReferralCode = (name: string) => {
-    const base = name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const base = name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
     const random = Math.random().toString(36).substring(2, 7).toUpperCase();
     return `${base}${random}`;
   };
@@ -89,6 +109,8 @@ function LoginContent() {
       const myReferralCode = generateReferralCode(data.name);
       const userDocRef = doc(firestore, 'users', userCredential.user.uid);
       
+      const referralCodeUsed = data.referredBy?.trim() || null;
+
       const newProfile = {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
@@ -106,7 +128,7 @@ function LoginContent() {
           },
           referral: {
             referralCode: myReferralCode,
-            referredBy: data.referredBy || null,
+            referredBy: referralCodeUsed,
             referralCount: 0,
             totalReferralEarnings: 0,
           },
@@ -150,32 +172,29 @@ function LoginContent() {
               }
           });
 
-      if (data.referredBy) {
+      if (referralCodeUsed) {
+        // Create the referral record for tracking
         const referralsRef = collection(firestore, 'referrals');
         const referralData = {
-          referrerUid: "", // Backend handles mapping code to UID
+          referrerUid: "", // Will be mapped by backend
           referredUid: userCredential.user.uid,
-          referralCode: data.referredBy,
+          referralCode: referralCodeUsed,
           referralDate: serverTimestamp(),
         };
         
-        addDoc(referralsRef, referralData).catch(async (error: any) => {
-          if (error.code === 'permission-denied') {
-            const permissionError = new FirestorePermissionError({
-                path: 'referrals',
-                operation: 'create',
-                requestResourceData: referralData,
-            } satisfies SecurityRuleContext);
-            errorEmitter.emit('permission-error', permissionError);
-          }
-        });
+        addDoc(referralsRef, referralData).catch(() => {});
+        
+        // Trigger automated verification to update referrer's balance
+        verifyReferralBackend(userCredential.user.uid);
       }
 
       toast({
         title: 'Sign Up Successful',
         description: `Welcome! Your unique referral code is ${myReferralCode}.`,
       });
-      router.push('/');
+      
+      // Delay redirect slightly to ensure writes are initiated
+      setTimeout(() => router.push('/'), 500);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -275,7 +294,7 @@ function LoginContent() {
                   )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isSubmittingSignUp}>
-                    {isSubmittingSignUp ? 'Creating Account...' : 'Sign Up & Start Earning'}
+                    {isSubmittingSignUp ? 'Creating Account...' : 'Sign-Up'}
                 </Button>
               </form>
             </TabsContent>
