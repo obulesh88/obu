@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
-import { Copy, Share2, Users, Trophy, Gift, Link as LinkIcon } from 'lucide-react';
+import { Copy, Users, Trophy, Gift, Link as LinkIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const REFERRAL_REWARD_AMOUNT = 3000;
@@ -15,7 +15,6 @@ export default function ReferralPage() {
 
   const referralCode = userProfile?.referral?.referralCode || '';
   const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/login?ref=${referralCode}` : '';
-  const shareMessage = `Join OR-wallet using my referral code ${referralCode} and start earning rewards! Get ${REFERRAL_REWARD_AMOUNT} OR coins bonus on sign up. ${referralLink}`;
 
   const copyToClipboard = (text: string, description: string) => {
     navigator.clipboard.writeText(text);
@@ -23,22 +22,6 @@ export default function ReferralPage() {
       title: 'Copied!',
       description,
     });
-  };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Join OR-wallet',
-          text: shareMessage,
-        });
-      } catch (err) {
-        // User cancelled or share failed
-      }
-    } else {
-      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
-      window.open(whatsappUrl, '_blank');
-    }
   };
 
   if (loading) {
@@ -105,16 +88,6 @@ export default function ReferralPage() {
                   </Button>
                 </div>
               </div>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-4">
-              <Button 
-                className="w-full h-14 bg-white text-primary hover:bg-white/90 font-bold shadow-lg text-lg" 
-                onClick={handleShare}
-              >
-                <Share2 className="mr-2 h-6 w-6" />
-                Share Invite
-              </Button>
             </div>
           </div>
         </CardContent>
