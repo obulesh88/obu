@@ -87,6 +87,13 @@ export default function AdListPage() {
     </Card>
   );
 
+  const getCurrentDivision = () => {
+    if (currentAdIndex === null) return 'A';
+    if (currentAdIndex < 3) return 'A';
+    if (currentAdIndex < 6) return 'B';
+    return 'C';
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
@@ -147,6 +154,7 @@ export default function AdListPage() {
         onOpenChange={setIsDialogOpen}
         onComplete={handleAdComplete}
         gameId={currentAdIndex !== null ? `ad_${currentAdIndex + 1}` : ''}
+        division={getCurrentDivision()}
       />
     </div>
   );

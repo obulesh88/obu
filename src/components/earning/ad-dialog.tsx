@@ -19,34 +19,38 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 const REWARD_AMOUNT = 5;
 const WATCH_DELAY = 15; // 15 seconds
 
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
+const ANON_KEY_A = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
+const ANON_KEY_B = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
 
-async function startAd(gameId: string, userId: string) {
+async function startAdSession(gameId: string, userId: string, division: 'A' | 'B' | 'C') {
+  const isB = division === 'B';
+  const url = isB 
+    ? "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2" 
+    : "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
+  const key = isB ? ANON_KEY_B : ANON_KEY_A;
+
   try {
-    const res = await fetch(
-      "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${ANON_KEY}`,
-          "apikey": ANON_KEY
-        },
-        body: JSON.stringify({ gameId, userId })
-      }
-    );
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
+        "apikey": key
+      },
+      body: JSON.stringify({ gameId, userId })
+    });
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error("Error calling start-ad:", errorText);
+      console.error(`Error calling ${division} start-ad:`, errorText);
       return null;
     }
 
     const data = await res.json();
-    console.log("start-ad response:", data);
+    console.log(`${division} start-ad response:`, data);
     return data;
   } catch (error) {
-    console.error("Network error starting ad:", error);
+    console.error(`Network error starting ${division} ad:`, error);
     return null;
   }
 }
@@ -56,9 +60,10 @@ interface AdDialogProps {
   onOpenChange: (open: boolean) => void;
   onComplete: () => void;
   gameId: string;
+  division: 'A' | 'B' | 'C';
 }
 
-export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogProps) {
+export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: AdDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -128,7 +133,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
     setStatus('Connecting to ad server...');
     setIsWatchButtonDisabled(true);
 
-    const result = await startAd(gameId, user.uid);
+    const result = await startAdSession(gameId, user.uid, division);
     
     if (!result) {
         setStatus('Failed to start ad. Please try again.');
@@ -142,7 +147,11 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
     }
 
     // Trigger the ad to open in a new window/tab
-    const adUrl = 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
+    // Use the URL from the response for Division B if it exists
+    const adUrl = (division === 'B' && result.adUrl) 
+      ? result.adUrl 
+      : 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
+    
     window.open(adUrl, '_blank');
 
     setHasStartedWatching(true);
