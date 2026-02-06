@@ -116,7 +116,6 @@ export default function ReferralPage() {
         <CardContent className="relative z-10">
           <div className="space-y-6">
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 space-y-6 border border-white/20">
-              {/* Unique Code Section */}
               <div className="flex flex-col items-center gap-3">
                 <p className="text-xs font-bold uppercase tracking-widest opacity-80">Your Referral Code</p>
                 <div className="flex items-center gap-2 w-full max-w-sm">
@@ -134,7 +133,6 @@ export default function ReferralPage() {
                 </div>
               </div>
 
-              {/* Referral Link Section */}
               <div className="flex flex-col items-center gap-3">
                 <p className="text-xs font-bold uppercase tracking-widest opacity-80">Shareable Link</p>
                 <div className="flex items-center gap-2 w-full">
