@@ -1,21 +1,17 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
-import { Copy, Share2, Users, Trophy, Gift, Link as LinkIcon, ShieldCheck, Loader2 } from 'lucide-react';
+import { Copy, Share2, Users, Trophy, Gift, Link as LinkIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useState } from 'react';
 
-const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 const REFERRAL_REWARD_AMOUNT = 3000;
 
 export default function ReferralPage() {
   const { toast } = useToast();
   const { user, userProfile, loading } = useUser();
-  const [isVerifying, setIsVerifying] = useState(false);
 
   const referralCode = userProfile?.referral?.referralCode || '';
   const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/login?ref=${referralCode}` : '';
@@ -42,46 +38,6 @@ export default function ReferralPage() {
     } else {
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
       window.open(whatsappUrl, '_blank');
-    }
-  };
-
-  const handleVerifyReferral = async () => {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Not Authenticated' });
-      return;
-    }
-    
-    setIsVerifying(true);
-    try {
-      const response = await fetch(
-        "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${AUTH_TOKEN}`
-          },
-          body: JSON.stringify({
-            userId: user.uid
-          })
-        }
-      );
-
-      const data = await response.json();
-      
-      toast({
-        title: "Verification Triggered",
-        description: data.message || "Checking for new referrals... Your balance and invite count will update shortly if verified.",
-      });
-    } catch (err) {
-      console.error("Error calling referral function:", err);
-      toast({
-        variant: "destructive",
-        title: "Verification Failed",
-        description: "Could not connect to the verification server. Please try again later.",
-      });
-    } finally {
-      setIsVerifying(false);
     }
   };
 
@@ -151,22 +107,13 @@ export default function ReferralPage() {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <Button 
                 className="w-full h-14 bg-white text-primary hover:bg-white/90 font-bold shadow-lg text-lg" 
                 onClick={handleShare}
               >
                 <Share2 className="mr-2 h-6 w-6" />
                 Share Invite
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full h-14 bg-transparent border-white text-white hover:bg-white/10 font-bold"
-                onClick={handleVerifyReferral}
-                disabled={isVerifying}
-              >
-                {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
-                Verify Status
               </Button>
             </div>
           </div>
@@ -217,7 +164,7 @@ export default function ReferralPage() {
             <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">3</div>
             <div>
               <p className="font-bold text-sm">Get Rewards</p>
-              <p className="text-xs text-muted-foreground mt-1">Click "Verify Status" once they sign up to claim your {REFERRAL_REWARD_AMOUNT} OR bonus!</p>
+              <p className="text-xs text-muted-foreground mt-1">Rewards are processed automatically once your friend signs up and completes verification!</p>
             </div>
           </div>
         </CardContent>
