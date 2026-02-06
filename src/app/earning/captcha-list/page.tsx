@@ -24,19 +24,15 @@ const CAPTCHA_DAY_KEY = 'or_wallet_captchas_last_day';
 
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
-function generateCaptcha() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
+async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
+  // Use start-ads-2 for Division B, start-ad for others (specifically A)
+  const endpoint = division === 'B'
+    ? "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2"
+    : "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
 
-type CaptchaItem = {
-  id: number;
-  text: string;
-};
-
-async function callGetAd(userId: string) {
   try {
     const response = await fetch(
-      "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
+      endpoint,
       {
         method: "POST",
         headers: {
@@ -57,6 +53,15 @@ async function callGetAd(userId: string) {
     return null;
   }
 }
+
+function generateCaptcha() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+type CaptchaItem = {
+  id: number;
+  text: string;
+};
 
 export default function CaptchaListPage() {
   const { toast } = useToast();
@@ -148,10 +153,10 @@ export default function CaptchaListPage() {
 
     const division = index < 3 ? 'A' : index < 6 ? 'B' : 'C';
 
-    // For Division A, trigger ad tracking
-    if (division === 'A') {
+    // Call ad tracking for Division A and Division B
+    if (division === 'A' || division === 'B') {
       const adWindow = window.open('about:blank', '_blank');
-      const adUrl = await callGetAd(user.uid);
+      const adUrl = await callGetAd(user.uid, division);
       if (adUrl && adWindow) {
         adWindow.location.href = adUrl;
       } else if (adWindow) {

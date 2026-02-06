@@ -22,9 +22,14 @@ const WATCH_DELAY = 15; // 15 seconds
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 async function startAdSession(gameId: string, userId: string, division: 'A' | 'B' | 'C') {
+  // Use start-ads-2 for Division B, start-ad for others
+  const endpoint = division === 'B' 
+    ? "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2"
+    : "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
+
   try {
     const response = await fetch(
-      "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
+      endpoint,
       {
         method: "POST",
         headers: {
@@ -92,7 +97,6 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
     
     if (hasStartedWatching && countdown > 0) {
       timer = setInterval(() => {
-        // Only count down while the user is away from the app (looking at the ad)
         if (document.visibilityState === 'hidden') {
           setCountdown((prev) => Math.max(0, prev - 1));
           setStatus("Ad in progress. Keep watching...");
@@ -115,7 +119,6 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
         return;
     }
 
-    // Open window immediately to avoid popup blocker
     const adWindow = window.open('about:blank', '_blank');
     setStatus('Connecting to ad server...');
     setIsWatchButtonDisabled(true);
