@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { useEffect, Suspense } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
@@ -148,6 +149,27 @@ function LoginContent() {
                   errorEmitter.emit('permission-error', permissionError);
               }
           });
+
+      // If there's a referral code, create a referral record
+      if (data.referredBy) {
+        const referralsRef = collection(firestore, 'referrals');
+        const referralData = {
+          referrerUid: data.referredBy, // This would normally be looked up to get the UID, but using code as identifier for MVP
+          referredUid: userCredential.user.uid,
+          referralCode: data.referredBy,
+          referralDate: serverTimestamp(),
+        };
+        addDoc(referralsRef, referralData).catch(async (error: any) => {
+          if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: 'referrals',
+                operation: 'create',
+                requestResourceData: referralData,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+          }
+        });
+      }
 
       toast({
         title: 'Sign Up Successful',

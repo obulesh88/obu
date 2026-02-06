@@ -57,3 +57,11 @@ export type EarningTransaction = {
   createdAt: Date;
   playTimeInSeconds?: number;
 };
+
+export type ReferralRecord = {
+  referralId: string;
+  referrerUid: string;
+  referredUid: string;
+  referralCode: string;
+  referralDate: any;
+};
