@@ -87,6 +87,7 @@ function LoginContent() {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await updateProfile(userCredential.user, { displayName: data.name });
 
+      const myReferralCode = generateReferralCode(data.name);
       const userDocRef = doc(firestore, 'users', userCredential.user.uid);
       
       const newProfile = {
@@ -105,7 +106,7 @@ function LoginContent() {
               walletAddress: `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
           },
           referral: {
-            referralCode: generateReferralCode(data.name),
+            referralCode: myReferralCode,
             referredBy: data.referredBy || null,
             referralCount: 0,
             totalReferralEarnings: 0,
@@ -150,11 +151,11 @@ function LoginContent() {
               }
           });
 
-      // If there's a referral code, create a referral record
+      // If there's a referral code, create a referral record in the tracking collection
       if (data.referredBy) {
         const referralsRef = collection(firestore, 'referrals');
         const referralData = {
-          referrerUid: data.referredBy, // This would normally be looked up to get the UID, but using code as identifier for MVP
+          referrerUid: data.referredBy, // Code used as identifier
           referredUid: userCredential.user.uid,
           referralCode: data.referredBy,
           referralDate: serverTimestamp(),
@@ -173,7 +174,7 @@ function LoginContent() {
 
       toast({
         title: 'Sign Up Successful',
-        description: data.referredBy ? `Welcome! You joined using code ${data.referredBy}.` : "You're now logged in.",
+        description: `Welcome! Your unique referral code is ${myReferralCode}.`,
       });
       router.push('/');
     } catch (error: any) {

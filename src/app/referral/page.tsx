@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
-import { Copy, Share2, Users, Trophy, Gift } from 'lucide-react';
+import { Copy, Share2, Users, Trophy, Gift, Link as LinkIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ReferralPage() {
@@ -67,23 +67,44 @@ export default function ReferralPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="bg-white/10 rounded-lg p-4 flex flex-col items-center gap-2">
-              <p className="text-sm font-medium uppercase tracking-wider">Your Referral Code</p>
-              <div className="flex items-center gap-2 w-full max-w-xs">
-                <Input 
-                  value={referralCode} 
-                  readOnly 
-                  className="bg-white/20 border-white/30 text-white font-mono text-center text-xl font-bold uppercase"
-                />
-                <Button 
-                  variant="secondary" 
-                  size="icon" 
-                  onClick={() => copyToClipboard(referralCode, 'Referral code copied.')}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
+            <div className="bg-white/10 rounded-lg p-4 space-y-4">
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-sm font-medium uppercase tracking-wider">Your Referral Code</p>
+                <div className="flex items-center gap-2 w-full max-w-xs">
+                  <Input 
+                    value={referralCode} 
+                    readOnly 
+                    className="bg-white/20 border-white/30 text-white font-mono text-center text-xl font-bold uppercase"
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="icon" 
+                    onClick={() => copyToClipboard(referralCode, 'Referral code copied.')}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-sm font-medium uppercase tracking-wider">Your Referral Link</p>
+                <div className="flex items-center gap-2 w-full">
+                  <Input 
+                    value={referralLink} 
+                    readOnly 
+                    className="bg-white/20 border-white/30 text-white text-xs"
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="icon" 
+                    onClick={() => copyToClipboard(referralLink, 'Referral link copied.')}
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
+            
             <Button className="w-full bg-white text-primary hover:bg-white/90" onClick={handleShare}>
               <Share2 className="mr-2 h-4 w-4" />
               Share Referral Link
@@ -117,22 +138,22 @@ export default function ReferralPage() {
           <div className="flex gap-4">
             <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">1</div>
             <div>
-              <p className="font-semibold">Share your code</p>
-              <p className="text-sm text-muted-foreground">Send your referral link or code to your friends.</p>
+              <p className="font-semibold">Share your link</p>
+              <p className="text-sm text-muted-foreground">Send your unique referral link to your friends.</p>
             </div>
           </div>
           <div className="flex gap-4">
             <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">2</div>
             <div>
               <p className="font-semibold">Friends sign up</p>
-              <p className="text-sm text-muted-foreground">When they join using your code, they become your referral.</p>
+              <p className="text-sm text-muted-foreground">When they join via your link, they are tracked as your referral.</p>
             </div>
           </div>
           <div className="flex gap-4">
             <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">3</div>
             <div>
               <p className="font-semibold">Earn rewards</p>
-              <p className="text-sm text-muted-foreground">Receive bonus OR coins instantly for every successful referral.</p>
+              <p className="text-sm text-muted-foreground">Receive bonus OR coins instantly for every active user you refer.</p>
             </div>
           </div>
         </CardContent>
