@@ -152,7 +152,6 @@ function LoginContent() {
               }
           });
 
-      // Create a referral record in the tracking collection
       if (data.referredBy) {
         const referralsRef = collection(firestore, 'referrals');
         const referralData = {
@@ -172,7 +171,6 @@ function LoginContent() {
           }
         });
 
-        // Call Supabase Referral Verification Function automatically on sign up
         fetch("https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function", {
           method: "POST",
           headers: {
@@ -289,7 +287,7 @@ function LoginContent() {
                   )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isSubmittingSignUp}>
-                    {isSubmittingSignUp ? 'Creating Account...' : 'Sign Up &amp; Start Earning'}
+                    {isSubmittingSignUp ? 'Creating Account...' : 'Sign Up & Start Earning'}
                 </Button>
               </form>
             </TabsContent>

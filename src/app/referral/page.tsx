@@ -27,19 +27,15 @@ export default function ReferralPage() {
     });
   };
 
-  /**
-   * handleShare Logic:
-   * 1. Check if the browser supports the Web Share API (Mobile standard).
-   * 2. If supported, open the native share sheet showing WhatsApp, Telegram, etc.
-   * 3. If not supported (Desktop), fallback to opening WhatsApp Web directly.
-   */
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Join OR-wallet',
           text: shareMessage,
-          url: referralLink,
+          // Note: On some mobile platforms, providing both text and url 
+          // can lead to double links or missing text.
+          // Including the link in the text is usually the safest for WhatsApp/Telegram.
         });
       } catch (err) {
         // User cancelled or share failed - no action needed
