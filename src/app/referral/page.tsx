@@ -157,7 +157,7 @@ export default function ReferralPage() {
                 onClick={handleShare}
               >
                 <Share2 className="mr-2 h-6 w-6" />
-                Invite Friends
+                Share Invite
               </Button>
               <Button 
                 variant="outline" 
