@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +27,12 @@ export default function ReferralPage() {
     });
   };
 
+  /**
+   * handleShare Logic:
+   * 1. Check if the browser supports the Web Share API (Mobile standard).
+   * 2. If supported, open the native share sheet showing WhatsApp, Telegram, etc.
+   * 3. If not supported (Desktop), fallback to opening WhatsApp Web directly.
+   */
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -37,10 +42,10 @@ export default function ReferralPage() {
           url: referralLink,
         });
       } catch (err) {
-        // If user cancels or share fails, we don't need to log an error
+        // User cancelled or share failed - no action needed
       }
     } else {
-      // Fallback: Open WhatsApp directly on desktop/browsers without share API
+      // Fallback for desktop: Open WhatsApp Web/Desktop directly
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
       window.open(whatsappUrl, '_blank');
     }
