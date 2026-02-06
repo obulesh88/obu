@@ -6,12 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
-import { Copy, Share2, Users, Trophy, Gift, Link as LinkIcon } from 'lucide-react';
+import { Copy, Share2, Users, Trophy, Gift, Link as LinkIcon, ShieldCheck, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useState } from 'react';
+
+const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 export default function ReferralPage() {
   const { toast } = useToast();
-  const { userProfile, loading } = useUser();
+  const { user, userProfile, loading } = useUser();
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const referralCode = userProfile?.referral?.referralCode || '';
   const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/login?ref=${referralCode}` : '';
@@ -37,6 +41,43 @@ export default function ReferralPage() {
       }
     } else {
       copyToClipboard(referralLink, 'Referral link copied to clipboard.');
+    }
+  };
+
+  const handleVerifyReferral = async () => {
+    if (!user) return;
+    setIsVerifying(true);
+    try {
+      const response = await fetch(
+        "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${AUTH_TOKEN}`
+          },
+          body: JSON.stringify({
+            userId: user.uid
+          })
+        }
+      );
+
+      const data = await response.json();
+      console.log("Referral Verification Response:", data);
+      
+      toast({
+        title: "Verification Triggered",
+        description: data.message || "Your referral status is being processed by the system.",
+      });
+    } catch (err) {
+      console.error("Error calling referral function:", err);
+      toast({
+        variant: "destructive",
+        title: "Verification Failed",
+        description: "Could not connect to verification server.",
+      });
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -105,10 +146,21 @@ export default function ReferralPage() {
               </div>
             </div>
             
-            <Button className="w-full bg-white text-primary hover:bg-white/90" onClick={handleShare}>
-              <Share2 className="mr-2 h-4 w-4" />
-              Share Referral Link
-            </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Button className="w-full bg-white text-primary hover:bg-white/90" onClick={handleShare}>
+                <Share2 className="mr-2 h-4 w-4" />
+                Share Link
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full bg-transparent border-white text-white hover:bg-white/10"
+                onClick={handleVerifyReferral}
+                disabled={isVerifying}
+              >
+                {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                Verify Status
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

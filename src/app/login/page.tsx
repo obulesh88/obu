@@ -19,6 +19,8 @@ import { doc, setDoc, serverTimestamp, collection, addDoc } from 'firebase/fires
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
+const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
+
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
@@ -155,7 +157,7 @@ function LoginContent() {
       if (data.referredBy) {
         const referralsRef = collection(firestore, 'referrals');
         const referralData = {
-          referrerUid: data.referredBy, // Code used as identifier
+          referrerUid: data.referredBy, 
           referredUid: userCredential.user.uid,
           referralCode: data.referredBy,
           referralDate: serverTimestamp(),
@@ -170,6 +172,18 @@ function LoginContent() {
             errorEmitter.emit('permission-error', permissionError);
           }
         });
+
+        // Call Supabase Referral Verification Function
+        fetch("https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${AUTH_TOKEN}`
+          },
+          body: JSON.stringify({
+            userId: userCredential.user.uid
+          })
+        }).catch(err => console.error("Referral function call failed", err));
       }
 
       toast({
