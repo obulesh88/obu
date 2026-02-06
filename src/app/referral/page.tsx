@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,10 +37,10 @@ export default function ReferralPage() {
           url: referralLink,
         });
       } catch (err) {
-        console.error('Share failed:', err);
+        // If user cancels or share fails, we don't need to log an error
       }
     } else {
-      // Fallback: Open WhatsApp directly
+      // Fallback: Open WhatsApp directly on desktop/browsers without share API
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
       window.open(whatsappUrl, '_blank');
     }

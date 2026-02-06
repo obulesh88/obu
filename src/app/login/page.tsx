@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -172,7 +173,7 @@ function LoginContent() {
           }
         });
 
-        // Call Supabase Referral Verification Function
+        // Call Supabase Referral Verification Function automatically on sign up
         fetch("https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function", {
           method: "POST",
           headers: {
