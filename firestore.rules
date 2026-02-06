@@ -17,27 +17,30 @@ service cloud.firestore {
       }
 
       function isValidBalanceUpdate() {
-        // This function validates server-side increments.
-        // It checks if the new balance is equal to the old balance plus an allowed reward amount.
-        let isRewardOf3 = request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 3;
-        let isRewardOf5 = request.resource.data.wallet.orBalance == resource.data.wallet.orBalance + 5;
-        // Also allow updates that don't change the balance (e.g., starting a game).
-        let noBalanceChange = request.resource.data.wallet.orBalance == resource.data.wallet.orBalance;
+        let orDiff = request.resource.data.wallet.orBalance - resource.data.wallet.orBalance;
+        let inrDiff = request.resource.data.wallet.inrBalance - resource.data.wallet.inrBalance;
+
+        // Reward scenarios: +3 or +5 OR, INR remains unchanged
+        let isReward = (orDiff == 3 || orDiff == 5) && inrDiff == 0;
         
-        return isRewardOf3 || isRewardOf5 || noBalanceChange;
+        // Conversion scenario: OR decreases, INR increases proportionally (1000:1)
+        // Note: orDiff will be negative (e.g., -1000), so we multiply by -1 to get the positive amount
+        let isConversion = orDiff < 0 && inrDiff == (orDiff * -1) / 1000;
+
+        // No change scenario
+        let noChange = orDiff == 0 && inrDiff == 0;
+        
+        return isReward || isConversion || noChange;
       }
       
       function areOtherCoreFieldsValid() {
-        // Allow total_play_seconds to only increase or stay the same. This works even with increments.
+        // Allow total_play_seconds to only increase or stay the same.
         let validGameTime = request.resource.data.playGames.total_play_seconds >= resource.data.playGames.total_play_seconds;
-        
-        // Critical: Prevent the client from ever changing the INR balance.
-        let inrUnchanged = request.resource.data.wallet.inrBalance == resource.data.wallet.inrBalance;
 
         // The user's wallet address should not be changed.
         let walletAddressUnchanged = request.resource.data.wallet.walletAddress == resource.data.wallet.walletAddress;
         
-        return validGameTime && inrUnchanged && walletAddressUnchanged;
+        return validGameTime && walletAddressUnchanged;
       }
 
       allow read, create: if isOwner();

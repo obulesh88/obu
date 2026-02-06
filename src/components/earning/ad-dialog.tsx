@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -36,7 +35,7 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${AUTH_TOKEN}`
         },
-        body: JSON.stringify({ userId, division })
+        body: JSON.stringify({ userId })
       }
     );
 
@@ -105,6 +104,7 @@ export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogP
         return;
     }
 
+    // Open window immediately to bypass popup blocker
     const adWindow = window.open('about:blank', '_blank');
     setStatus('Connecting to ad server...');
     setIsWatchButtonDisabled(true);
@@ -145,7 +145,17 @@ export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogP
     };
 
     updateDoc(userDocRef, updateData)
+        .then(() => {
+            toast({
+                title: 'Success!',
+                description: `You earned ${REWARD_AMOUNT} OR coins.`,
+            });
+            onComplete();
+            onOpenChange(false);
+            setIsClaiming(false);
+        })
         .catch(async (error: any) => {
+            setIsClaiming(false);
             if (error.code === 'permission-denied') {
               const permissionError = new FirestorePermissionError({
                   path: userDocRef.path,
@@ -155,15 +165,6 @@ export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogP
               errorEmitter.emit('permission-error', permissionError);
             }
         });
-
-    toast({
-        title: 'Success!',
-        description: `You earned ${REWARD_AMOUNT} OR coins.`,
-    });
-    
-    onComplete();
-    onOpenChange(false);
-    setIsClaiming(false);
   };
 
   return (
@@ -172,7 +173,7 @@ export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogP
         <DialogHeader>
           <DialogTitle>🎥 Watch Ad & Earn</DialogTitle>
           <DialogDescription>
-            Watch an ad for {WATCH_DELAY} seconds to earn rewards.
+            Watch an ad for {WATCH_DELAY} seconds to earn rewards. Division {division} active.
           </DialogDescription>
         </DialogHeader>
         
@@ -189,7 +190,7 @@ export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogP
           </Button>
           {showClaimButton && (
             <Button type="button" onClick={handleClaimReward} disabled={isClaiming}>
-                {isClaiming ? 'Claiming...' : '✔ Submit / Claim'}
+                {isClaiming ? 'Claiming...' : '✔ Claim Reward'}
             </Button>
           )}
         </DialogFooter>
