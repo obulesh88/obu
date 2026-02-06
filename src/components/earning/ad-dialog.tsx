@@ -151,12 +151,14 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId }: AdDialogPro
 
     updateDoc(userDocRef, updateData)
         .catch(async (error: any) => {
-            const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: updateData,
-            } satisfies SecurityRuleContext);
-            errorEmitter.emit('permission-error', permissionError);
+            if (error.code === 'permission-denied') {
+              const permissionError = new FirestorePermissionError({
+                  path: userDocRef.path,
+                  operation: 'update',
+                  requestResourceData: updateData,
+              } satisfies SecurityRuleContext);
+              errorEmitter.emit('permission-error', permissionError);
+            }
         });
 
     toast({
