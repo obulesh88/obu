@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,15 +34,11 @@ export default function ReferralPage() {
         await navigator.share({
           title: 'Join OR-wallet',
           text: shareMessage,
-          // Note: On some mobile platforms, providing both text and url 
-          // can lead to double links or missing text.
-          // Including the link in the text is usually the safest for WhatsApp/Telegram.
         });
       } catch (err) {
-        // User cancelled or share failed - no action needed
+        // User cancelled or share failed
       }
     } else {
-      // Fallback for desktop: Open WhatsApp Web/Desktop directly
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
       window.open(whatsappUrl, '_blank');
     }
@@ -55,6 +52,7 @@ export default function ReferralPage() {
     
     setIsVerifying(true);
     try {
+      // Calling the manual verification endpoint
       const response = await fetch(
         "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function",
         {
@@ -72,8 +70,8 @@ export default function ReferralPage() {
       const data = await response.json();
       
       toast({
-        title: "Verification Request Sent",
-        description: data.message || "Your referral status is being processed. Bonus OR will be added once verified.",
+        title: "Verification Triggered",
+        description: data.message || "Checking for new referrals... Your balance and invite count will update shortly if verified.",
       });
     } catch (err) {
       console.error("Error calling referral function:", err);

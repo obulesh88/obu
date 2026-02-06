@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -155,11 +156,12 @@ function LoginContent() {
       if (data.referredBy) {
         const referralsRef = collection(firestore, 'referrals');
         const referralData = {
-          referrerUid: data.referredBy, 
+          referrerUid: "", // Backend handles mapping code to UID
           referredUid: userCredential.user.uid,
           referralCode: data.referredBy,
           referralDate: serverTimestamp(),
         };
+        
         addDoc(referralsRef, referralData).catch(async (error: any) => {
           if (error.code === 'permission-denied') {
             const permissionError = new FirestorePermissionError({
@@ -171,6 +173,7 @@ function LoginContent() {
           }
         });
 
+        // Trigger the backend to process the referral immediately
         fetch("https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function", {
           method: "POST",
           headers: {
@@ -180,7 +183,7 @@ function LoginContent() {
           body: JSON.stringify({
             userId: userCredential.user.uid
           })
-        }).catch(err => console.error("Referral function call failed", err));
+        }).catch(err => console.error("Referral auto-verification failed", err));
       }
 
       toast({
