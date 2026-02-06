@@ -22,7 +22,6 @@ const WATCH_DELAY = 15; // 15 seconds
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 async function startAdSession(gameId: string, userId: string, division: 'A' | 'B' | 'C') {
-  // Use the same endpoint logic for all divisions but can differentiate if needed
   try {
     const response = await fetch(
       "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
@@ -40,7 +39,6 @@ async function startAdSession(gameId: string, userId: string, division: 'A' | 'B
     if (data.success) {
       return data;
     }
-    console.error("Failed to start ad session:", data.error);
     return null;
   } catch (err) {
     console.error("Error calling ad function:", err);
@@ -94,7 +92,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
     
     if (hasStartedWatching && countdown > 0) {
       timer = setInterval(() => {
-        // Strict timer: user must be on the ad page (implies app tab is hidden)
+        // Only count down while the user is away from the app (looking at the ad)
         if (document.visibilityState === 'hidden') {
           setCountdown((prev) => Math.max(0, prev - 1));
           setStatus("Ad in progress. Keep watching...");

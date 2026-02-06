@@ -18,9 +18,11 @@ import { Separator } from '@/components/ui/separator';
 
 const REWARD_PER_CAPTCHA = 3;
 const NUM_CAPTCHAS = 10;
-const SUBMIT_DELAY = 15; // 15 seconds
+const SUBMIT_DELAY = 15; // 15 seconds wait
 const CAPTCHA_STORAGE_KEY = 'or_wallet_completed_captchas';
 const CAPTCHA_DAY_KEY = 'or_wallet_captchas_last_day';
+
+const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 function generateCaptcha() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -30,8 +32,6 @@ type CaptchaItem = {
   id: number;
   text: string;
 };
-
-const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 async function callGetAd(userId: string) {
   try {
@@ -48,13 +48,10 @@ async function callGetAd(userId: string) {
     );
 
     const data = await response.json();
-
     if (data.success) {
       return data.adUrl;
-    } else {
-      console.error("Failed to get ad:", data.error);
-      return null;
     }
+    return null;
   } catch (err) {
     console.error("Error calling ad function:", err);
     return null;
@@ -151,6 +148,7 @@ export default function CaptchaListPage() {
 
     const division = index < 3 ? 'A' : index < 6 ? 'B' : 'C';
 
+    // For Division A, trigger ad tracking
     if (division === 'A') {
       const adWindow = window.open('about:blank', '_blank');
       const adUrl = await callGetAd(user.uid);
@@ -160,24 +158,6 @@ export default function CaptchaListPage() {
         adWindow.close();
       }
     }
-
-    const userDocRef = doc(firestore, 'users', user.uid);
-    const updateData = {
-        'captcha.is_active': true,
-        'updatedAt': serverTimestamp()
-    };
-
-    updateDoc(userDocRef, updateData)
-        .catch(async (error: any) => {
-            if (error.code === 'permission-denied') {
-                const permissionError = new FirestorePermissionError({
-                    path: userDocRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData,
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
-            }
-        });
 
     setSubmitting(prev => {
       const newState = [...prev];
@@ -227,7 +207,6 @@ export default function CaptchaListPage() {
       const userDocRef = doc(firestore, 'users', user.uid);
       const updateData = {
           'wallet.orBalance': increment(REWARD_PER_CAPTCHA),
-          'captcha.is_active': false,
           'captcha.verifiedAt': serverTimestamp(),
           'captcha.claimed': true,
           'captcha.reward_comm': REWARD_PER_CAPTCHA,
@@ -316,61 +295,63 @@ export default function CaptchaListPage() {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Solve the Captchas</CardTitle>
-        <CardDescription>Enter the characters for each captcha, click submit, wait {SUBMIT_DELAY} seconds, then claim your reward of {REWARD_PER_CAPTCHA} OR coins.</CardDescription>
-      </CardHeader>
-      <CardContent>
-          {!isClient ? (
-            <div className="space-y-8">
-               {Array.from({ length: 3 }).map((_, i) => (
-                 <Skeleton key={i} className="h-24 w-full" />
-               ))}
-            </div>
-          ) : allCaptchasCompleted ? (
-            <div className="flex flex-col items-center justify-center text-center p-8 gap-4">
-              <CheckCircle2 className="h-16 w-16 text-green-500" />
-              <h3 className="text-xl font-bold">All Captchas Solved for Today!</h3>
-              <p className="text-muted-foreground">Come back tomorrow for more rewards.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-10">
-              {/* Division A */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-bold text-primary">Division A</h3>
-                  <Separator className="flex-1" />
-                </div>
-                <div className="space-y-6">
-                  {[0, 1, 2].map(index => renderCaptchaItem(index))}
-                </div>
+    <div className="flex flex-col gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Solve the Captchas</CardTitle>
+          <CardDescription>Enter the characters for each captcha, click submit, and wait {SUBMIT_DELAY} seconds to claim your reward.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {!isClient ? (
+              <div className="space-y-8">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-24 w-full" />
+                ))}
               </div>
+            ) : allCaptchasCompleted ? (
+              <div className="flex flex-col items-center justify-center text-center p-8 gap-4">
+                <CheckCircle2 className="h-16 w-16 text-green-500" />
+                <h3 className="text-xl font-bold">All Captchas Solved for Today!</h3>
+                <p className="text-muted-foreground">Come back tomorrow for more rewards.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-10">
+                {/* Division A */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-lg font-bold text-primary">Division A</h3>
+                    <Separator className="flex-1" />
+                  </div>
+                  <div className="space-y-6">
+                    {[0, 1, 2].map(index => renderCaptchaItem(index))}
+                  </div>
+                </div>
 
-              {/* Division B */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-bold text-primary">Division B</h3>
-                  <Separator className="flex-1" />
+                {/* Division B */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-lg font-bold text-primary">Division B</h3>
+                    <Separator className="flex-1" />
+                  </div>
+                  <div className="space-y-6">
+                    {[3, 4, 5].map(index => renderCaptchaItem(index))}
+                  </div>
                 </div>
-                <div className="space-y-6">
-                  {[3, 4, 5].map(index => renderCaptchaItem(index))}
-                </div>
-              </div>
 
-              {/* Division C */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-bold text-primary">Division C</h3>
-                  <Separator className="flex-1" />
-                </div>
-                <div className="space-y-6">
-                  {[6, 7, 8, 9].map(index => renderCaptchaItem(index))}
+                {/* Division C */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-lg font-bold text-primary">Division C</h3>
+                    <Separator className="flex-1" />
+                  </div>
+                  <div className="space-y-6">
+                    {[6, 7, 8, 9].map(index => renderCaptchaItem(index))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-      </CardContent>
-    </Card>
+            )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
