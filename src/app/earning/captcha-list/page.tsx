@@ -25,10 +25,9 @@ const CAPTCHA_DAY_KEY = 'or_wallet_captchas_last_day';
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
-  // Use start-ads-2 for Division B, start-ad for others (specifically A)
-  const endpoint = division === 'B'
-    ? "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2"
-    : "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
+  let endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
+  if (division === 'B') endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
+  if (division === 'C') endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-3";
 
   try {
     const response = await fetch(
@@ -153,15 +152,13 @@ export default function CaptchaListPage() {
 
     const division = index < 3 ? 'A' : index < 6 ? 'B' : 'C';
 
-    // Call ad tracking for Division A and Division B
-    if (division === 'A' || division === 'B') {
-      const adWindow = window.open('about:blank', '_blank');
-      const adUrl = await callGetAd(user.uid, division);
-      if (adUrl && adWindow) {
-        adWindow.location.href = adUrl;
-      } else if (adWindow) {
-        adWindow.close();
-      }
+    // Call ad tracking for all Divisions
+    const adWindow = window.open('about:blank', '_blank');
+    const adUrl = await callGetAd(user.uid, division);
+    if (adUrl && adWindow) {
+      adWindow.location.href = adUrl;
+    } else if (adWindow) {
+      adWindow.close();
     }
 
     setSubmitting(prev => {

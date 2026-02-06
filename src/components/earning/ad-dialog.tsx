@@ -22,10 +22,9 @@ const WATCH_DELAY = 15; // 15 seconds
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 async function startAdSession(gameId: string, userId: string, division: 'A' | 'B' | 'C') {
-  // Use start-ads-2 for Division B, start-ad for others
-  const endpoint = division === 'B' 
-    ? "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2"
-    : "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
+  let endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
+  if (division === 'B') endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
+  if (division === 'C') endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-3";
 
   try {
     const response = await fetch(
@@ -126,7 +125,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
     const result = await startAdSession(gameId, user.uid, division);
     
     if (result && result.success) {
-        const adUrl = result.adUrl || 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
+        const adUrl = result.adUrl;
         if (adWindow) adWindow.location.href = adUrl;
         
         setHasStartedWatching(true);
