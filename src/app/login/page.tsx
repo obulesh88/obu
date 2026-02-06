@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -24,6 +23,7 @@ const SignUpSchema = z.object({
   email: z.string().email('Invalid email address'),
   phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  referredBy: z.string().optional(),
 });
 type SignUpSchemaType = z.infer<typeof SignUpSchema>;
 
@@ -42,20 +42,29 @@ function LoginContent() {
   const firestore = useFirestore();
   const { user, loading } = useUser();
 
+  const {
+    register: registerSignUp,
+    handleSubmit: handleSubmitSignUp,
+    setValue: setSignUpValue,
+    formState: { errors: errorsSignUp, isSubmitting: isSubmittingSignUp },
+  } = useForm<SignUpSchemaType>({
+    resolver: zodResolver(SignUpSchema),
+    defaultValues: {
+      referredBy: referralCodeFromUrl || '',
+    },
+  });
+
   useEffect(() => {
     if (!loading && user) {
       router.push('/');
     }
   }, [user, loading, router]);
 
-
-  const {
-    register: registerSignUp,
-    handleSubmit: handleSubmitSignUp,
-    formState: { errors: errorsSignUp, isSubmitting: isSubmittingSignUp },
-  } = useForm<SignUpSchemaType>({
-    resolver: zodResolver(SignUpSchema),
-  });
+  useEffect(() => {
+    if (referralCodeFromUrl) {
+      setSignUpValue('referredBy', referralCodeFromUrl);
+    }
+  }, [referralCodeFromUrl, setSignUpValue]);
 
   const {
     register: registerSignIn,
@@ -96,7 +105,7 @@ function LoginContent() {
           },
           referral: {
             referralCode: generateReferralCode(data.name),
-            referredBy: referralCodeFromUrl || null,
+            referredBy: data.referredBy || null,
             referralCount: 0,
             totalReferralEarnings: 0,
           },
@@ -142,7 +151,7 @@ function LoginContent() {
 
       toast({
         title: 'Sign Up Successful',
-        description: referralCodeFromUrl ? `Welcome! You joined using code ${referralCodeFromUrl}.` : "You're now logged in.",
+        description: data.referredBy ? `Welcome! You joined using code ${data.referredBy}.` : "You're now logged in.",
       });
       router.push('/');
     } catch (error: any) {
@@ -211,11 +220,6 @@ function LoginContent() {
             </TabsContent>
             <TabsContent value="signup">
               <form onSubmit={handleSubmitSignUp(onSignUp)} className="space-y-4 pt-4">
-                {referralCodeFromUrl && (
-                  <div className="rounded-md bg-primary/10 p-3 text-center text-sm font-medium text-primary">
-                    Referred by: {referralCodeFromUrl}
-                  </div>
-                )}
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Full Name</Label>
                   <Input id="signup-name" {...registerSignUp('name')} />
@@ -235,6 +239,18 @@ function LoginContent() {
                   <Label htmlFor="signup-password">Password</Label>
                   <Input id="signup-password" type="password" {...registerSignUp('password')} />
                   {errorsSignUp.password && <p className="text-destructive text-xs">{errorsSignUp.password.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-referral">Referral Code (Optional)</Label>
+                  <Input 
+                    id="signup-referral" 
+                    placeholder="Enter referral code" 
+                    {...registerSignUp('referredBy')}
+                    className="uppercase font-mono"
+                  />
+                  {referralCodeFromUrl && !errorsSignUp.referredBy && (
+                    <p className="text-xs text-primary font-medium">Auto-filled from link.</p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isSubmittingSignUp}>
                     {isSubmittingSignUp ? 'Creating Account...' : 'Create Account'}
