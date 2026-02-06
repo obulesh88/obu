@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -153,7 +152,7 @@ function LoginContent() {
               }
           });
 
-      // If there's a referral code, create a referral record in the tracking collection
+      // Create a referral record in the tracking collection
       if (data.referredBy) {
         const referralsRef = collection(firestore, 'referrals');
         const referralData = {
@@ -290,7 +289,7 @@ function LoginContent() {
                   )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isSubmittingSignUp}>
-                    {isSubmittingSignUp ? 'Creating Account...' : 'Create Account'}
+                    {isSubmittingSignUp ? 'Creating Account...' : 'Sign Up &amp; Start Earning'}
                 </Button>
               </form>
             </TabsContent>
