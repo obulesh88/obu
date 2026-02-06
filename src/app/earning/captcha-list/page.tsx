@@ -31,7 +31,7 @@ type CaptchaItem = {
   text: string;
 };
 
-const ANON_KEY = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
+const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 async function callGetAd(userId: string) {
   try {
@@ -41,7 +41,7 @@ async function callGetAd(userId: string) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${ANON_KEY}`
+          "Authorization": `Bearer ${AUTH_TOKEN}`
         },
         body: JSON.stringify({ userId })
       }

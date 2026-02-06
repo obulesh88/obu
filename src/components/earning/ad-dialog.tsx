@@ -19,50 +19,31 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 const REWARD_AMOUNT = 5;
 const WATCH_DELAY = 15; // 15 seconds
 
-const ANON_KEY = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
+const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 async function startAdSession(gameId: string, userId: string, division: 'A' | 'B' | 'C') {
-  // Use the Division A logic as requested for Division A
-  if (division === 'A') {
-    try {
-      const response = await fetch(
-        "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${ANON_KEY}`
-          },
-          body: JSON.stringify({ userId })
-        }
-      );
-
-      const data = await response.json();
-      if (data.success) {
-        return data;
-      }
-      console.error("Failed to start ad session:", data.error);
-      return null;
-    } catch (err) {
-      console.error("Error calling ad function:", err);
-      return null;
-    }
-  }
-
-  // Fallback for B and C (they can use the same endpoint or a default)
+  // Use the same endpoint logic for all divisions but can differentiate if needed
   try {
-    const res = await fetch("https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${ANON_KEY}`
-      },
-      body: JSON.stringify({ gameId, userId })
-    });
+    const response = await fetch(
+      "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${AUTH_TOKEN}`
+        },
+        body: JSON.stringify({ userId, gameId, division })
+      }
+    );
 
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (error) {
+    const data = await response.json();
+    if (data.success) {
+      return data;
+    }
+    console.error("Failed to start ad session:", data.error);
+    return null;
+  } catch (err) {
+    console.error("Error calling ad function:", err);
     return null;
   }
 }
@@ -143,8 +124,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
 
     const result = await startAdSession(gameId, user.uid, division);
     
-    if (result && (result.adUrl || result.success)) {
-        // Use default if adUrl is missing but success is true
+    if (result && result.success) {
         const adUrl = result.adUrl || 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
         if (adWindow) adWindow.location.href = adUrl;
         
