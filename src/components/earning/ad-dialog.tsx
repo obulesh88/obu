@@ -22,7 +22,7 @@ const WATCH_DELAY = 15; // 15 seconds
 const ANON_KEY = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
 
 async function startAdSession(gameId: string, userId: string, division: 'A' | 'B' | 'C') {
-  // Logic for Division A as requested
+  // Use the Division A logic as requested for Division A
   if (division === 'A') {
     try {
       const response = await fetch(
@@ -31,7 +31,6 @@ async function startAdSession(gameId: string, userId: string, division: 'A' | 'B
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "apikey": ANON_KEY,
             "Authorization": `Bearer ${ANON_KEY}`
           },
           body: JSON.stringify({ userId })
@@ -50,14 +49,13 @@ async function startAdSession(gameId: string, userId: string, division: 'A' | 'B
     }
   }
 
-  // Fallback for B and C
+  // Fallback for B and C (they can use the same endpoint or a default)
   try {
     const res = await fetch("https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${ANON_KEY}`,
-        "apikey": ANON_KEY
+        "Authorization": `Bearer ${ANON_KEY}`
       },
       body: JSON.stringify({ gameId, userId })
     });
@@ -138,6 +136,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
         return;
     }
 
+    // Open window immediately to avoid popup blocker
     const adWindow = window.open('about:blank', '_blank');
     setStatus('Connecting to ad server...');
     setIsWatchButtonDisabled(true);
@@ -145,6 +144,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
     const result = await startAdSession(gameId, user.uid, division);
     
     if (result && (result.adUrl || result.success)) {
+        // Use default if adUrl is missing but success is true
         const adUrl = result.adUrl || 'https://multicoloredsister.com/bh3bV.0kPm3EpQv/bpmRVOJsZfDC0h2vNfz/QS2/OnTJgL2dL-TvYS3/NiDFYg5hOVDgcd';
         if (adWindow) adWindow.location.href = adUrl;
         

@@ -41,7 +41,6 @@ async function callGetAd(userId: string) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": ANON_KEY,
           "Authorization": `Bearer ${ANON_KEY}`
         },
         body: JSON.stringify({ userId })
@@ -51,7 +50,6 @@ async function callGetAd(userId: string) {
     const data = await response.json();
 
     if (data.success) {
-      console.log("Ad URL:", data.adUrl);
       return data.adUrl;
     } else {
       console.error("Failed to get ad:", data.error);
