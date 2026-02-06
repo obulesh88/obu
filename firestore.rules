@@ -21,8 +21,8 @@ service cloud.firestore {
         let orDiff = request.resource.data.wallet.orBalance - resource.data.wallet.orBalance;
         let inrDiff = request.resource.data.wallet.inrBalance - resource.data.wallet.inrBalance;
 
-        // Reward scenarios: +3 or +5 OR, INR remains unchanged
-        let isReward = (orDiff == 3 || orDiff == 5) && inrDiff == 0;
+        // Reward scenarios: +3 (captcha), +5 (ads), or +3000 (referral) OR, INR remains unchanged
+        let isReward = (orDiff == 3 || orDiff == 5 || orDiff == 3000) && inrDiff == 0;
         
         // Conversion scenario: OR decreases, INR increases proportionally (1000:1)
         // Note: orDiff will be negative (e.g., -1000), so we multiply by -1 to get the positive amount

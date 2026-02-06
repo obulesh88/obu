@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
+const REFERRAL_REWARD_AMOUNT = 3000;
 
 export default function ReferralPage() {
   const { toast } = useToast();
@@ -18,7 +19,7 @@ export default function ReferralPage() {
 
   const referralCode = userProfile?.referral?.referralCode || '';
   const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/login?ref=${referralCode}` : '';
-  const shareMessage = `Join OR-wallet using my referral code ${referralCode} and start earning rewards! ${referralLink}`;
+  const shareMessage = `Join OR-wallet using my referral code ${referralCode} and start earning rewards! Get ${REFERRAL_REWARD_AMOUNT} OR coins bonus on sign up. ${referralLink}`;
 
   const copyToClipboard = (text: string, description: string) => {
     navigator.clipboard.writeText(text);
@@ -52,7 +53,6 @@ export default function ReferralPage() {
     
     setIsVerifying(true);
     try {
-      // Calling the manual verification endpoint
       const response = await fetch(
         "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function",
         {
@@ -110,7 +110,7 @@ export default function ReferralPage() {
             Refer & Earn
           </CardTitle>
           <CardDescription className="text-primary-foreground/80">
-            Earn bonus OR coins for every friend who joins using your unique link!
+            Earn {REFERRAL_REWARD_AMOUNT} OR coins for every friend who joins using your unique link!
           </CardDescription>
         </CardHeader>
         <CardContent className="relative z-10">
@@ -217,7 +217,7 @@ export default function ReferralPage() {
             <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">3</div>
             <div>
               <p className="font-bold text-sm">Get Rewards</p>
-              <p className="text-xs text-muted-foreground mt-1">Click "Verify Status" once they sign up to claim your OR bonus!</p>
+              <p className="text-xs text-muted-foreground mt-1">Click "Verify Status" once they sign up to claim your {REFERRAL_REWARD_AMOUNT} OR bonus!</p>
             </div>
           </div>
         </CardContent>
