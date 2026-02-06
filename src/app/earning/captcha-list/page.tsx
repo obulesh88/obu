@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -152,7 +153,7 @@ export default function CaptchaListPage() {
 
     const division = index < 3 ? 'A' : index < 6 ? 'B' : 'C';
 
-    // Call ad tracking for all Divisions
+    // Call ad tracking and open window
     const adWindow = window.open('about:blank', '_blank');
     const adUrl = await callGetAd(user.uid, division);
     if (adUrl && adWindow) {
@@ -200,12 +201,6 @@ export default function CaptchaListPage() {
   const handleClaim = (index: number) => {
       if (!user || !firestore) return;
 
-      setSubmitting(prev => {
-        const newState = [...prev];
-        newState[index] = true;
-        return newState;
-      });
-
       const userDocRef = doc(firestore, 'users', user.uid);
       const updateData = {
           'wallet.orBalance': increment(REWARD_PER_CAPTCHA),
@@ -243,17 +238,12 @@ export default function CaptchaListPage() {
         newState[index] = false;
         return newState;
     });
-    setSubmitting(prev => {
-        const newState = [...prev];
-        newState[index] = false;
-        return newState;
-    });
   };
   
   const getButtonContent = (index: number) => {
       if(completed[index]) return 'Completed';
       if(readyToClaim[index]) return `Claim ${REWARD_PER_CAPTCHA} OR`;
-      if(submitting[index]) return `Waiting... ${countdown[index]}s`;
+      if(submitting[index]) return `Wait ${countdown[index]}s`;
       return 'Submit';
   };
 
@@ -270,7 +260,7 @@ export default function CaptchaListPage() {
               </div>
               <Button variant="ghost" size="icon" onClick={() => refreshCaptcha(index)} disabled={submitting[index] || completed[index] || readyToClaim[index]}>
                   <RefreshCw className="h-5 w-5" />
-                  <span className="sr-only">Refresh Captcha</span>
+                  <span className="sr-only">Refresh</span>
               </Button>
           </div>
       </div>
@@ -283,7 +273,7 @@ export default function CaptchaListPage() {
           placeholder="Enter text"
           autoComplete="off"
           disabled={submitting[index] || completed[index] || readyToClaim[index]}
-          className="font-mono"
+          className="font-mono uppercase"
         />
       </div>
       <Button 

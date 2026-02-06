@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,7 @@ const WATCH_DELAY = 15; // 15 seconds
 
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
-async function startAdSession(gameId: string, userId: string, division: 'A' | 'B' | 'C') {
+async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
   let endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
   if (division === 'B') endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
   if (division === 'C') endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-3";
@@ -35,7 +36,7 @@ async function startAdSession(gameId: string, userId: string, division: 'A' | 'B
           "Content-Type": "application/json",
           "Authorization": `Bearer ${AUTH_TOKEN}`
         },
-        body: JSON.stringify({ userId, gameId, division })
+        body: JSON.stringify({ userId, division })
       }
     );
 
@@ -58,7 +59,7 @@ interface AdDialogProps {
   division: 'A' | 'B' | 'C';
 }
 
-export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: AdDialogProps) {
+export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -69,7 +70,6 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
   const [isWatchButtonDisabled, setIsWatchButtonDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [hasStartedWatching, setHasStartedWatching] = useState(false);
-  const [isTabVisible, setIsTabVisible] = useState(true);
 
   useEffect(() => {
     if (open) {
@@ -83,25 +83,12 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
   }, [open]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsTabVisible(document.visibilityState === 'visible');
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-  useEffect(() => {
     let timer: NodeJS.Timeout;
     
     if (hasStartedWatching && countdown > 0) {
       timer = setInterval(() => {
-        if (document.visibilityState === 'hidden') {
-          setCountdown((prev) => Math.max(0, prev - 1));
-          setStatus("Ad in progress. Keep watching...");
-        } else {
-          setStatus("Timer Paused. Please return to the ad!");
-        }
+        setCountdown((prev) => Math.max(0, prev - 1));
+        setStatus("Ad in progress. Keep watching...");
       }, 1000);
     } else if (hasStartedWatching && countdown === 0) {
       setShowClaimButton(true);
@@ -122,7 +109,7 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
     setStatus('Connecting to ad server...');
     setIsWatchButtonDisabled(true);
 
-    const result = await startAdSession(gameId, user.uid, division);
+    const result = await startAdSession(user.uid, division);
     
     if (result && result.success) {
         const adUrl = result.adUrl;
@@ -185,12 +172,12 @@ export function AdDialog({ open, onOpenChange, onComplete, gameId, division }: A
         <DialogHeader>
           <DialogTitle>🎥 Watch Ad & Earn</DialogTitle>
           <DialogDescription>
-            Watch an ad for {WATCH_DELAY} seconds. The timer only counts down while you are looking at the ad.
+            Watch an ad for {WATCH_DELAY} seconds to earn rewards.
           </DialogDescription>
         </DialogHeader>
         
         <div className="text-center font-semibold p-6 border rounded-md bg-muted flex flex-col items-center justify-center gap-2 min-h-[120px]">
-            <span className={!isTabVisible && countdown > 0 ? "text-primary animate-pulse" : ""}>{status}</span>
+            <span className={countdown > 0 ? "text-primary animate-pulse" : ""}>{status}</span>
             {countdown > 0 && (
               <span className="text-4xl font-mono text-primary">{countdown}s</span>
             )}

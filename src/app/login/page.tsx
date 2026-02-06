@@ -2,7 +2,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
@@ -33,8 +33,10 @@ const SignInSchema = z.object({
 });
 type SignInSchemaType = z.infer<typeof SignInSchema>;
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralCodeFromUrl = searchParams.get('ref');
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -65,7 +67,7 @@ export default function LoginPage() {
 
   const generateReferralCode = (name: string) => {
     const base = name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-    const random = Math.floor(1000 + Math.random() * 9000);
+    const random = Math.random().toString(36).substring(2, 7).toUpperCase();
     return `${base}${random}`;
   };
 
@@ -94,7 +96,7 @@ export default function LoginPage() {
           },
           referral: {
             referralCode: generateReferralCode(data.name),
-            referredBy: null,
+            referredBy: referralCodeFromUrl || null,
             referralCount: 0,
             totalReferralEarnings: 0,
           },
@@ -140,7 +142,7 @@ export default function LoginPage() {
 
       toast({
         title: 'Sign Up Successful',
-        description: "You're now logged in.",
+        description: referralCodeFromUrl ? `Welcome! You joined using code ${referralCodeFromUrl}.` : "You're now logged in.",
       });
       router.push('/');
     } catch (error: any) {
@@ -209,6 +211,11 @@ export default function LoginPage() {
             </TabsContent>
             <TabsContent value="signup">
               <form onSubmit={handleSubmitSignUp(onSignUp)} className="space-y-4 pt-4">
+                {referralCodeFromUrl && (
+                  <div className="rounded-md bg-primary/10 p-3 text-center text-sm font-medium text-primary">
+                    Referred by: {referralCodeFromUrl}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Full Name</Label>
                   <Input id="signup-name" {...registerSignUp('name')} />
@@ -238,5 +245,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
