@@ -9,7 +9,6 @@ service cloud.firestore {
       }
       
       function areImmutableFieldsUnchanged() {
-        // These fields cannot be changed by the user after creation.
         let isUidSame = request.resource.data.uid == resource.data.uid;
         let isEmailSame = request.resource.data.email == resource.data.email;
         let isCreationSame = request.resource.data.createdAt == resource.data.createdAt;
@@ -25,28 +24,24 @@ service cloud.firestore {
         let isReward = (orDiff == 3 || orDiff == 5 || orDiff == 3000) && inrDiff == 0;
         
         // Conversion scenario: OR decreases, INR increases proportionally (1000:1)
-        // Note: orDiff will be negative (e.g., -1000), so we multiply by -1 to get the positive amount
         let isConversion = orDiff < 0 && inrDiff == (orDiff * -1) / 1000;
 
-        // No change scenario
         let noChange = orDiff == 0 && inrDiff == 0;
         
         return isReward || isConversion || noChange;
       }
       
       function areOtherCoreFieldsValid() {
-        // Allow total_play_seconds to only increase or stay the same.
         let validGameTime = request.resource.data.playGames.total_play_seconds >= resource.data.playGames.total_play_seconds;
-
-        // The user's wallet address should not be changed.
         let walletAddressUnchanged = request.resource.data.wallet.walletAddress == resource.data.wallet.walletAddress;
         
         return validGameTime && walletAddressUnchanged;
       }
 
-      allow read, create: if isOwner();
+      // Allow authenticated users to search for referrers by code
+      allow read: if request.auth != null;
+      allow create: if isOwner();
 
-      // Allow updates if the user is the owner and the update adheres to the defined functions.
       allow update: if isOwner()
         && areImmutableFieldsUnchanged()
         && isValidBalanceUpdate()
@@ -56,6 +51,7 @@ service cloud.firestore {
     match /referrals/{referralId} {
       allow create: if request.auth != null;
       allow read: if request.auth != null && (request.auth.uid == resource.data.referredUid || request.auth.uid == resource.data.referrerUid);
+      allow update: if request.auth != null && request.auth.uid == resource.data.referrerUid && request.resource.data.claimed == true;
     }
   }
 }

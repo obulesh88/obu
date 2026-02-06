@@ -1,3 +1,4 @@
+
 'use client';
 
 import { getApps, initializeApp, getApp, type FirebaseApp } from 'firebase/app';
@@ -8,6 +9,7 @@ import { FirebaseProvider, useFirebase, useFirebaseApp, useFirestore, useAuth } 
 import { FirebaseClientProvider } from './client-provider';
 import { useFirebaseAuth } from './auth/use-user';
 import { useDoc } from './firestore/use-doc';
+import { useCollection } from './firestore/use-collection';
 
 function initializeFirebase() {
   const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -17,22 +19,16 @@ function initializeFirebase() {
   return { firebaseApp: app, auth, firestore };
 }
 
-// The main useUser hook is in @/hooks/use-user.ts
-// This re-export is kept for compatibility if it's used elsewhere,
-// but direct usage should be from the primary hook file.
-function useUser() {
-    return useFirebaseAuth();
-}
-
 export {
   initializeFirebase,
   FirebaseProvider,
   FirebaseClientProvider,
-  useUser,
+  useFirebaseAuth as useUser,
   useFirebaseAuth,
   useFirebase,
   useFirebaseApp,
   useFirestore,
   useAuth,
-  useDoc
+  useDoc,
+  useCollection
 };

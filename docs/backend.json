@@ -88,9 +88,10 @@
         "referrerUid": { "type": "string", "description": "The UID of the person who referred." },
         "referredUid": { "type": "string", "description": "The UID of the newly joined user." },
         "referralCode": { "type": "string", "description": "The code used for the referral." },
-        "referralDate": { "type": "string", "format": "date-time", "description": "When the referral occurred." }
+        "referralDate": { "type": "string", "format": "date-time", "description": "When the referral occurred." },
+        "claimed": { "type": "boolean", "description": "Whether the referrer has claimed the reward." }
       },
-      "required": ["referrerUid", "referredUid", "referralCode", "referralDate"]
+      "required": ["referrerUid", "referredUid", "referralCode", "referralDate", "claimed"]
     }
   },
   "auth": {

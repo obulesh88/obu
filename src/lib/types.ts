@@ -59,9 +59,11 @@ export type EarningTransaction = {
 };
 
 export type ReferralRecord = {
+  id?: string;
   referralId: string;
   referrerUid: string;
   referredUid: string;
   referralCode: string;
   referralDate: any;
+  claimed: boolean;
 };

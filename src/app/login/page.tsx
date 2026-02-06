@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -14,11 +15,9 @@ import { useEffect, Suspense } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
-import { doc, setDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-
-const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -34,24 +33,6 @@ const SignInSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 type SignInSchemaType = z.infer<typeof SignInSchema>;
-
-async function verifyReferralBackend(userId: string) {
-  try {
-    await fetch(
-      "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${AUTH_TOKEN}`
-        },
-        body: JSON.stringify({ userId })
-      }
-    );
-  } catch (err) {
-    console.error("Auto-verification error:", err);
-  }
-}
 
 function LoginContent() {
   const router = useRouter();
@@ -110,6 +91,17 @@ function LoginContent() {
       const userDocRef = doc(firestore, 'users', userCredential.user.uid);
       
       const referralCodeUsed = data.referredBy?.trim() || null;
+      let referrerUid = "";
+
+      // Try to find referrer UID if a code was used
+      if (referralCodeUsed) {
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, where('referral.referralCode', '==', referralCodeUsed));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          referrerUid = querySnapshot.docs[0].id;
+        }
+      }
 
       const newProfile = {
           uid: userCredential.user.uid,
@@ -172,20 +164,17 @@ function LoginContent() {
               }
           });
 
-      if (referralCodeUsed) {
-        // Create the referral record for tracking
+      if (referralCodeUsed && referrerUid) {
         const referralsRef = collection(firestore, 'referrals');
         const referralData = {
-          referrerUid: "", // Will be mapped by backend
+          referralId: `ref_${Date.now()}`,
+          referrerUid: referrerUid,
           referredUid: userCredential.user.uid,
           referralCode: referralCodeUsed,
           referralDate: serverTimestamp(),
+          claimed: false
         };
-        
         addDoc(referralsRef, referralData).catch(() => {});
-        
-        // Trigger automated verification to update referrer's balance
-        verifyReferralBackend(userCredential.user.uid);
       }
 
       toast({
@@ -193,7 +182,6 @@ function LoginContent() {
         description: `Welcome! Your unique referral code is ${myReferralCode}.`,
       });
       
-      // Delay redirect slightly to ensure writes are initiated
       setTimeout(() => router.push('/'), 500);
     } catch (error: any) {
       toast({
