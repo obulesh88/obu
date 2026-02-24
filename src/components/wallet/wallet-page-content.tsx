@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Download, RefreshCw, ArrowRightLeft } from 'lucide-react';
+import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
@@ -14,6 +14,14 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 
@@ -27,6 +35,28 @@ export default function WalletPageContent() {
   const [inrAmount, setInrAmount] = useState('');
   const [isConverting, setIsConverting] = useState(false);
   
+  const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
+  const [isSavingBank, setIsSavingBank] = useState(false);
+  const [bankData, setBankData] = useState({
+    name: '',
+    contact: '',
+    email: '',
+    accountNumber: '',
+    ifsc: '',
+  });
+
+  useEffect(() => {
+    if (userProfile?.bankDetails) {
+      setBankData({
+        name: userProfile.bankDetails.name || '',
+        contact: userProfile.bankDetails.contact || '',
+        email: userProfile.bankDetails.email || '',
+        accountNumber: userProfile.bankDetails.accountNumber || '',
+        ifsc: userProfile.bankDetails.ifsc || '',
+      });
+    }
+  }, [userProfile]);
+
   useEffect(() => {
     const orValue = parseFloat(orAmount);
     if (!isNaN(orValue) && orValue > 0) {
@@ -35,6 +65,46 @@ export default function WalletPageContent() {
       setInrAmount('');
     }
   }, [orAmount]);
+
+  const handleSaveBankDetails = async () => {
+    if (!user || !firestore) return;
+    
+    setIsSavingBank(true);
+    const userDocRef = doc(firestore, 'users', user.uid);
+    
+    const updateData = {
+      bankDetails: bankData,
+      updatedAt: serverTimestamp()
+    };
+
+    updateDoc(userDocRef, updateData)
+      .then(() => {
+        toast({
+          title: 'Bank Details Saved',
+          description: 'Your payment information has been updated.',
+        });
+        setIsBankDialogOpen(false);
+      })
+      .catch(async (error: any) => {
+        if (error.code === 'permission-denied') {
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: updateData,
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Failed to save',
+            description: error.message
+          });
+        }
+      })
+      .finally(() => {
+        setIsSavingBank(false);
+      });
+  };
 
   const handleConvert = async () => {
     if (!user || !userProfile || !firestore) {
@@ -136,8 +206,17 @@ export default function WalletPageContent() {
 
       {activeTab === 'earning' && (
          <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
              <CardTitle className="text-sm font-medium">Available to Withdraw</CardTitle>
+             <Button 
+               variant="ghost" 
+               size="sm" 
+               className="h-8 gap-1 text-[10px] uppercase font-bold text-primary hover:text-primary/80 hover:bg-primary/10" 
+               onClick={() => setIsBankDialogOpen(true)}
+             >
+               <Building2 className="h-3 w-3" />
+               Bank Details
+             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
              {loading ? (
@@ -238,6 +317,73 @@ export default function WalletPageContent() {
           </CardFooter>
         </Card>
       )}
+
+      {/* Bank Details Dialog */}
+      <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Bank Details</DialogTitle>
+            <DialogDescription>
+              Enter your bank account information to receive payments.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="bank-name">Full Name (Bank Record)</Label>
+              <Input 
+                id="bank-name" 
+                value={bankData.name} 
+                onChange={(e) => setBankData({...bankData, name: e.target.value})}
+                placeholder="John Doe" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bank-contact">Contact Number</Label>
+              <Input 
+                id="bank-contact" 
+                value={bankData.contact} 
+                onChange={(e) => setBankData({...bankData, contact: e.target.value})}
+                placeholder="10-digit number" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bank-email">Email</Label>
+              <Input 
+                id="bank-email" 
+                type="email"
+                value={bankData.email} 
+                onChange={(e) => setBankData({...bankData, email: e.target.value})}
+                placeholder="email@example.com" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bank-acc">Account Number</Label>
+              <Input 
+                id="bank-acc" 
+                value={bankData.accountNumber} 
+                onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})}
+                placeholder="Your account number" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bank-ifsc">IFSC Code</Label>
+              <Input 
+                id="bank-ifsc" 
+                value={bankData.ifsc} 
+                onChange={(e) => setBankData({...bankData, ifsc: e.target.value})}
+                placeholder="Bank IFSC code" 
+                className="uppercase"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveBankDetails} disabled={isSavingBank} className="w-full">
+              {isSavingBank ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save Details
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
