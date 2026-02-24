@@ -1,8 +1,9 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save } from 'lucide-react';
+import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save, Send } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
@@ -32,8 +33,10 @@ export default function WalletPageContent() {
   const firestore = useFirestore();
 
   const [orAmount, setOrAmount] = useState('');
-  const [inrAmount, setInrAmount] = useState('');
+  const [convertInrAmount, setConvertInrAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isConverting, setIsConverting] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   const [isSavingBank, setIsSavingBank] = useState(false);
@@ -60,9 +63,9 @@ export default function WalletPageContent() {
   useEffect(() => {
     const orValue = parseFloat(orAmount);
     if (!isNaN(orValue) && orValue > 0) {
-      setInrAmount((orValue / CONVERSION_RATE).toFixed(2));
+      setConvertInrAmount((orValue / CONVERSION_RATE).toFixed(2));
     } else {
-      setInrAmount('');
+      setConvertInrAmount('');
     }
   }, [orAmount]);
 
@@ -103,6 +106,68 @@ export default function WalletPageContent() {
       })
       .finally(() => {
         setIsSavingBank(false);
+      });
+  };
+
+  const handleWithdraw = async () => {
+    if (!user || !userProfile || !firestore) return;
+
+    const amount = parseFloat(withdrawAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid withdrawal amount.' });
+      return;
+    }
+
+    if (amount > (userProfile.wallet?.inrBalance || 0)) {
+      toast({ variant: 'destructive', title: 'Insufficient Balance', description: 'You do not have enough INR balance.' });
+      return;
+    }
+
+    // Check if bank details are set
+    const { name, accountNumber, ifsc } = bankData;
+    if (!name || !accountNumber || !ifsc) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Missing Bank Details', 
+        description: 'Please save your bank details first using the button above.' 
+      });
+      setIsBankDialogOpen(true);
+      return;
+    }
+
+    setIsWithdrawing(true);
+    const userDocRef = doc(firestore, 'users', user.uid);
+    const updateData = {
+      'wallet.inrBalance': increment(-amount),
+      'updatedAt': serverTimestamp()
+    };
+
+    updateDoc(userDocRef, updateData)
+      .then(() => {
+        toast({
+          title: 'Withdrawal Initiated',
+          description: `₹${amount.toFixed(2)} will be credited to your bank account shortly.`,
+        });
+        setWithdrawAmount('');
+      })
+      .catch(async (error: any) => {
+        if (error.code === 'permission-denied') {
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: updateData,
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Withdrawal Failed',
+            description: error.message
+          });
+        }
+      })
+      .finally(() => {
+        setIsWithdrawing(false);
       });
   };
 
@@ -218,13 +283,45 @@ export default function WalletPageContent() {
                Bank Details
              </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
              {loading ? (
                 <Skeleton className="h-8 w-24" />
              ) : (
                 <div className="text-3xl font-bold text-primary">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
              )}
+             
+             <div className="space-y-2">
+                <Label htmlFor="withdrawAmount">Withdraw Amount (INR)</Label>
+                <div className="relative">
+                  <Input 
+                    id="withdrawAmount" 
+                    type="number" 
+                    placeholder="Enter amount" 
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    disabled={isWithdrawing}
+                    className="font-bold text-lg"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span className="text-sm font-bold text-muted-foreground">₹</span>
+                  </div>
+                </div>
+             </div>
           </CardContent>
+          <CardFooter>
+            <Button 
+                className="w-full h-12 text-lg font-bold" 
+                onClick={handleWithdraw} 
+                disabled={isWithdrawing || !withdrawAmount || parseFloat(withdrawAmount) <= 0}
+            >
+                {isWithdrawing ? (
+                    <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                    <Send className="mr-2 h-5 w-5" />
+                )}
+                {isWithdrawing ? 'Processing...' : 'Withdraw Now'}
+            </Button>
+          </CardFooter>
         </Card>
       )}
 
@@ -285,7 +382,7 @@ export default function WalletPageContent() {
                     id="inrAmount" 
                     type="number" 
                     placeholder="0.00" 
-                    value={inrAmount}
+                    value={convertInrAmount}
                     readOnly 
                     className="bg-muted font-bold text-green-600"
                   />

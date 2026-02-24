@@ -26,9 +26,12 @@ service cloud.firestore {
         // Conversion scenario: OR decreases, INR increases proportionally (1000:1)
         let isConversion = orDiff < 0 && inrDiff == (orDiff * -1) / 1000;
 
+        // Withdrawal scenario: INR decreases, OR remains unchanged
+        let isWithdrawal = inrDiff < 0 && orDiff == 0;
+
         let noChange = orDiff == 0 && inrDiff == 0;
         
-        return isReward || isConversion || noChange;
+        return isReward || isConversion || isWithdrawal || noChange;
       }
       
       function areOtherCoreFieldsValid() {
