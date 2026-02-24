@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Download, Upload, RefreshCw, ArrowRightLeft } from 'lucide-react';
+import { DollarSign, Download, Upload, RefreshCw, ArrowRightLeft, Landmark } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
@@ -14,6 +14,14 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 
@@ -26,6 +34,17 @@ export default function WalletPageContent() {
   const [orAmount, setOrAmount] = useState('');
   const [inrAmount, setInrAmount] = useState('');
   const [isConverting, setIsConverting] = useState(false);
+  
+  // Withdrawal Form State
+  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawDetails, setWithdrawDetails] = useState({
+    name: '',
+    contact: '',
+    email: '',
+    account_number: '',
+    ifsc: ''
+  });
 
   useEffect(() => {
     const orValue = parseFloat(orAmount);
@@ -99,6 +118,46 @@ export default function WalletPageContent() {
         });
   };
 
+  const handleWithdrawSubmit = () => {
+    if (!userProfile || userProfile.wallet.inrBalance <= 0) {
+        toast({
+            variant: 'destructive',
+            title: 'Insufficient Funds',
+            description: 'You have no INR balance to withdraw.'
+        });
+        return;
+    }
+
+    const { name, contact, email, account_number, ifsc } = withdrawDetails;
+    if (!name || !contact || !email || !account_number || !ifsc) {
+        toast({
+            variant: 'destructive',
+            title: 'Missing Information',
+            description: 'Please fill in all bank details.'
+        });
+        return;
+    }
+
+    setIsWithdrawing(true);
+
+    // Mock withdrawal process
+    setTimeout(() => {
+        toast({
+            title: 'Withdrawal Initiated',
+            description: `Your withdrawal of ₹${userProfile.wallet.inrBalance.toFixed(2)} is being processed to account ending in ${account_number.slice(-4)}.`
+        });
+        setIsWithdrawing(false);
+        setIsWithdrawDialogOpen(false);
+        setWithdrawDetails({
+            name: '',
+            contact: '',
+            email: '',
+            account_number: '',
+            ifsc: ''
+        });
+    }, 1500);
+  };
+
   return (
     <div className="grid gap-6">
       <div className="grid grid-cols-3 gap-4">
@@ -145,7 +204,7 @@ export default function WalletPageContent() {
              ) : (
                 <div className="text-3xl font-bold text-primary">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
              )}
-            <Button className="w-full">
+            <Button className="w-full" onClick={() => setIsWithdrawDialogOpen(true)} disabled={!userProfile || userProfile.wallet.inrBalance <= 0}>
               <Upload className="mr-2 h-4 w-4" />
               Withdraw to Bank
             </Button>
@@ -242,6 +301,79 @@ export default function WalletPageContent() {
           </CardFooter>
         </Card>
       )}
+
+      {/* Withdrawal Dialog */}
+      <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+                <Landmark className="h-5 w-5 text-primary" />
+                Bank Withdrawal
+            </DialogTitle>
+            <DialogDescription>
+              Enter your bank account details carefully to receive your ₹{userProfile?.wallet.inrBalance.toFixed(2)} balance.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="bank-name">Full Name (as in bank)</Label>
+              <Input 
+                id="bank-name" 
+                placeholder="John Doe" 
+                value={withdrawDetails.name}
+                onChange={(e) => setWithdrawDetails({...withdrawDetails, name: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bank-contact">Contact Number</Label>
+              <Input 
+                id="bank-contact" 
+                type="tel" 
+                placeholder="+91 XXXXX XXXXX" 
+                value={withdrawDetails.contact}
+                onChange={(e) => setWithdrawDetails({...withdrawDetails, contact: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bank-email">Email Address</Label>
+              <Input 
+                id="bank-email" 
+                type="email" 
+                placeholder="john@example.com" 
+                value={withdrawDetails.email}
+                onChange={(e) => setWithdrawDetails({...withdrawDetails, email: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bank-account">Account Number</Label>
+              <Input 
+                id="bank-account" 
+                placeholder="XXXXXXXXXXXX" 
+                value={withdrawDetails.account_number}
+                onChange={(e) => setWithdrawDetails({...withdrawDetails, account_number: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bank-ifsc">IFSC Code</Label>
+              <Input 
+                id="bank-ifsc" 
+                placeholder="SBIN000XXXX" 
+                className="uppercase font-mono"
+                value={withdrawDetails.ifsc}
+                onChange={(e) => setWithdrawDetails({...withdrawDetails, ifsc: e.target.value.toUpperCase()})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsWithdrawDialogOpen(false)} disabled={isWithdrawing}>
+              Cancel
+            </Button>
+            <Button onClick={handleWithdrawSubmit} disabled={isWithdrawing}>
+              {isWithdrawing ? 'Processing...' : 'Submit Withdrawal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
