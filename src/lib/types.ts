@@ -12,6 +12,13 @@ export type UserProfile = {
     inrBalance: number;
     walletAddress: string;
   };
+  bankDetails?: {
+    name: string;
+    contact: string;
+    email: string;
+    accountNumber: string;
+    ifsc: string;
+  };
   referral: {
     referralCode: string;
     referredBy: string | null;

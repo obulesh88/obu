@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -38,6 +39,7 @@ export default function WalletPageContent() {
   // Withdrawal Form State
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawDetails, setWithdrawDetails] = useState({
     name: '',
     contact: '',
@@ -45,6 +47,19 @@ export default function WalletPageContent() {
     account_number: '',
     ifsc: ''
   });
+
+  // Load existing bank details when profile changes
+  useEffect(() => {
+    if (userProfile?.bankDetails) {
+      setWithdrawDetails({
+        name: userProfile.bankDetails.name || '',
+        contact: userProfile.bankDetails.contact || '',
+        email: userProfile.bankDetails.email || '',
+        account_number: userProfile.bankDetails.accountNumber || '',
+        ifsc: userProfile.bankDetails.ifsc || ''
+      });
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     const orValue = parseFloat(orAmount);
@@ -119,54 +134,87 @@ export default function WalletPageContent() {
   };
 
   const handleWithdrawSubmit = () => {
-    if (!userProfile) {
+    if (!user || !userProfile || !firestore) {
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'User profile not found.'
+            description: 'Authentication or profile missing.'
         });
         return;
     }
 
     const { name, contact, email, account_number, ifsc } = withdrawDetails;
-    if (!name || !contact || !email || !account_number || !ifsc) {
+    const amount = parseFloat(withdrawAmount);
+
+    if (!name || !contact || !email || !account_number || !ifsc || isNaN(amount)) {
         toast({
             variant: 'destructive',
             title: 'Missing Information',
-            description: 'Please fill in all bank details.'
+            description: 'Please fill in all bank details and withdrawal amount.'
+        });
+        return;
+    }
+
+    if (amount <= 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid Amount',
+          description: 'Please enter a valid positive amount.'
+        });
+        return;
+    }
+
+    if (amount > userProfile.wallet.inrBalance) {
+        toast({
+          variant: 'destructive',
+          title: 'Insufficient Balance',
+          description: `You only have ₹${userProfile.wallet.inrBalance.toFixed(2)} available.`
         });
         return;
     }
 
     setIsWithdrawing(true);
 
-    // Mock withdrawal process
-    setTimeout(() => {
-        const balance = userProfile.wallet.inrBalance;
-        toast({
-            title: 'Withdrawal Initiated',
-            description: `Your withdrawal of ₹${balance.toFixed(2)} is being processed to account ending in ${account_number.slice(-4)}.`
-        });
-        
-        // Optionally update the balance in Firestore here if you want it to actually deduct in the UI
-        if (balance > 0 && firestore && user) {
-          const userDocRef = doc(firestore, 'users', user.uid);
-          updateDoc(userDocRef, {
-            'wallet.inrBalance': 0,
-            'updatedAt': serverTimestamp()
-          }).catch(() => {});
-        }
+    const userDocRef = doc(firestore, 'users', user.uid);
+    const updateData = {
+      'wallet.inrBalance': increment(-amount),
+      'bankDetails': {
+        name,
+        contact,
+        email,
+        accountNumber: account_number,
+        ifsc: ifsc
+      },
+      'updatedAt': serverTimestamp()
+    };
 
+    updateDoc(userDocRef, updateData)
+      .then(() => {
+        toast({
+          title: 'Withdrawal Initiated',
+          description: `Your withdrawal of ₹${amount.toFixed(2)} is being processed. Bank details saved for future use.`
+        });
         setIsWithdrawing(false);
         setIsWithdrawDialogOpen(false);
-        setWithdrawDetails({
-            name: '',
-            contact: '',
-            email: '',
-            account_number: '',
-            ifsc: ''
-        });
-    }, 1500);
+        setWithdrawAmount('');
+      })
+      .catch(async (error: any) => {
+        setIsWithdrawing(false);
+        if (error.code === 'permission-denied') {
+          const permissionError = new FirestorePermissionError({
+              path: userDocRef.path,
+              operation: 'update',
+              requestResourceData: updateData,
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+        } else {
+          toast({
+              variant: 'destructive',
+              title: 'Withdrawal Failed',
+              description: error.message || 'An unexpected error occurred.'
+          });
+        }
+      });
   };
 
   return (
@@ -326,10 +374,30 @@ export default function WalletPageContent() {
                 Bank Withdrawal
             </DialogTitle>
             <DialogDescription>
-              Enter your bank account details carefully to receive your ₹{userProfile?.wallet.inrBalance.toFixed(2) || '0.00'} balance.
+              Enter withdrawal amount and bank details. Details will be saved for next time.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="withdraw-amount">Amount to Withdraw (₹)</Label>
+              <div className="relative">
+                <Input 
+                  id="withdraw-amount" 
+                  type="number" 
+                  placeholder="0.00" 
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="font-bold text-primary"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <span className="text-xs font-bold text-primary">INR</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Available: ₹{userProfile?.wallet.inrBalance.toFixed(2) || '0.00'}
+              </p>
+            </div>
+            
             <div className="grid gap-2">
               <Label htmlFor="bank-name">Full Name (as in bank)</Label>
               <Input 
@@ -383,7 +451,7 @@ export default function WalletPageContent() {
             <Button variant="outline" onClick={() => setIsWithdrawDialogOpen(false)} disabled={isWithdrawing}>
               Cancel
             </Button>
-            <Button onClick={handleWithdrawSubmit} disabled={isWithdrawing}>
+            <Button onClick={handleWithdrawSubmit} disabled={isWithdrawing || !withdrawAmount || parseFloat(withdrawAmount) <= 0}>
               {isWithdrawing ? 'Processing...' : 'Submit Withdrawal'}
             </Button>
           </DialogFooter>

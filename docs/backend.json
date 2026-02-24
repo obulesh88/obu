@@ -28,6 +28,16 @@
           },
           "required": ["orBalance", "inrBalance", "walletAddress"]
         },
+        "bankDetails": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "contact": { "type": "string" },
+            "email": { "type": "string" },
+            "accountNumber": { "type": "string" },
+            "ifsc": { "type": "string" }
+          }
+        },
         "referral": {
           "type": "object",
           "properties": {
