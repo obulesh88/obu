@@ -119,11 +119,11 @@ export default function WalletPageContent() {
   };
 
   const handleWithdrawSubmit = () => {
-    if (!userProfile || userProfile.wallet.inrBalance <= 0) {
+    if (!userProfile) {
         toast({
             variant: 'destructive',
-            title: 'Insufficient Funds',
-            description: 'You have no INR balance to withdraw.'
+            title: 'Error',
+            description: 'User profile not found.'
         });
         return;
     }
@@ -142,10 +142,21 @@ export default function WalletPageContent() {
 
     // Mock withdrawal process
     setTimeout(() => {
+        const balance = userProfile.wallet.inrBalance;
         toast({
             title: 'Withdrawal Initiated',
-            description: `Your withdrawal of ₹${userProfile.wallet.inrBalance.toFixed(2)} is being processed to account ending in ${account_number.slice(-4)}.`
+            description: `Your withdrawal of ₹${balance.toFixed(2)} is being processed to account ending in ${account_number.slice(-4)}.`
         });
+        
+        // Optionally update the balance in Firestore here if you want it to actually deduct in the UI
+        if (balance > 0 && firestore && user) {
+          const userDocRef = doc(firestore, 'users', user.uid);
+          updateDoc(userDocRef, {
+            'wallet.inrBalance': 0,
+            'updatedAt': serverTimestamp()
+          }).catch(() => {});
+        }
+
         setIsWithdrawing(false);
         setIsWithdrawDialogOpen(false);
         setWithdrawDetails({
@@ -204,7 +215,11 @@ export default function WalletPageContent() {
              ) : (
                 <div className="text-3xl font-bold text-primary">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
              )}
-            <Button className="w-full" onClick={() => setIsWithdrawDialogOpen(true)} disabled={!userProfile || userProfile.wallet.inrBalance <= 0}>
+            <Button 
+              className="w-full" 
+              onClick={() => setIsWithdrawDialogOpen(true)} 
+              disabled={!userProfile}
+            >
               <Upload className="mr-2 h-4 w-4" />
               Withdraw to Bank
             </Button>
@@ -311,7 +326,7 @@ export default function WalletPageContent() {
                 Bank Withdrawal
             </DialogTitle>
             <DialogDescription>
-              Enter your bank account details carefully to receive your ₹{userProfile?.wallet.inrBalance.toFixed(2)} balance.
+              Enter your bank account details carefully to receive your ₹{userProfile?.wallet.inrBalance.toFixed(2) || '0.00'} balance.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
