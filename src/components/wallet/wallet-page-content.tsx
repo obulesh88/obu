@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -25,6 +24,8 @@ import {
 } from '@/components/ui/dialog';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
+const MIN_WITHDRAWAL = 1;
+const MAX_WITHDRAWAL = 10;
 
 export default function WalletPageContent() {
   const [activeTab, setActiveTab] = useState<'earning' | 'deposit' | 'convert'>('earning');
@@ -115,6 +116,16 @@ export default function WalletPageContent() {
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid withdrawal amount.' });
+      return;
+    }
+
+    if (amount < MIN_WITHDRAWAL) {
+      toast({ variant: 'destructive', title: 'Withdrawal Limit', description: `Minimum withdrawal is ₹${MIN_WITHDRAWAL}.` });
+      return;
+    }
+
+    if (amount > MAX_WITHDRAWAL) {
+      toast({ variant: 'destructive', title: 'Withdrawal Limit', description: `Maximum withdrawal is ₹${MAX_WITHDRAWAL}.` });
       return;
     }
 
@@ -306,6 +317,7 @@ export default function WalletPageContent() {
                     <span className="text-sm font-bold text-muted-foreground">₹</span>
                   </div>
                 </div>
+                <p className="text-[10px] text-muted-foreground font-medium">Min: ₹{MIN_WITHDRAWAL} | Max: ₹{MAX_WITHDRAWAL}</p>
              </div>
           </CardContent>
           <CardFooter>
