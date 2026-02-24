@@ -1,9 +1,8 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Download, Upload, RefreshCw, ArrowRightLeft, Landmark } from 'lucide-react';
+import { DollarSign, Download, RefreshCw, ArrowRightLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
@@ -15,14 +14,6 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 
@@ -36,31 +27,6 @@ export default function WalletPageContent() {
   const [inrAmount, setInrAmount] = useState('');
   const [isConverting, setIsConverting] = useState(false);
   
-  // Withdrawal Form State
-  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawDetails, setWithdrawDetails] = useState({
-    name: '',
-    contact: '',
-    email: '',
-    account_number: '',
-    ifsc: ''
-  });
-
-  // Load existing bank details when profile changes
-  useEffect(() => {
-    if (userProfile?.bankDetails) {
-      setWithdrawDetails({
-        name: userProfile.bankDetails.name || '',
-        contact: userProfile.bankDetails.contact || '',
-        email: userProfile.bankDetails.email || '',
-        account_number: userProfile.bankDetails.accountNumber || '',
-        ifsc: userProfile.bankDetails.ifsc || ''
-      });
-    }
-  }, [userProfile]);
-
   useEffect(() => {
     const orValue = parseFloat(orAmount);
     if (!isNaN(orValue) && orValue > 0) {
@@ -133,90 +99,6 @@ export default function WalletPageContent() {
         });
   };
 
-  const handleWithdrawSubmit = () => {
-    if (!user || !userProfile || !firestore) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Authentication or profile missing.'
-        });
-        return;
-    }
-
-    const { name, contact, email, account_number, ifsc } = withdrawDetails;
-    const amount = parseFloat(withdrawAmount);
-
-    if (!name || !contact || !email || !account_number || !ifsc || isNaN(amount)) {
-        toast({
-            variant: 'destructive',
-            title: 'Missing Information',
-            description: 'Please fill in all bank details and withdrawal amount.'
-        });
-        return;
-    }
-
-    if (amount <= 0) {
-        toast({
-          variant: 'destructive',
-          title: 'Invalid Amount',
-          description: 'Please enter a valid positive amount.'
-        });
-        return;
-    }
-
-    if (amount > userProfile.wallet.inrBalance) {
-        toast({
-          variant: 'destructive',
-          title: 'Insufficient Balance',
-          description: `You only have ₹${userProfile.wallet.inrBalance.toFixed(2)} available.`
-        });
-        return;
-    }
-
-    setIsWithdrawing(true);
-
-    const userDocRef = doc(firestore, 'users', user.uid);
-    const updateData = {
-      'wallet.inrBalance': increment(-amount),
-      'bankDetails': {
-        name,
-        contact,
-        email,
-        accountNumber: account_number,
-        ifsc: ifsc
-      },
-      'updatedAt': serverTimestamp()
-    };
-
-    updateDoc(userDocRef, updateData)
-      .then(() => {
-        toast({
-          title: 'Withdrawal Initiated',
-          description: `Your withdrawal of ₹${amount.toFixed(2)} is being processed. Bank details saved for future use.`
-        });
-        setIsWithdrawing(false);
-        setIsWithdrawDialogOpen(false);
-        setWithdrawAmount('');
-      })
-      .catch(async (error: any) => {
-        setIsWithdrawing(false);
-        if (error.code === 'permission-denied') {
-          const permissionError = new FirestorePermissionError({
-              path: userDocRef.path,
-              operation: 'update',
-              requestResourceData: updateData,
-          } satisfies SecurityRuleContext);
-          errorEmitter.emit('permission-error', permissionError);
-        } else {
-          toast({
-              variant: 'destructive',
-              title: 'Withdrawal Failed',
-              description: error.message || 'An unexpected error occurred.'
-          });
-        }
-      });
-  };
-
   return (
     <div className="grid gap-6">
       <div className="grid grid-cols-3 gap-4">
@@ -263,14 +145,6 @@ export default function WalletPageContent() {
              ) : (
                 <div className="text-3xl font-bold text-primary">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
              )}
-            <Button 
-              className="w-full" 
-              onClick={() => setIsWithdrawDialogOpen(true)} 
-              disabled={!userProfile}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Withdraw to Bank
-            </Button>
           </CardContent>
         </Card>
       )}
@@ -364,99 +238,6 @@ export default function WalletPageContent() {
           </CardFooter>
         </Card>
       )}
-
-      {/* Withdrawal Dialog */}
-      <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-                <Landmark className="h-5 w-5 text-primary" />
-                Bank Withdrawal
-            </DialogTitle>
-            <DialogDescription>
-              Enter withdrawal amount and bank details. Details will be saved for next time.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="withdraw-amount">Amount to Withdraw (₹)</Label>
-              <div className="relative">
-                <Input 
-                  id="withdraw-amount" 
-                  type="number" 
-                  placeholder="0.00" 
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="font-bold text-primary"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <span className="text-xs font-bold text-primary">INR</span>
-                </div>
-              </div>
-              <p className="text-[10px] text-muted-foreground">
-                Available: ₹{userProfile?.wallet.inrBalance.toFixed(2) || '0.00'}
-              </p>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="bank-name">Full Name (as in bank)</Label>
-              <Input 
-                id="bank-name" 
-                placeholder="John Doe" 
-                value={withdrawDetails.name}
-                onChange={(e) => setWithdrawDetails({...withdrawDetails, name: e.target.value})}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="bank-contact">Contact Number</Label>
-              <Input 
-                id="bank-contact" 
-                type="tel" 
-                placeholder="+91 XXXXX XXXXX" 
-                value={withdrawDetails.contact}
-                onChange={(e) => setWithdrawDetails({...withdrawDetails, contact: e.target.value})}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="bank-email">Email Address</Label>
-              <Input 
-                id="bank-email" 
-                type="email" 
-                placeholder="john@example.com" 
-                value={withdrawDetails.email}
-                onChange={(e) => setWithdrawDetails({...withdrawDetails, email: e.target.value})}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="bank-account">Account Number</Label>
-              <Input 
-                id="bank-account" 
-                placeholder="XXXXXXXXXXXX" 
-                value={withdrawDetails.account_number}
-                onChange={(e) => setWithdrawDetails({...withdrawDetails, account_number: e.target.value})}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="bank-ifsc">IFSC Code</Label>
-              <Input 
-                id="bank-ifsc" 
-                placeholder="SBIN000XXXX" 
-                className="uppercase font-mono"
-                value={withdrawDetails.ifsc}
-                onChange={(e) => setWithdrawDetails({...withdrawDetails, ifsc: e.target.value.toUpperCase()})}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsWithdrawDialogOpen(false)} disabled={isWithdrawing}>
-              Cancel
-            </Button>
-            <Button onClick={handleWithdrawSubmit} disabled={isWithdrawing || !withdrawAmount || parseFloat(withdrawAmount) <= 0}>
-              {isWithdrawing ? 'Processing...' : 'Submit Withdrawal'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
