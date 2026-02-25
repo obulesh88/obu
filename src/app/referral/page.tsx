@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
-import { Copy, Users, Trophy, Gift, Link as LinkIcon, CheckCircle, Clock } from 'lucide-react';
+import { Copy, Users, Trophy, Gift, Clock, Share2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
@@ -14,7 +14,7 @@ import { useMemo, useState } from 'react';
 import { ReferralRecord } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import { Badge } from '@/components/ui/badge';
+import { FaWhatsapp } from 'react-icons/fa';
 
 const REFERRAL_REWARD_AMOUNT = 3000;
 
@@ -42,6 +42,12 @@ export default function ReferralPage() {
     });
   };
 
+  const shareOnWhatsApp = () => {
+    const message = `Check out OR-wallet! Use my referral code ${referralCode} to join and earn rewards. Sign up here: ${referralLink}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleClaim = async (referral: ReferralRecord) => {
     if (!user || !firestore || !userProfile || !referral.id) return;
     
@@ -60,10 +66,8 @@ export default function ReferralPage() {
       claimed: true
     };
 
-    // Update referral record
     updateDoc(refRecordRef, refUpdate)
       .then(() => {
-        // Update user profile balance
         return updateDoc(userDocRef, profileUpdate);
       })
       .then(() => {
@@ -119,7 +123,7 @@ export default function ReferralPage() {
         <CardContent className="relative z-10">
           <div className="space-y-6">
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 space-y-6 border border-white/20">
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-4">
                 <p className="text-xs font-bold uppercase tracking-widest opacity-80">Your Referral Code</p>
                 <div className="flex items-center gap-2 w-full max-w-sm">
                   <div className="flex-1 bg-white/20 border border-white/30 rounded-lg py-3 px-4 text-white font-mono text-center text-2xl font-black uppercase tracking-tighter">
@@ -134,6 +138,14 @@ export default function ReferralPage() {
                     <Copy className="h-5 w-5" />
                   </Button>
                 </div>
+                
+                <Button 
+                  onClick={shareOnWhatsApp}
+                  className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold h-12 gap-2"
+                >
+                  <FaWhatsapp className="h-6 w-6" />
+                  Share on WhatsApp
+                </Button>
               </div>
             </div>
           </div>
@@ -207,15 +219,15 @@ export default function ReferralPage() {
           <div className="flex gap-4">
             <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">1</div>
             <div>
-              <p className="font-bold text-sm">Send Code</p>
-              <p className="text-xs text-muted-foreground mt-1">Give your referral code to your friends.</p>
+              <p className="font-bold text-sm">Send Link</p>
+              <p className="text-xs text-muted-foreground mt-1">Use the WhatsApp button to invite friends with your link.</p>
             </div>
           </div>
           <div className="flex gap-4">
             <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">2</div>
             <div>
               <p className="font-bold text-sm">Friend Joins</p>
-              <p className="text-xs text-muted-foreground mt-1">They enter your code during sign-up.</p>
+              <p className="text-xs text-muted-foreground mt-1">They enter your code or use your link during sign-up.</p>
             </div>
           </div>
           <div className="flex gap-4">
