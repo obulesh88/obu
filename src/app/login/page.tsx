@@ -159,6 +159,7 @@ function LoginContent() {
           },
       };
 
+      // Create the document. Use .catch() for security rules errors.
       setDoc(userDocRef, newProfile)
           .catch(async (error: any) => {
               if (error.code === 'permission-denied') {
