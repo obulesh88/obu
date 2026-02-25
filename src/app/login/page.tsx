@@ -11,7 +11,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, Suspense } from 'react';
+import { useEffect, Suspense, useState } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
@@ -63,7 +63,7 @@ function LoginContent() {
 
   useEffect(() => {
     if (referralCodeFromUrl) {
-      setSignUpValue('referredBy', referralCodeFromUrl);
+      setSignUpValue('referredBy', referralCodeFromUrl.toUpperCase());
     }
   }, [referralCodeFromUrl, setSignUpValue]);
 
@@ -78,31 +78,38 @@ function LoginContent() {
   const generateReferralCode = (name: string) => {
     const base = name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
     const random = Math.random().toString(36).substring(2, 7).toUpperCase();
-    return `${base}${random}`;
+    return `${base}${random}`.toUpperCase();
   };
 
   const onSignUp: SubmitHandler<SignUpSchemaType> = async (data) => {
     if (!auth || !firestore) return;
     try {
+      // 1. Create Auth User
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await updateProfile(userCredential.user, { displayName: data.name });
 
       const myReferralCode = generateReferralCode(data.name);
       const userDocRef = doc(firestore, 'users', userCredential.user.uid);
       
-      const referralCodeUsed = data.referredBy?.trim() || null;
+      const referralCodeUsed = data.referredBy?.trim().toUpperCase() || null;
       let referrerUid = "";
 
-      // Try to find referrer UID if a code was used
+      // 2. Try to find referrer UID if a code was used (Non-blocking check)
       if (referralCodeUsed) {
-        const usersRef = collection(firestore, 'users');
-        const q = query(usersRef, where('referral.referralCode', '==', referralCodeUsed));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          referrerUid = querySnapshot.docs[0].id;
+        try {
+          const usersRef = collection(firestore, 'users');
+          const q = query(usersRef, where('referral.referralCode', '==', referralCodeUsed));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            referrerUid = querySnapshot.docs[0].id;
+          }
+        } catch (queryError) {
+          // If query fails (e.g. missing index), we still allow signup to proceed
+          console.warn("Referral verification query failed, proceeding without attribution:", queryError);
         }
       }
 
+      // 3. Create User Profile
       const newProfile = {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
@@ -164,17 +171,22 @@ function LoginContent() {
               }
           });
 
+      // 4. Create Referral Log if valid referrer found
       if (referralCodeUsed && referrerUid) {
-        const referralsRef = collection(firestore, 'referrals');
-        const referralData = {
-          referralId: `ref_${Date.now()}`,
-          referrerUid: referrerUid,
-          referredUid: userCredential.user.uid,
-          referralCode: referralCodeUsed,
-          referralDate: serverTimestamp(),
-          claimed: false
-        };
-        addDoc(referralsRef, referralData).catch(() => {});
+        try {
+          const referralsRef = collection(firestore, 'referrals');
+          const referralData = {
+            referralId: `ref_${Date.now()}`,
+            referrerUid: referrerUid,
+            referredUid: userCredential.user.uid,
+            referralCode: referralCodeUsed,
+            referralDate: serverTimestamp(),
+            claimed: false
+          };
+          addDoc(referralsRef, referralData).catch(() => {});
+        } catch (refLogErr) {
+          console.warn("Could not log referral event:", refLogErr);
+        }
       }
 
       toast({
@@ -187,7 +199,7 @@ function LoginContent() {
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: error.message || 'An unexpected error occurred during registration.',
       });
     }
   };
