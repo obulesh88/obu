@@ -15,12 +15,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-        <div className="flex min-h-full w-full flex-col">
+        <div className="flex h-full w-full flex-col overflow-hidden">
           <Header />
-          <SidebarInset>
+          <SidebarInset className="flex-1 overflow-y-auto scrollbar-hide">
             <main className={cn(
               "flex flex-1 flex-col",
-              !isPaddingDisabled && "gap-4 p-4"
+              !isPaddingDisabled && "gap-4 p-4 pb-20"
             )}>
             {children}
             </main>
@@ -55,7 +55,7 @@ export default function RootLayout({
         )}
       >
         <div className="relative flex h-full w-full flex-col items-center justify-center p-0 md:p-6 lg:p-10">
-          <div className="relative h-full w-full max-w-[430px] bg-background shadow-[0_0_80px_-20px_rgba(0,0,0,0.8)] md:h-[92dvh] md:max-h-[880px] md:rounded-[54px] md:border-[12px] md:border-zinc-900 md:ring-2 md:ring-zinc-800 flex flex-col overflow-y-auto overflow-x-hidden scrollbar-hide">
+          <div className="relative h-full w-full max-w-[430px] bg-background shadow-[0_0_80px_-20px_rgba(0,0,0,0.8)] md:h-[92dvh] md:max-h-[880px] md:rounded-[54px] md:border-[12px] md:border-zinc-900 md:ring-2 md:ring-zinc-800 flex flex-col overflow-hidden">
             <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
               <FirebaseClientProvider>
                 <LayoutProvider>
