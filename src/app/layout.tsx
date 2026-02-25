@@ -51,11 +51,11 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          'h-screen overflow-hidden bg-muted/40 font-body antialiased'
+          'h-[100dvh] w-full overflow-hidden bg-zinc-950 font-body antialiased flex items-center justify-center'
         )}
       >
-        <div className="flex h-full w-full items-center justify-center">
-          <div className="relative h-full w-full max-w-[420px] overflow-y-auto overflow-x-hidden bg-background shadow-2xl md:h-[90vh] md:max-h-[840px] md:rounded-[32px] md:border-8 md:border-black">
+        <div className="relative flex h-full w-full flex-col items-center justify-center p-0 md:p-6 lg:p-10">
+          <div className="relative h-full w-full max-w-[430px] bg-background shadow-[0_0_80px_-20px_rgba(0,0,0,0.8)] md:h-[92dvh] md:max-h-[880px] md:rounded-[54px] md:border-[12px] md:border-zinc-900 md:ring-2 md:ring-zinc-800 flex flex-col overflow-y-auto overflow-x-hidden scrollbar-hide">
             <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
               <FirebaseClientProvider>
                 <LayoutProvider>
