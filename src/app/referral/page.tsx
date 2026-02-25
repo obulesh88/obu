@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
-import { Copy, Users, Trophy, Gift, Clock, Share2 } from 'lucide-react';
+import { Copy, Users, Trophy, Gift, Clock, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
@@ -17,6 +17,8 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { FaWhatsapp } from 'react-icons/fa';
 
 const REFERRAL_REWARD_AMOUNT = 3000;
+const SUPABASE_AUTH_TOKEN = "Bearer cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
+const SUPABASE_FUNC_URL = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/referral_function";
 
 export default function ReferralPage() {
   const { toast } = useToast();
@@ -55,41 +57,63 @@ export default function ReferralPage() {
     const userDocRef = doc(firestore, 'users', user.uid);
     const refRecordRef = doc(firestore, 'referrals', referral.id);
 
-    const profileUpdate = {
-      'wallet.orBalance': increment(REFERRAL_REWARD_AMOUNT),
-      'referral.referralCount': increment(1),
-      'referral.totalReferralEarnings': increment(REFERRAL_REWARD_AMOUNT),
-      'updatedAt': serverTimestamp()
-    };
-
-    const refUpdate = {
-      claimed: true
-    };
-
-    updateDoc(refRecordRef, refUpdate)
-      .then(() => {
-        return updateDoc(userDocRef, profileUpdate);
-      })
-      .then(() => {
-        toast({
-          title: 'Reward Claimed!',
-          description: `You earned ${REFERRAL_REWARD_AMOUNT} OR for a successful referral.`,
-        });
-      })
-      .catch(async (error: any) => {
-        console.error("Claim error:", error);
-        if (error.code === 'permission-denied') {
-          const permissionError = new FirestorePermissionError({
-            path: refRecordRef.path,
-            operation: 'update',
-            requestResourceData: refUpdate,
-          } satisfies SecurityRuleContext);
-          errorEmitter.emit('permission-error', permissionError);
-        }
-      })
-      .finally(() => {
-        setClaimingId(null);
+    try {
+      // 1. Call Supabase Verification Function
+      const response = await fetch(SUPABASE_FUNC_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": SUPABASE_AUTH_TOKEN,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          referralId: referral.id,
+          referrerUid: user.uid,
+          referredUid: referral.referredUid,
+          referralCode: referral.referralCode
+        })
       });
+
+      const verifyData = await response.json();
+      console.log('Verification result:', verifyData);
+
+      // 2. Proceed with local balance update
+      const profileUpdate = {
+        'wallet.orBalance': increment(REFERRAL_REWARD_AMOUNT),
+        'referral.referralCount': increment(1),
+        'referral.totalReferralEarnings': increment(REFERRAL_REWARD_AMOUNT),
+        'updatedAt': serverTimestamp()
+      };
+
+      const refUpdate = {
+        claimed: true
+      };
+
+      await updateDoc(refRecordRef, refUpdate);
+      await updateDoc(userDocRef, profileUpdate);
+
+      toast({
+        title: 'Reward Claimed!',
+        description: `Successfully verified! You earned ${REFERRAL_REWARD_AMOUNT} OR.`,
+      });
+    } catch (error: any) {
+      console.error("Claim error:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Verification Failed',
+        description: 'The referral could not be verified at this time.',
+      });
+      
+      if (error.code === 'permission-denied') {
+        const permissionError = new FirestorePermissionError({
+          path: refRecordRef.path,
+          operation: 'update',
+          requestResourceData: { claimed: true },
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      }
+    } finally {
+      setClaimingId(null);
+    }
   };
 
   if (loading) {
@@ -179,7 +203,7 @@ export default function ReferralPage() {
             <Clock className="h-5 w-5 text-primary" />
             Unclaimed Referrals
           </CardTitle>
-          <CardDescription>Claim rewards for friends who joined through your link.</CardDescription>
+          <CardDescription>Verify and claim rewards for successful invites.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {referralsLoading ? (
@@ -197,7 +221,10 @@ export default function ReferralPage() {
                     onClick={() => handleClaim(ref)}
                     disabled={claimingId === ref.id}
                   >
-                    {claimingId === ref.id ? 'Claiming...' : `Claim ${REFERRAL_REWARD_AMOUNT} OR`}
+                    {claimingId === ref.id ? (
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    {claimingId === ref.id ? 'Verifying...' : `Claim ${REFERRAL_REWARD_AMOUNT} OR`}
                   </Button>
                 </div>
               ))}
@@ -213,29 +240,20 @@ export default function ReferralPage() {
 
       <Card className="shadow-md border-none">
         <CardHeader>
-          <CardTitle className="text-lg">Quick Guide</CardTitle>
+          <CardTitle className="text-lg text-primary font-bold">Verification Steps</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex gap-4">
-            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">1</div>
-            <div>
-              <p className="font-bold text-sm">Send Link</p>
-              <p className="text-xs text-muted-foreground mt-1">Use the WhatsApp button to invite friends with your link.</p>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="flex gap-4 items-center">
+            <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">1</div>
+            <p className="text-sm">Friend joins using your code</p>
           </div>
-          <div className="flex gap-4">
-            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">2</div>
-            <div>
-              <p className="font-bold text-sm">Friend Joins</p>
-              <p className="text-xs text-muted-foreground mt-1">They enter your code or use your link during sign-up.</p>
-            </div>
+          <div className="flex gap-4 items-center">
+            <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">2</div>
+            <p className="text-sm">Record appears in your list above</p>
           </div>
-          <div className="flex gap-4">
-            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 text-sm">3</div>
-            <div>
-              <p className="font-bold text-sm">Claim Rewards</p>
-              <p className="text-xs text-muted-foreground mt-1">Once they join, their record appears above. Click "Claim" to get your 3,000 OR!</p>
-            </div>
+          <div className="flex gap-4 items-center">
+            <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">3</div>
+            <p className="text-sm">Click claim to run automated verification and get 3,000 OR</p>
           </div>
         </CardContent>
       </Card>
