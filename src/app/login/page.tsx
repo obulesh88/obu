@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -14,16 +14,13 @@ import { useEffect, Suspense, useState } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
-import { doc, setDoc, serverTimestamp, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
   phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  referredBy: z.string().optional(),
 });
 type SignUpSchemaType = z.infer<typeof SignUpSchema>;
 
@@ -45,13 +42,9 @@ function LoginContent() {
   const {
     register: registerSignUp,
     handleSubmit: handleSubmitSignUp,
-    setValue: setSignUpValue,
     formState: { errors: errorsSignUp, isSubmitting: isSubmittingSignUp },
   } = useForm<SignUpSchemaType>({
     resolver: zodResolver(SignUpSchema),
-    defaultValues: {
-      referredBy: referralCodeFromUrl || '',
-    },
   });
 
   useEffect(() => {
@@ -59,12 +52,6 @@ function LoginContent() {
       router.push('/');
     }
   }, [user, loading, router]);
-
-  useEffect(() => {
-    if (referralCodeFromUrl) {
-      setSignUpValue('referredBy', referralCodeFromUrl.toUpperCase().trim());
-    }
-  }, [referralCodeFromUrl, setSignUpValue]);
 
   const {
     register: registerSignIn,
@@ -89,7 +76,7 @@ function LoginContent() {
       const myReferralCode = generateReferralCode(data.name);
       const userDocRef = doc(firestore, 'users', userCredential.user.uid);
       
-      const referralCodeUsed = data.referredBy?.trim().toUpperCase() || null;
+      const referralCodeUsed = referralCodeFromUrl?.trim().toUpperCase() || null;
       let referrerUid = "";
 
       if (referralCodeUsed) {
@@ -158,15 +145,14 @@ function LoginContent() {
 
       if (referralCodeUsed && referrerUid) {
         const referralsRef = collection(firestore, 'referrals');
-        const referralData = {
+        await setDoc(doc(referralsRef, `ref_${Date.now()}`), {
           referralId: `ref_${Date.now()}`,
           referrerUid: referrerUid,
           referredUid: userCredential.user.uid,
           referralCode: referralCodeUsed,
           referralDate: serverTimestamp(),
           claimed: false
-        };
-        await addDoc(referralsRef, referralData);
+        });
       }
 
       toast({
@@ -175,9 +161,9 @@ function LoginContent() {
       });
       
       if (!referralCodeUsed) {
-        setTimeout(() => router.push('/referral/entry'), 500);
+        router.push('/referral/entry');
       } else {
-        setTimeout(() => router.push('/'), 500);
+        router.push('/');
       }
     } catch (error: any) {
       toast({
