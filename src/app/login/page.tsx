@@ -10,7 +10,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, Suspense, useState } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
@@ -47,12 +47,6 @@ function LoginContent() {
     resolver: zodResolver(SignUpSchema),
   });
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/');
-    }
-  }, [user, loading, router]);
-
   const {
     register: registerSignIn,
     handleSubmit: handleSubmitSignIn,
@@ -60,6 +54,12 @@ function LoginContent() {
   } = useForm<SignInSchemaType>({
     resolver: zodResolver(SignInSchema),
   });
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
 
   const generateReferralCode = (name: string) => {
     const base = name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
@@ -160,6 +160,7 @@ function LoginContent() {
         description: `Welcome! Your unique referral code is ${myReferralCode}.`,
       });
       
+      // If signed up without a direct referral link, show the entry page
       if (!referralCodeUsed) {
         router.push('/referral/entry');
       } else {
