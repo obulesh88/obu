@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -20,8 +19,8 @@ service cloud.firestore {
         let orDiff = request.resource.data.wallet.orBalance - resource.data.wallet.orBalance;
         let inrDiff = request.resource.data.wallet.inrBalance - resource.data.wallet.inrBalance;
 
-        // Reward scenarios: +3 (captcha), +5 (ads), or +3000 (referral) OR, INR remains unchanged
-        let isReward = (orDiff == 3 || orDiff == 5 || orDiff == 3000) && inrDiff == 0;
+        // Reward scenarios: +3 (captcha), +5 (ads), +500 (joining), or +3000 (referral) OR, INR remains unchanged
+        let isReward = (orDiff == 3 || orDiff == 5 || orDiff == 500 || orDiff == 3000) && inrDiff == 0;
         
         // Conversion scenario: OR decreases, INR increases proportionally (1000:1)
         let isConversion = orDiff < 0 && inrDiff == (orDiff * -1) / 1000;
@@ -35,7 +34,7 @@ service cloud.firestore {
       }
       
       function areOtherCoreFieldsValid() {
-        let validGameTime = request.resource.data.playGames.total_play_seconds >= resource.data.playGames.total_play_seconds;
+        let validGameTime = request.resource.data.playGames.total_play_seconds >= (resource.data.playGames.total_play_seconds || 0);
         let walletAddressUnchanged = request.resource.data.wallet.walletAddress == resource.data.wallet.walletAddress;
         
         return validGameTime && walletAddressUnchanged;

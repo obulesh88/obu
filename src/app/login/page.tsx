@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ import { useEffect, Suspense } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
-import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -32,8 +32,6 @@ type SignInSchemaType = z.infer<typeof SignInSchema>;
 
 function LoginContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const referralCodeFromUrl = searchParams.get('ref');
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -76,22 +74,6 @@ function LoginContent() {
       const myReferralCode = generateReferralCode(data.name);
       const userDocRef = doc(firestore, 'users', userCredential.user.uid);
       
-      const referralCodeUsed = referralCodeFromUrl?.trim().toUpperCase() || null;
-      let referrerUid = "";
-
-      if (referralCodeUsed) {
-        try {
-          const usersRef = collection(firestore, 'users');
-          const q = query(usersRef, where('referral.referralCode', '==', referralCodeUsed));
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-            referrerUid = querySnapshot.docs[0].id;
-          }
-        } catch (queryError) {
-          console.error("Referral verification failed:", queryError);
-        }
-      }
-
       const newProfile = {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
@@ -109,7 +91,7 @@ function LoginContent() {
           },
           referral: {
             referralCode: myReferralCode,
-            referredBy: referralCodeUsed,
+            referredBy: null,
             referralCount: 0,
             totalReferralEarnings: 0,
           },
@@ -143,29 +125,12 @@ function LoginContent() {
 
       await setDoc(userDocRef, newProfile);
 
-      if (referralCodeUsed && referrerUid) {
-        const referralsRef = collection(firestore, 'referrals');
-        await setDoc(doc(referralsRef, `ref_${Date.now()}`), {
-          referralId: `ref_${Date.now()}`,
-          referrerUid: referrerUid,
-          referredUid: userCredential.user.uid,
-          referralCode: referralCodeUsed,
-          referralDate: serverTimestamp(),
-          claimed: false
-        });
-      }
-
       toast({
         title: 'Sign Up Successful',
         description: `Welcome! Your unique referral code is ${myReferralCode}.`,
       });
       
-      // If signed up without a direct referral link, show the entry page
-      if (!referralCodeUsed) {
-        router.push('/referral/entry');
-      } else {
-        router.push('/');
-      }
+      router.push('/referral/entry');
     } catch (error: any) {
       toast({
         variant: 'destructive',

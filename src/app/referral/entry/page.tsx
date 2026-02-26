@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
-import { Gift, RefreshCw, ArrowRight } from 'lucide-react';
+import { doc, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { Gift, RefreshCw, ArrowRight, Star } from 'lucide-react';
+
+const JOINING_REWARD = 500;
 
 export default function ReferralEntryPage() {
   const router = useRouter();
@@ -24,7 +26,7 @@ export default function ReferralEntryPage() {
     if (!loading && !user) {
       router.push('/login');
     }
-    // If user already has a referrer, they don't belong here
+    // If user already has a referrer or has already claimed joining bonus, they don't belong here
     if (!loading && userProfile?.referral?.referredBy) {
       router.push('/');
     }
@@ -64,6 +66,7 @@ export default function ReferralEntryPage() {
       const userDocRef = doc(firestore, 'users', user.uid);
       await updateDoc(userDocRef, {
         'referral.referredBy': code,
+        'wallet.orBalance': increment(JOINING_REWARD),
         'updatedAt': serverTimestamp()
       });
 
@@ -78,8 +81,8 @@ export default function ReferralEntryPage() {
       });
 
       toast({
-        title: 'Referral Applied!',
-        description: 'You have successfully linked your account to the referrer.',
+        title: 'Welcome Bonus Claimed!',
+        description: `You've successfully used the code and earned ${JOINING_REWARD} OR coins!`,
       });
       router.push('/');
     } catch (error: any) {
@@ -104,15 +107,15 @@ export default function ReferralEntryPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl border-primary/20">
+      <Card className="w-full max-w-md shadow-xl border-primary/20 bg-background">
         <CardHeader className="text-center">
-          <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4 relative">
             <Gift className="h-8 w-8 text-primary" />
+            <Star className="h-4 w-4 text-yellow-500 absolute -top-1 -right-1 animate-pulse" />
           </div>
-          <CardTitle className="text-2xl font-bold">Have a Referral Code?</CardTitle>
+          <CardTitle className="text-2xl font-bold">Claim Joining Bonus!</CardTitle>
           <CardDescription>
-            Enter your friend's code to link your account. 
-            Don't worry, you can skip this if you don't have one.
+            Enter a friend's referral code to link your account and get <span className="text-primary font-bold">{JOINING_REWARD} OR coins</span> instantly.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -136,8 +139,8 @@ export default function ReferralEntryPage() {
           >
             {isSubmitting ? (
               <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-            ) : <Gift className="mr-2 h-5 w-5" />}
-            Apply Code
+            ) : <Star className="mr-2 h-5 w-5 fill-current" />}
+            Claim {JOINING_REWARD} OR
           </Button>
           <Button 
             variant="ghost" 
