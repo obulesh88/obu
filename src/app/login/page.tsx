@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -57,6 +56,9 @@ function LoginContent() {
 
   useEffect(() => {
     if (!loading && user) {
+      // Check if user came from sign up recently? 
+      // For now, let the default behavior be redirect to home.
+      // The onSignUp function will handle the specific redirect to /referral/entry.
       router.push('/');
     }
   }, [user, loading, router]);
@@ -100,11 +102,9 @@ function LoginContent() {
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
             referrerUid = querySnapshot.docs[0].id;
-          } else {
-            console.warn(`Referral code ${referralCodeUsed} not found.`);
           }
         } catch (queryError) {
-          console.error("Referral verification query failed. You likely need to create a Firestore index:", queryError);
+          console.error("Referral verification failed:", queryError);
         }
       }
 
@@ -157,17 +157,7 @@ function LoginContent() {
           },
       };
 
-      setDoc(userDocRef, newProfile)
-          .catch(async (error: any) => {
-              if (error.code === 'permission-denied') {
-                  const permissionError = new FirestorePermissionError({
-                      path: userDocRef.path,
-                      operation: 'create',
-                      requestResourceData: newProfile,
-                  } satisfies SecurityRuleContext);
-                  errorEmitter.emit('permission-error', permissionError);
-              }
-          });
+      await setDoc(userDocRef, newProfile);
 
       if (referralCodeUsed && referrerUid) {
         const referralsRef = collection(firestore, 'referrals');
@@ -179,9 +169,7 @@ function LoginContent() {
           referralDate: serverTimestamp(),
           claimed: false
         };
-        addDoc(referralsRef, referralData).catch((err) => {
-          console.error("Failed to create referral record:", err);
-        });
+        await addDoc(referralsRef, referralData);
       }
 
       toast({
@@ -189,7 +177,12 @@ function LoginContent() {
         description: `Welcome! Your unique referral code is ${myReferralCode}.`,
       });
       
-      setTimeout(() => router.push('/'), 500);
+      // If no referral code was used, redirect to the "Do you have a code?" page
+      if (!referralCodeUsed) {
+        setTimeout(() => router.push('/referral/entry'), 500);
+      } else {
+        setTimeout(() => router.push('/'), 500);
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
