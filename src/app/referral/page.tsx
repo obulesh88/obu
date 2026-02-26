@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
-import { Copy, Users, Trophy, Gift, Clock, RefreshCw } from 'lucide-react';
+import { Copy, Users, Trophy, Gift, Clock, RefreshCw, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
@@ -15,6 +15,7 @@ import { ReferralRecord } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { FaWhatsapp } from 'react-icons/fa';
+import { Badge } from '@/components/ui/badge';
 
 const REFERRAL_REWARD_AMOUNT = 3000;
 const SUPABASE_AUTH_TOKEN = "Bearer cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
@@ -24,7 +25,10 @@ export default function ReferralPage() {
   const { toast } = useToast();
   const { user, userProfile, loading } = useUser();
   const firestore = useFirestore();
+  
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [verifiedIds, setVerifiedIds] = useState<string[]>([]);
 
   const referralCode = userProfile?.referral?.referralCode || '';
   const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/login?ref=${referralCode}` : '';
@@ -50,15 +54,11 @@ export default function ReferralPage() {
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleClaim = async (referral: ReferralRecord) => {
-    if (!user || !firestore || !userProfile || !referral.id) return;
+  const handleVerifyReferral = async (referral: ReferralRecord) => {
+    if (!user || !referral.id) return;
     
-    setClaimingId(referral.id);
-    const userDocRef = doc(firestore, 'users', user.uid);
-    const refRecordRef = doc(firestore, 'referrals', referral.id);
-
+    setVerifyingId(referral.id);
     try {
-      // 1. Call Supabase Verification Function
       const response = await fetch(SUPABASE_FUNC_URL, {
         method: "POST",
         headers: {
@@ -66,51 +66,74 @@ export default function ReferralPage() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          referralId: referral.id,
-          referrerUid: user.uid,
-          referredUid: referral.referredUid,
-          referralCode: referral.referralCode
+            referralId: referral.id,
+            referrerUid: user.uid,
+            referredUid: referral.referredUid,
+            referralCode: referral.referralCode
         })
       });
 
-      // We proceed even if verification fails for now to ensure user experience, 
-      // but in a production app you'd check the status code here.
-      const verifyData = await response.json();
-      console.log('Verification result:', verifyData);
+      const data = await response.json();
+      console.log('Supabase Verification:', data);
 
-      // 2. Proceed with local balance update
-      const profileUpdate = {
-        'wallet.orBalance': increment(REFERRAL_REWARD_AMOUNT),
-        'referral.referralCount': increment(1),
-        'referral.totalReferralEarnings': increment(REFERRAL_REWARD_AMOUNT),
-        'updatedAt': serverTimestamp()
-      };
+      // We treat HTTP 200 or a success field as a pass
+      if (response.ok) {
+        setVerifiedIds(prev => [...prev, referral.id!]);
+        toast({
+          title: 'Referral Verified',
+          description: 'This referral is legitimate. You can now claim your reward.',
+        });
+      } else {
+        throw new Error(data.message || 'Verification failed');
+      }
+    } catch (error: any) {
+      console.error("Verification error:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Verification Failed',
+        description: 'We could not verify this referral at this time.',
+      });
+    } finally {
+      setVerifyingId(null);
+    }
+  };
 
-      const refUpdate = {
-        claimed: true
-      };
+  const handleClaimReward = async (referral: ReferralRecord) => {
+    if (!user || !firestore || !userProfile || !referral.id) return;
+    
+    setClaimingId(referral.id);
+    const userDocRef = doc(firestore, 'users', user.uid);
+    const refRecordRef = doc(firestore, 'referrals', referral.id);
 
-      // Perform updates
+    const profileUpdate = {
+      'wallet.orBalance': increment(REFERRAL_REWARD_AMOUNT),
+      'referral.referralCount': increment(1),
+      'referral.totalReferralEarnings': increment(REFERRAL_REWARD_AMOUNT),
+      'updatedAt': serverTimestamp()
+    };
+
+    const refUpdate = {
+      claimed: true
+    };
+
+    try {
       await updateDoc(refRecordRef, refUpdate);
       await updateDoc(userDocRef, profileUpdate);
 
       toast({
-        title: 'Reward Claimed!',
-        description: `Successfully verified! You earned ${REFERRAL_REWARD_AMOUNT} OR.`,
-      });
-    } catch (error: any) {
-      console.error("Claim error:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Verification Failed',
-        description: 'The referral could not be verified at this time.',
+        title: 'Success!',
+        description: `You earned ${REFERRAL_REWARD_AMOUNT} OR coins!`,
       });
       
+      // Remove from locally verified list
+      setVerifiedIds(prev => prev.filter(id => id !== referral.id));
+    } catch (error: any) {
+      console.error("Claim error:", error);
       if (error.code === 'permission-denied') {
         const permissionError = new FirestorePermissionError({
           path: refRecordRef.path,
           operation: 'update',
-          requestResourceData: { claimed: true },
+          requestResourceData: refUpdate,
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       }
@@ -131,6 +154,8 @@ export default function ReferralPage() {
       </div>
     );
   }
+
+  const unclaimedReferrals = referrals?.filter(r => !r.claimed) || [];
 
   return (
     <div className="flex flex-col gap-6 pb-20">
@@ -211,26 +236,58 @@ export default function ReferralPage() {
         <CardContent className="space-y-4">
           {referralsLoading ? (
             <Skeleton className="h-20 w-full" />
-          ) : referrals && referrals.filter(r => !r.claimed).length > 0 ? (
+          ) : unclaimedReferrals.length > 0 ? (
             <div className="space-y-4">
-              {referrals.filter(r => !r.claimed).map((ref) => (
-                <div key={ref.id} className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold">New Referral</span>
-                    <span className="text-[10px] text-muted-foreground">{new Date(ref.referralDate?.seconds * 1000).toLocaleDateString()}</span>
+              {unclaimedReferrals.map((ref) => {
+                const isVerified = verifiedIds.includes(ref.id!);
+                const isVerifying = verifyingId === ref.id;
+                const isClaiming = claimingId === ref.id;
+
+                return (
+                  <div key={ref.id} className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-bold">New Referral</span>
+                      {isVerified ? (
+                        <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200 gap-1 w-fit">
+                          <ShieldCheck className="h-3 w-3" />
+                          Verified
+                        </Badge>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">Pending verification</span>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {!isVerified ? (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleVerifyReferral(ref)}
+                          disabled={isVerifying}
+                          className="h-8 min-w-[80px]"
+                        >
+                          {isVerifying ? (
+                            <RefreshCw className="h-3 w-3 animate-spin mr-2" />
+                          ) : <ShieldCheck className="h-3 w-3 mr-2" />}
+                          {isVerifying ? 'Verifying...' : 'Verify'}
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleClaimReward(ref)}
+                          disabled={isClaiming}
+                          className="h-8 min-w-[120px] bg-green-600 hover:bg-green-700"
+                        >
+                          {isClaiming ? (
+                            <RefreshCw className="h-3 w-3 animate-spin mr-2" />
+                          ) : <CheckCircle2 className="h-3 w-3 mr-2" />}
+                          {isClaiming ? 'Claiming...' : `Claim ${REFERRAL_REWARD_AMOUNT}`}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleClaim(ref)}
-                    disabled={claimingId === ref.id}
-                  >
-                    {claimingId === ref.id ? (
-                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
-                    {claimingId === ref.id ? 'Verifying...' : `Claim ${REFERRAL_REWARD_AMOUNT} OR`}
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-6 border-2 border-dashed rounded-lg">
@@ -252,11 +309,11 @@ export default function ReferralPage() {
           </div>
           <div className="flex gap-4 items-center">
             <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">2</div>
-            <p className="text-sm">Record appears in your list above</p>
+            <p className="text-sm">Click <span className="font-bold">Verify</span> to check if the referral is valid</p>
           </div>
           <div className="flex gap-4 items-center">
             <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">3</div>
-            <p className="text-sm">Click claim to run automated verification and get 3,000 OR</p>
+            <p className="text-sm">Click <span className="font-bold">Claim</span> to get your {REFERRAL_REWARD_AMOUNT} OR</p>
           </div>
         </CardContent>
       </Card>
