@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -56,9 +56,6 @@ function LoginContent() {
 
   useEffect(() => {
     if (!loading && user) {
-      // Check if user came from sign up recently? 
-      // For now, let the default behavior be redirect to home.
-      // The onSignUp function will handle the specific redirect to /referral/entry.
       router.push('/');
     }
   }, [user, loading, router]);
@@ -177,7 +174,6 @@ function LoginContent() {
         description: `Welcome! Your unique referral code is ${myReferralCode}.`,
       });
       
-      // If no referral code was used, redirect to the "Do you have a code?" page
       if (!referralCodeUsed) {
         setTimeout(() => router.push('/referral/entry'), 500);
       } else {
@@ -268,18 +264,6 @@ function LoginContent() {
                   <Label htmlFor="signup-password">Password</Label>
                   <Input id="signup-password" type="password" {...registerSignUp('password')} />
                   {errorsSignUp.password && <p className="text-destructive text-xs">{errorsSignUp.password.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-referral">Referral Code (Optional)</Label>
-                  <Input 
-                    id="signup-referral" 
-                    placeholder="Enter referral code" 
-                    {...registerSignUp('referredBy')}
-                    className="uppercase font-mono"
-                  />
-                  {referralCodeFromUrl && !errorsSignUp.referredBy && (
-                    <p className="text-xs text-primary font-medium">Auto-filled from link.</p>
-                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isSubmittingSignUp}>
                     {isSubmittingSignUp ? 'Creating Account...' : 'Sign-Up'}
