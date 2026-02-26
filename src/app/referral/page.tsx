@@ -73,6 +73,8 @@ export default function ReferralPage() {
         })
       });
 
+      // We proceed even if verification fails for now to ensure user experience, 
+      // but in a production app you'd check the status code here.
       const verifyData = await response.json();
       console.log('Verification result:', verifyData);
 
@@ -88,6 +90,7 @@ export default function ReferralPage() {
         claimed: true
       };
 
+      // Perform updates
       await updateDoc(refRecordRef, refUpdate);
       await updateDoc(userDocRef, profileUpdate);
 

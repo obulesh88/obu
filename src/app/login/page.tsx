@@ -63,7 +63,7 @@ function LoginContent() {
 
   useEffect(() => {
     if (referralCodeFromUrl) {
-      setSignUpValue('referredBy', referralCodeFromUrl.toUpperCase());
+      setSignUpValue('referredBy', referralCodeFromUrl.toUpperCase().trim());
     }
   }, [referralCodeFromUrl, setSignUpValue]);
 
@@ -84,7 +84,6 @@ function LoginContent() {
   const onSignUp: SubmitHandler<SignUpSchemaType> = async (data) => {
     if (!auth || !firestore) return;
     try {
-      // 1. Create Auth User
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await updateProfile(userCredential.user, { displayName: data.name });
 
@@ -94,7 +93,6 @@ function LoginContent() {
       const referralCodeUsed = data.referredBy?.trim().toUpperCase() || null;
       let referrerUid = "";
 
-      // 2. Try to find referrer UID if a code was used (Non-blocking check)
       if (referralCodeUsed) {
         try {
           const usersRef = collection(firestore, 'users');
@@ -102,14 +100,14 @@ function LoginContent() {
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
             referrerUid = querySnapshot.docs[0].id;
+          } else {
+            console.warn(`Referral code ${referralCodeUsed} not found.`);
           }
         } catch (queryError) {
-          // If query fails (e.g. missing index), we still allow signup to proceed
-          console.warn("Referral verification query failed, proceeding without attribution:", queryError);
+          console.error("Referral verification query failed. You likely need to create a Firestore index:", queryError);
         }
       }
 
-      // 3. Create User Profile
       const newProfile = {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
@@ -159,7 +157,6 @@ function LoginContent() {
           },
       };
 
-      // Create the document. Use .catch() for security rules errors.
       setDoc(userDocRef, newProfile)
           .catch(async (error: any) => {
               if (error.code === 'permission-denied') {
@@ -172,22 +169,19 @@ function LoginContent() {
               }
           });
 
-      // 4. Create Referral Log if valid referrer found
       if (referralCodeUsed && referrerUid) {
-        try {
-          const referralsRef = collection(firestore, 'referrals');
-          const referralData = {
-            referralId: `ref_${Date.now()}`,
-            referrerUid: referrerUid,
-            referredUid: userCredential.user.uid,
-            referralCode: referralCodeUsed,
-            referralDate: serverTimestamp(),
-            claimed: false
-          };
-          addDoc(referralsRef, referralData).catch(() => {});
-        } catch (refLogErr) {
-          console.warn("Could not log referral event:", refLogErr);
-        }
+        const referralsRef = collection(firestore, 'referrals');
+        const referralData = {
+          referralId: `ref_${Date.now()}`,
+          referrerUid: referrerUid,
+          referredUid: userCredential.user.uid,
+          referralCode: referralCodeUsed,
+          referralDate: serverTimestamp(),
+          claimed: false
+        };
+        addDoc(referralsRef, referralData).catch((err) => {
+          console.error("Failed to create referral record:", err);
+        });
       }
 
       toast({
