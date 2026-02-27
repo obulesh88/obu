@@ -10,11 +10,21 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, Suspense } from 'react';
+import { useEffect, Suspense, useState } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { FileText, ShieldCheck, Scale } from 'lucide-react';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -29,6 +39,29 @@ const SignInSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 type SignInSchemaType = z.infer<typeof SignInSchema>;
+
+function PolicyLink({ title, icon: Icon, content }: { title: string, icon: any, content: React.ReactNode }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button type="button" className="text-[10px] text-muted-foreground hover:text-primary underline underline-offset-2 flex items-center gap-1">
+          <Icon className="h-3 w-3" />
+          {title}
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="h-[300px] pr-4">
+          <div className="text-sm space-y-4 text-muted-foreground leading-relaxed">
+            {content}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function LoginContent() {
   const router = useRouter();
@@ -217,9 +250,54 @@ function LoginContent() {
                   <Input id="signup-password" type="password" {...registerSignUp('password')} />
                   {errorsSignUp.password && <p className="text-destructive text-xs">{errorsSignUp.password.message}</p>}
                 </div>
-                <Button type="submit" className="w-full" disabled={isSubmittingSignUp}>
-                    {isSubmittingSignUp ? 'Creating Account...' : 'Sign-Up'}
-                </Button>
+                <div className="pt-2">
+                   <Button type="submit" className="w-full" disabled={isSubmittingSignUp}>
+                      {isSubmittingSignUp ? 'Creating Account...' : 'Sign-Up'}
+                  </Button>
+                </div>
+                
+                {/* Policies Section */}
+                <div className="pt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t">
+                  <PolicyLink 
+                    title="Terms & Conditions" 
+                    icon={FileText} 
+                    content={
+                      <>
+                        <p><strong>1. Acceptance of Terms:</strong> By creating an account on OR-wallet, you agree to abide by all rules and regulations set forth in this document.</p>
+                        <p><strong>2. User Conduct:</strong> Users must not engage in fraudulent activities, including but not limited to using multiple accounts, automated bots, or manipulated referral links.</p>
+                        <p><strong>3. Service Modification:</strong> We reserve the right to modify rewards, conversion rates, and features at any time without prior notice.</p>
+                        <p><strong>4. Account Termination:</strong> Violation of any policy may result in immediate account suspension and forfeiture of all earned coins.</p>
+                      </>
+                    }
+                  />
+                  <PolicyLink 
+                    title="Withdrawal Policy" 
+                    icon={ShieldCheck} 
+                    content={
+                      <>
+                        <p><strong>1. Conversion Rate:</strong> OR coins are converted at a rate of 1,000 OR = ₹1.00 INR.</p>
+                        <p><strong>2. Limits:</strong> Minimum withdrawal is ₹1.00 and Maximum per transaction is ₹10.00.</p>
+                        <p><strong>3. Verification:</strong> All withdrawals are subject to review. Fraudulent earnings will be denied.</p>
+                        <p><strong>4. Bank Details:</strong> Users must provide accurate bank details. OR-wallet is not responsible for transfers to incorrect accounts provided by the user.</p>
+                      </>
+                    }
+                  />
+                  <PolicyLink 
+                    title="Referral Policy" 
+                    icon={Scale} 
+                    content={
+                      <>
+                        <p><strong>1. Rewards:</strong> Earn 3,000 OR for every successful referral. New users get 1,000 OR joining bonus.</p>
+                        <p><strong>2. Verification:</strong> Referrals must be verified through the app's verification system before rewards can be claimed.</p>
+                        <p><strong>3. Self-Referral:</strong> Creating multiple accounts to refer yourself is strictly prohibited and will lead to a permanent ban.</p>
+                        <p><strong>4. Fair Play:</strong> We use AI and manual review to ensure all referrals are genuine and from different devices/IPs.</p>
+                      </>
+                    }
+                  />
+                </div>
+                <p className="text-[10px] text-center text-muted-foreground">
+                  By signing up, you agree to our Terms and Policies.
+                </p>
               </form>
             </TabsContent>
           </Tabs>
