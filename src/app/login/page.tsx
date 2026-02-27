@@ -10,7 +10,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, Suspense, useState } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useUser } from '@/hooks/use-user';
@@ -18,13 +18,12 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, ShieldCheck, Scale } from 'lucide-react';
+import { FileText, ShieldCheck, Scale, Lock } from 'lucide-react';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -53,7 +52,7 @@ function PolicyLink({ title, icon: Icon, content }: { title: string, icon: any, 
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="h-[300px] pr-4">
+        <ScrollArea className="h-[400px] pr-4">
           <div className="text-sm space-y-4 text-muted-foreground leading-relaxed">
             {content}
           </div>
@@ -263,10 +262,33 @@ function LoginContent() {
                     icon={FileText} 
                     content={
                       <>
-                        <p><strong>1. Acceptance of Terms:</strong> By creating an account on OR-wallet, you agree to abide by all rules and regulations set forth in this document.</p>
-                        <p><strong>2. User Conduct:</strong> Users must not engage in fraudulent activities, including but not limited to using multiple accounts, automated bots, or manipulated referral links.</p>
-                        <p><strong>3. Service Modification:</strong> We reserve the right to modify rewards, conversion rates, and features at any time without prior notice.</p>
-                        <p><strong>4. Account Termination:</strong> Violation of any policy may result in immediate account suspension and forfeiture of all earned coins.</p>
+                        <h3 className="font-bold text-foreground">Terms and Conditions</h3>
+                        <p className="text-xs italic">Last updated: {new Date().toLocaleDateString()}</p>
+                        <p>Welcome to OR Wallet. By accessing or using our Service, you agree to these Terms and Conditions. If you do not agree, please do not use our website.</p>
+                        <p><strong>1. Eligibility:</strong> You must be at least 13 years old to use OR Wallet. If you are under 18, you must use the website with permission from a parent or legal guardian.</p>
+                        <p><strong>2. User Accounts:</strong> You are responsible for maintaining account confidentiality and all activity under your account. We may suspend accounts with false information.</p>
+                        <p><strong>3. Rewards:</strong> Earning rates may change anytime. Fraud, VPN, bots, scripts, automation, or multiple accounts are strictly prohibited.</p>
+                        <p><strong>4. Acceptable Use:</strong> You agree not to hacking, reverse engineering, or exploiting bugs to manipulate rewards.</p>
+                        <p><strong>5. Intellectual Property:</strong> All OR Wallet content, logos, and software are protected by intellectual property laws.</p>
+                        <p><strong>6. Account Termination:</strong> Violation of terms results in immediate account suspension and forfeiture of rewards.</p>
+                        <p><strong>7. Disclaimer:</strong> OR Wallet is provided "as is". We do not guarantee continuous availability or specific earning amounts.</p>
+                        <p><strong>8. Governing Law:</strong> These Terms are governed by the laws of India. Any disputes shall fall under Indian court jurisdiction.</p>
+                      </>
+                    }
+                  />
+                  <PolicyLink 
+                    title="Privacy Policy" 
+                    icon={Lock} 
+                    content={
+                      <>
+                        <h3 className="font-bold text-foreground">Privacy Policy</h3>
+                        <p>We respect your privacy and collect limited information to operate OR Wallet.</p>
+                        <p><strong>Information We Collect:</strong> Name, email address, device/browser data, IP address, and transaction records.</p>
+                        <p><strong>How We Use Information:</strong> To provide and operate the website, track rewards, process withdrawals, and prevent fraud.</p>
+                        <p><strong>Cookies:</strong> We use cookies to improve experience and analytics. Disabling them may affect functionality.</p>
+                        <p><strong>Data Sharing:</strong> We do not sell data. Limited data is shared with payment providers and ad partners for operational needs.</p>
+                        <p><strong>Data Security:</strong> We use reasonable security measures, though no system is 100% secure.</p>
+                        <p><strong>User Rights:</strong> You may request account deletion, data correction, or access by contacting support@orwallet.com.</p>
                       </>
                     }
                   />
@@ -275,10 +297,12 @@ function LoginContent() {
                     icon={ShieldCheck} 
                     content={
                       <>
-                        <p><strong>1. Conversion Rate:</strong> OR coins are converted at a rate of 1,000 OR = ₹1.00 INR.</p>
-                        <p><strong>2. Limits:</strong> Minimum withdrawal is ₹1.00 and Maximum per transaction is ₹10.00.</p>
-                        <p><strong>3. Verification:</strong> All withdrawals are subject to review. Fraudulent earnings will be denied.</p>
-                        <p><strong>4. Bank Details:</strong> Users must provide accurate bank details. OR-wallet is not responsible for transfers to incorrect accounts provided by the user.</p>
+                        <h3 className="font-bold text-foreground">Withdrawal Policy</h3>
+                        <p>Users may withdraw earnings once minimum withdrawal limits are reached.</p>
+                        <p><strong>Conditions:</strong> Identity verification may be required. Incorrect payment details are user responsibility.</p>
+                        <p><strong>Fraud Checks:</strong> Fraud checks may delay or cancel withdrawals. OR Wallet may refuse payouts for policy violations.</p>
+                        <p><strong>Processing:</strong> Processing time depends on providers. Fees may apply depending on method.</p>
+                        <p><strong>Limits:</strong> Minimum withdrawal is ₹1.00 and Maximum per transaction is ₹10.00.</p>
                       </>
                     }
                   />
@@ -287,10 +311,12 @@ function LoginContent() {
                     icon={Scale} 
                     content={
                       <>
-                        <p><strong>1. Rewards:</strong> Earn 3,000 OR for every successful referral. New users get 1,000 OR joining bonus.</p>
-                        <p><strong>2. Verification:</strong> Referrals must be verified through the app's verification system before rewards can be claimed.</p>
-                        <p><strong>3. Self-Referral:</strong> Creating multiple accounts to refer yourself is strictly prohibited and will lead to a permanent ban.</p>
-                        <p><strong>4. Fair Play:</strong> We use AI and manual review to ensure all referrals are genuine and from different devices/IPs.</p>
+                        <h3 className="font-bold text-foreground">Referral Policy</h3>
+                        <p>Users earn referral rewards for inviting new genuine users.</p>
+                        <p><strong>Prohibited Actions:</strong> Self-referrals, duplicate accounts, fake or incentivized sign-ups are strictly banned.</p>
+                        <p><strong>Rewards:</strong> Earn 3,000 OR for every successful referral. New users get 1,000 OR joining bonus.</p>
+                        <p><strong>Verification:</strong> We use AI and manual review to ensure all referrals are genuine and from different devices/IPs.</p>
+                        <p><strong>Abuse:</strong> We may cancel referral rewards or suspend accounts for any detected abuse or manipulation.</p>
                       </>
                     }
                   />
