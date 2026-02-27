@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
@@ -24,12 +24,16 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, ShieldCheck, Scale, Lock } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const SignUpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
   phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the terms and conditions" }),
+  }),
 });
 type SignUpSchemaType = z.infer<typeof SignUpSchema>;
 
@@ -72,9 +76,13 @@ function LoginContent() {
   const {
     register: registerSignUp,
     handleSubmit: handleSubmitSignUp,
+    control: controlSignUp,
     formState: { errors: errorsSignUp, isSubmitting: isSubmittingSignUp },
   } = useForm<SignUpSchemaType>({
     resolver: zodResolver(SignUpSchema),
+    defaultValues: {
+      acceptTerms: false,
+    }
   });
 
   const {
@@ -249,6 +257,27 @@ function LoginContent() {
                   <Input id="signup-password" type="password" {...registerSignUp('password')} />
                   {errorsSignUp.password && <p className="text-destructive text-xs">{errorsSignUp.password.message}</p>}
                 </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Controller
+                      name="acceptTerms"
+                      control={controlSignUp}
+                      render={({ field }) => (
+                        <Checkbox
+                          id="acceptTerms"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <Label htmlFor="acceptTerms" className="text-xs font-normal leading-tight text-muted-foreground">
+                      I agree to the Terms & Conditions, Privacy Policy, and other site policies.
+                    </Label>
+                  </div>
+                  {errorsSignUp.acceptTerms && <p className="text-destructive text-[10px]">{errorsSignUp.acceptTerms.message}</p>}
+                </div>
+
                 <div className="pt-2">
                    <Button type="submit" className="w-full" disabled={isSubmittingSignUp}>
                       {isSubmittingSignUp ? 'Creating Account...' : 'Sign-Up'}
