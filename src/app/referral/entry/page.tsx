@@ -11,7 +11,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { Gift, RefreshCw, ArrowRight, Star } from 'lucide-react';
 
-const JOINING_REWARD = 500;
+const JOINING_REWARD = 1000;
 
 export default function ReferralEntryPage() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function ReferralEntryPage() {
     
     const code = referralCode.trim().toUpperCase();
     if (!code) {
-      toast({ variant: 'destructive', title: 'Code Required', description: 'Please enter a referral code or skip.' });
+      toast({ variant: 'destructive', title: 'Code Required', description: 'Please enter a referral code.' });
       return;
     }
 
@@ -115,33 +115,34 @@ export default function ReferralEntryPage() {
           </div>
           <CardTitle className="text-2xl font-bold">Claim Joining Bonus!</CardTitle>
           <CardDescription>
-            Enter a friend's referral code to link your account and get <span className="text-primary font-bold">{JOINING_REWARD} OR coins</span> instantly.
+            Enter a friend's referral code to get <span className="text-primary font-bold">{JOINING_REWARD} OR coins</span> instantly.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="referral-code">Referral Code</Label>
-            <Input 
-              id="referral-code"
-              placeholder="e.g. JOIN123"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value)}
-              className="uppercase font-mono text-center text-lg h-12"
-              disabled={isSubmitting}
-            />
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="referral-code">Referral ID</Label>
+            <div className="flex gap-2">
+              <Input 
+                id="referral-code"
+                placeholder="Enter ID"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                className="uppercase font-mono text-lg h-12 flex-1"
+                disabled={isSubmitting}
+              />
+              <Button 
+                onClick={handleSubmit} 
+                className="h-12 px-6 font-bold shrink-0"
+                disabled={isSubmitting || !referralCode.trim()}
+              >
+                {isSubmitting ? (
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                ) : "Claim"}
+              </Button>
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
-          <Button 
-            onClick={handleSubmit} 
-            className="w-full h-12 text-lg font-bold"
-            disabled={isSubmitting || !referralCode.trim()}
-          >
-            {isSubmitting ? (
-              <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-            ) : <Star className="mr-2 h-5 w-5 fill-current" />}
-            Claim {JOINING_REWARD} OR
-          </Button>
           <Button 
             variant="ghost" 
             onClick={handleSkip} 
