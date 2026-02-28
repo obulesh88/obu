@@ -2,58 +2,20 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Since authentication is removed, we allow public access to user profiles
+    // and referrals. In a production app, more granular security (like device-based IDs)
+    // would be recommended.
+    
     match /users/{userId} {
-      function isOwner() {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      
-      function areImmutableFieldsUnchanged() {
-        let isUidSame = request.resource.data.uid == resource.data.uid;
-        let isEmailSame = request.resource.data.email == resource.data.email;
-        let isCreationSame = request.resource.data.createdAt == resource.data.createdAt;
-        
-        return isUidSame && isEmailSame && isCreationSame;
-      }
-
-      function isValidBalanceUpdate() {
-        let orDiff = request.resource.data.wallet.orBalance - resource.data.wallet.orBalance;
-        let inrDiff = request.resource.data.wallet.inrBalance - resource.data.wallet.inrBalance;
-
-        // Reward scenarios: +3 (captcha), +5 (ads), +1000 (joining), or +3000 (referral) OR, INR remains unchanged
-        let isReward = (orDiff == 3 || orDiff == 5 || orDiff == 1000 || orDiff == 3000) && inrDiff == 0;
-        
-        // Conversion scenario: OR decreases, INR increases proportionally (1000:1)
-        let isConversion = orDiff < 0 && inrDiff == (orDiff * -1) / 1000;
-
-        // Withdrawal scenario: INR decreases, OR remains unchanged
-        let isWithdrawal = inrDiff < 0 && orDiff == 0;
-
-        let noChange = orDiff == 0 && inrDiff == 0;
-        
-        return isReward || isConversion || isWithdrawal || noChange;
-      }
-      
-      function areOtherCoreFieldsValid() {
-        let validGameTime = request.resource.data.playGames.total_play_seconds >= (resource.data.playGames.total_play_seconds || 0);
-        let walletAddressUnchanged = request.resource.data.wallet.walletAddress == resource.data.wallet.walletAddress;
-        
-        return validGameTime && walletAddressUnchanged;
-      }
-
-      // Allow authenticated users to search for referrers by code
-      allow read: if request.auth != null;
-      allow create: if isOwner();
-
-      allow update: if isOwner()
-        && areImmutableFieldsUnchanged()
-        && isValidBalanceUpdate()
-        && areOtherCoreFieldsValid();
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
     }
 
     match /referrals/{referralId} {
-      allow create: if request.auth != null;
-      allow read: if request.auth != null && (request.auth.uid == resource.data.referredUid || request.auth.uid == resource.data.referrerUid);
-      allow update: if request.auth != null && request.auth.uid == resource.data.referrerUid && request.resource.data.claimed == true;
+      allow create: if true;
+      allow read: if true;
+      allow update: if true;
     }
   }
 }

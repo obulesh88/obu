@@ -1,8 +1,6 @@
-
 'use client';
 
 import { getApps, initializeApp, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 import { FirebaseProvider, useFirebase, useFirebaseApp, useFirestore, useAuth } from './provider';
@@ -13,10 +11,10 @@ import { useCollection } from './firestore/use-collection';
 
 function initializeFirebase() {
   const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-  const auth = getAuth(app);
   const firestore = getFirestore(app);
   
-  return { firebaseApp: app, auth, firestore };
+  // Auth is intentionally omitted to support the "no-auth" guest experience
+  return { firebaseApp: app, auth: null, firestore };
 }
 
 export {
