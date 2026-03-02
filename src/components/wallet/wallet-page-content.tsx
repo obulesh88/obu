@@ -1,9 +1,8 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save, Send, ShieldCheck, Ticket, CreditCard, Smartphone } from 'lucide-react';
+import { DollarSign, RefreshCw, ArrowRightLeft, Building2, Save, Send, ShieldCheck, Ticket, CreditCard, Smartphone } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
@@ -15,7 +14,6 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import { FaWhatsapp } from 'react-icons/fa';
 import {
   Dialog,
   DialogContent,
@@ -28,10 +26,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 const MIN_WITHDRAWAL = 1;
-const MAX_WITHDRAWAL = 1000;
+const MAX_WITHDRAWAL = 10; // Updated limit
 
 export default function WalletPageContent() {
-  const [activeTab, setActiveTab] = useState<'earning' | 'deposit' | 'convert'>('earning');
+  const [activeTab, setActiveTab] = useState<'earning' | 'convert'>('earning');
   const { user, userProfile, loading } = useUser();
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -133,6 +131,11 @@ export default function WalletPageContent() {
       return;
     }
 
+    if (amount > MAX_WITHDRAWAL) {
+        toast({ variant: 'destructive', title: 'Limit Exceeded', description: `Max withdrawal ₹${MAX_WITHDRAWAL}.` });
+        return;
+    }
+
     if (amount > (userProfile.wallet?.inrBalance || 0)) {
       toast({ variant: 'destructive', title: 'Insufficient Balance' });
       return;
@@ -223,7 +226,7 @@ export default function WalletPageContent() {
 
   return (
     <div className="grid gap-6">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <Card
           className={cn(
             'flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:bg-primary/5',
@@ -233,16 +236,6 @@ export default function WalletPageContent() {
         >
           <DollarSign className={cn("h-6 w-6 mb-2", activeTab === 'earning' ? "text-primary" : "text-muted-foreground")} />
           <p className="text-[10px] font-bold uppercase">Withdraw</p>
-        </Card>
-        <Card
-          className={cn(
-            'flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:bg-primary/5',
-            activeTab === 'deposit' && 'ring-2 ring-primary bg-primary/5'
-          )}
-          onClick={() => setActiveTab('deposit')}
-        >
-          <Download className={cn("h-6 w-6 mb-2", activeTab === 'deposit' ? "text-primary" : "text-muted-foreground")} />
-          <p className="text-[10px] font-bold uppercase">Deposit</p>
         </Card>
         <Card
           className={cn(
@@ -283,7 +276,7 @@ export default function WalletPageContent() {
                   <Input 
                     id="withdrawAmount" 
                     type="number" 
-                    placeholder="Min ₹1" 
+                    placeholder={`Min ₹${MIN_WITHDRAWAL}`} 
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     disabled={isWithdrawing}
@@ -294,7 +287,7 @@ export default function WalletPageContent() {
                   </div>
                 </div>
                 <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight">
-                    <p className="text-muted-foreground">Limit: ₹1 - ₹1000</p>
+                    <p className="text-muted-foreground">Limit: ₹{MIN_WITHDRAWAL} - ₹{MAX_WITHDRAWAL}</p>
                     <p className="text-primary">Manual Verification</p>
                 </div>
              </div>
@@ -317,21 +310,6 @@ export default function WalletPageContent() {
                 Secure Privacy Protocol Enabled
             </div>
           </CardFooter>
-        </Card>
-      )}
-
-      {activeTab === 'deposit' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Add Funds</CardTitle>
-            <CardDescription>To deposit cash securely, contact our verified support channel. No public details shared for your safety.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Button className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold h-12 gap-2" onClick={() => window.open('https://wa.me/your_number_here', '_blank')}>
-              <FaWhatsapp className="h-6 w-6" />
-              Deposit via WhatsApp
-            </Button>
-          </CardContent>
         </Card>
       )}
 
