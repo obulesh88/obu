@@ -1,7 +1,6 @@
-
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
@@ -11,7 +10,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Moon, Sun, FileText, Shield, Ticket, Info, Mail, Undo2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -59,7 +58,7 @@ We focus on user experience, security, and prompt reward fulfillment. Based in I
       icon: <Mail className="h-4 w-4" />, 
       content: `For any queries, support, or business inquiries, please reach out to us:
 
-Email: support@orwallet.com
+Email: obuleswaror@gmail.com
 Business Hours: Monday to Friday (10:00 AM - 6:00 PM IST)
 Response Time: We usually respond within 24-48 hours.
 
