@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, FileText, Shield, Ticket } from 'lucide-react';
+import { Moon, Sun, FileText, Shield, Ticket, Info, Mail, Undo2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -47,6 +48,24 @@ export default function ProfilePage() {
 
   const policies = [
     { 
+      title: "About Us", 
+      icon: <Info className="h-4 w-4" />, 
+      content: `OR Wallet is a leading digital rewards platform designed to help users earn micro-incentives through simple daily tasks. Our mission is to provide a transparent and accessible way for everyone to participate in the digital economy.
+
+We focus on user experience, security, and prompt reward fulfillment. Based in India, we are committed to building a trusted community of earners and providing high-quality traffic to our advertising partners.`
+    },
+    { 
+      title: "Contact Us", 
+      icon: <Mail className="h-4 w-4" />, 
+      content: `For any queries, support, or business inquiries, please reach out to us:
+
+Email: support@orwallet.com
+Business Hours: Monday to Friday (10:00 AM - 6:00 PM IST)
+Response Time: We usually respond within 24-48 hours.
+
+Our support team is dedicated to helping you with any issues regarding your wallet, rewards, or technical difficulties.`
+    },
+    { 
       title: "Terms and Conditions", 
       icon: <FileText className="h-4 w-4" />, 
       content: `Welcome to OR Wallet (“we,” “our,” or “us”). By accessing or using the OR Wallet website and services (the “Service”), you agree to these Terms and Conditions, including our privacy, rewards, and withdrawal policies.
@@ -81,6 +100,15 @@ Conditions:
 - Fraud checks may delay or cancel withdrawals.
 - Processing time depends on payment providers.
 - OR Wallet may refuse payouts for policy violations.`
+    },
+    { 
+      title: "Refund & Cancellation Policy", 
+      icon: <Undo2 className="h-4 w-4" />, 
+      content: `As OR Wallet is a platform for earning rewards and does not charge users for services or sell physical goods, the following policy applies:
+
+1. No Deposits: Since we do not accept deposits or payments from users, there are no refunds for "payments."
+2. Reward Adjustments: We reserve the right to cancel or reverse rewards earned through fraudulent means, VPN usage, or technical exploits.
+3. Withdrawal Cancellation: Users can request a cancellation of a 'Pending' withdrawal if it hasn't been processed yet. Once 'Completed', the transaction is final and cannot be refunded.`
     }
   ];
 
@@ -123,7 +151,7 @@ Conditions:
 
       <Card>
         <CardHeader>
-          <CardTitle>Legal & Policies</CardTitle>
+          <CardTitle>Business & Legal Policies</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2">
           {policies.map((policy) => (
