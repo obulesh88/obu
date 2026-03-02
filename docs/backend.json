@@ -36,7 +36,7 @@
             "email": { "type": "string" },
             "accountNumber": { "type": "string" },
             "ifsc": { "type": "string" },
-            "vpa": { "type": "string", "description": "UPI ID for Razorpay VPA payouts." }
+            "vpa": { "type": "string", "description": "UPI ID for manual payouts." }
           }
         },
         "referral": {
@@ -103,6 +103,20 @@
         "claimed": { "type": "boolean", "description": "Whether the referrer has claimed the reward." }
       },
       "required": ["referrerUid", "referredUid", "referralCode", "referralDate", "claimed"]
+    },
+    "WithdrawalRequest": {
+      "title": "Withdrawal Request",
+      "description": "A request from a user to withdraw their INR balance.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "completed", "rejected"] },
+        "payoutDetails": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "status", "payoutDetails", "createdAt"]
     }
   },
   "auth": {
@@ -116,6 +130,10 @@
     "/referrals/{referralId}": {
       "schema": { "$ref": "#/entities/ReferralRecord" },
       "description": "Historical log of all referral events."
+    },
+    "/payout_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/WithdrawalRequest" },
+      "description": "Manual payout requests for admin processing."
     }
   }
 }

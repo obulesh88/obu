@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
-import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import {
@@ -88,7 +88,7 @@ export default function WalletPageContent() {
       .then(() => {
         toast({
           title: 'Details Saved',
-          description: 'Your payout information has been updated for Razorpay.',
+          description: 'Your payout information has been updated.',
         });
         setIsBankDialogOpen(false);
       })
@@ -154,34 +154,47 @@ export default function WalletPageContent() {
 
     setIsWithdrawing(true);
     const userDocRef = doc(firestore, 'users', user.uid);
+    const requestsRef = collection(firestore, 'payout_requests');
+    
     const updateData = {
       'wallet.inrBalance': increment(-amount),
       'updatedAt': serverTimestamp()
     };
 
-    updateDoc(userDocRef, updateData)
+    const requestData = {
+      userId: user.uid,
+      amount: amount,
+      status: 'pending',
+      payoutDetails: bankData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    // 1. Create the request log
+    addDoc(requestsRef, requestData)
       .then(() => {
-        toast({
-          title: 'Withdrawal Initiated',
-          description: `₹${amount.toFixed(2)} will be processed via Razorpay shortly.`,
-        });
-        setWithdrawAmount('');
+        // 2. Deduct the user's balance
+        updateDoc(userDocRef, updateData)
+          .then(() => {
+            toast({
+              title: 'Withdrawal Requested',
+              description: `₹${amount.toFixed(2)} request submitted. Our admin will process it shortly.`,
+            });
+            setWithdrawAmount('');
+          })
+          .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+              const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: updateData,
+              } satisfies SecurityRuleContext);
+              errorEmitter.emit('permission-error', permissionError);
+            }
+          });
       })
       .catch(async (error: any) => {
-        if (error.code === 'permission-denied') {
-          const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
-            operation: 'update',
-            requestResourceData: updateData,
-          } satisfies SecurityRuleContext);
-          errorEmitter.emit('permission-error', permissionError);
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Withdrawal Failed',
-            description: error.message
-          });
-        }
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit request.' });
       })
       .finally(() => {
         setIsWithdrawing(false);
@@ -297,7 +310,7 @@ export default function WalletPageContent() {
                onClick={() => setIsBankDialogOpen(true)}
              >
                <Building2 className="h-3 w-3" />
-               Razorpay Details
+               Payout Details
              </Button>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -325,7 +338,7 @@ export default function WalletPageContent() {
                 </div>
                 <div className="flex justify-between items-center">
                     <p className="text-[10px] text-muted-foreground font-medium">Min: ₹{MIN_WITHDRAWAL} | Max: ₹{MAX_WITHDRAWAL}</p>
-                    <p className="text-[10px] font-bold text-primary uppercase">Powered by Razorpay</p>
+                    <p className="text-[10px] font-bold text-primary uppercase">Manual Verification</p>
                 </div>
              </div>
           </CardContent>
@@ -340,7 +353,7 @@ export default function WalletPageContent() {
                 ) : (
                     <Send className="mr-2 h-5 w-5" />
                 )}
-                {isWithdrawing ? 'Processing...' : 'Withdraw to Bank/UPI'}
+                {isWithdrawing ? 'Processing...' : 'Request Payout'}
             </Button>
           </CardFooter>
         </Card>
@@ -354,7 +367,7 @@ export default function WalletPageContent() {
           <CardContent className="grid grid-cols-1 gap-4">
             <Button variant="outline" className="justify-start">
               <CreditCard className="mr-2 h-4 w-4" />
-              Add Cash via Razorpay
+              Add Cash via Bank Transfer
             </Button>
             <Button variant="outline" className="justify-start">
               <Download className="mr-2 h-4 w-4" />
@@ -436,13 +449,13 @@ export default function WalletPageContent() {
         </Card>
       )}
 
-      {/* Razorpay Details Dialog */}
+      {/* Manual Payout Details Dialog */}
       <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Payout Settings (Razorpay)</DialogTitle>
+            <DialogTitle>Payout Settings</DialogTitle>
             <DialogDescription>
-              Enter your Bank or UPI details to receive payments via Razorpay.
+              Enter your Bank or UPI details where you wish to receive your earnings.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">

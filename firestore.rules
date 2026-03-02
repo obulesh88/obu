@@ -1,10 +1,9 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Since authentication is removed, we allow public access to user profiles
-    // and referrals. In a production app, more granular security (like device-based IDs)
-    // would be recommended.
+    // Allow public access as authentication is currently handled via mock guest IDs
     
     match /users/{userId} {
       allow read: if true;
@@ -13,6 +12,12 @@ service cloud.firestore {
     }
 
     match /referrals/{referralId} {
+      allow create: if true;
+      allow read: if true;
+      allow update: if true;
+    }
+
+    match /payout_requests/{requestId} {
       allow create: if true;
       allow read: if true;
       allow update: if true;

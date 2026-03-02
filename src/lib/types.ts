@@ -75,3 +75,18 @@ export type ReferralRecord = {
   referralDate: any;
   claimed: boolean;
 };
+
+export type WithdrawalRequest = {
+  id?: string;
+  userId: string;
+  amount: number;
+  status: 'pending' | 'completed' | 'rejected';
+  payoutDetails: {
+    name: string;
+    accountNumber?: string;
+    ifsc?: string;
+    vpa?: string;
+  };
+  createdAt: any;
+  updatedAt: any;
+};
