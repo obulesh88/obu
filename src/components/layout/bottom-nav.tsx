@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Home, RefreshCw, Wallet, User, CircleDollarSign } from 'lucide-react';
+import { Home, Wallet, User, CircleDollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useLayout } from '@/context/layout-context';

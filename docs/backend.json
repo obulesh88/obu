@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -81,7 +82,10 @@
           "properties": {
             "payoutType": { "type": "string", "enum": ["bank", "upi", "giftcard"] },
             "giftCardEmail": { "type": "string" },
-            "vpa": { "type": "string" }
+            "vpa": { "type": "string" },
+            "accountNumber": { "type": "string" },
+            "ifsc": { "type": "string" },
+            "name": { "type": "string" }
           }
         },
         "createdAt": { "type": "string", "format": "date-time" },
