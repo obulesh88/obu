@@ -1,4 +1,3 @@
-
 export type UserProfile = {
   uid: string;
   email: string;
@@ -36,16 +35,6 @@ export type UserProfile = {
     claimed: boolean;
     reward_comm: number;
   };
-  playGames: {
-    is_active: boolean;
-    min_required_seconds: number;
-    play_start: any;
-    total_play_seconds: number;
-    verifiedAt: any;
-    claimed: boolean;
-    reward_comm: number;
-    game_id: string | null;
-  };
   watchAds: {
     ad_provider: string;
     ad_start: any;
@@ -62,10 +51,9 @@ export type EarningTransaction = {
   id: string;
   userId: string;
   amount: number;
-  type: 'ad' | 'captcha' | 'game' | 'referral';
+  type: 'ad' | 'captcha' | 'referral';
   description: string;
   createdAt: Date;
-  playTimeInSeconds?: number;
 };
 
 export type ReferralRecord = {

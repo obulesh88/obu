@@ -1,4 +1,3 @@
-
 'use client';
 import { useMemo, useEffect, useState } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -60,16 +59,6 @@ export function useUser() {
           verifiedAt: null,
           claimed: false,
           reward_comm: 0,
-        },
-        playGames: {
-          is_active: false,
-          min_required_seconds: 300,
-          play_start: null,
-          total_play_seconds: 0,
-          verifiedAt: null,
-          claimed: false,
-          reward_comm: 0,
-          game_id: null,
         },
         watchAds: {
           ad_provider: 'Monetag',
