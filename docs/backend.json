@@ -36,7 +36,9 @@
             "email": { "type": "string" },
             "accountNumber": { "type": "string" },
             "ifsc": { "type": "string" },
-            "vpa": { "type": "string", "description": "UPI ID for manual payouts." }
+            "vpa": { "type": "string" },
+            "payoutType": { "type": "string", "enum": ["bank", "upi", "giftcard"] },
+            "giftCardEmail": { "type": "string" }
           }
         },
         "referral": {
@@ -112,7 +114,14 @@
         "userId": { "type": "string" },
         "amount": { "type": "number" },
         "status": { "type": "string", "enum": ["pending", "completed", "rejected"] },
-        "payoutDetails": { "type": "object" },
+        "payoutDetails": { 
+          "type": "object",
+          "properties": {
+            "payoutType": { "type": "string", "enum": ["bank", "upi", "giftcard"] },
+            "giftCardEmail": { "type": "string" },
+            "vpa": { "type": "string" }
+          }
+        },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },

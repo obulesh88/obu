@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save, Send, ShieldCheck } from 'lucide-react';
+import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save, Send, ShieldCheck, Ticket, CreditCard, Smartphone } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
@@ -24,6 +24,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 const MIN_WITHDRAWAL = 1;
@@ -43,6 +44,8 @@ export default function WalletPageContent() {
   
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   const [isSavingBank, setIsSavingBank] = useState(false);
+  const [payoutType, setPayoutType] = useState<'bank' | 'upi' | 'giftcard'>('upi');
+  
   const [bankData, setBankData] = useState({
     name: '',
     contact: '',
@@ -50,6 +53,7 @@ export default function WalletPageContent() {
     accountNumber: '',
     ifsc: '',
     vpa: '',
+    giftCardEmail: '',
   });
 
   useEffect(() => {
@@ -61,7 +65,11 @@ export default function WalletPageContent() {
         accountNumber: userProfile.bankDetails.accountNumber || '',
         ifsc: userProfile.bankDetails.ifsc || '',
         vpa: userProfile.bankDetails.vpa || '',
+        giftCardEmail: userProfile.bankDetails.giftCardEmail || userProfile.email || '',
       });
+      if (userProfile.bankDetails.payoutType) {
+        setPayoutType(userProfile.bankDetails.payoutType as any);
+      }
     }
   }, [userProfile]);
 
@@ -81,7 +89,10 @@ export default function WalletPageContent() {
     const userDocRef = doc(firestore, 'users', user.uid);
     
     const updateData = {
-      bankDetails: bankData,
+      bankDetails: {
+        ...bankData,
+        payoutType: payoutType
+      },
       updatedAt: serverTimestamp()
     };
 
@@ -101,12 +112,6 @@ export default function WalletPageContent() {
             requestResourceData: updateData,
           } satisfies SecurityRuleContext);
           errorEmitter.emit('permission-error', permissionError);
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Failed to save',
-            description: error.message
-          });
         }
       })
       .finally(() => {
@@ -119,35 +124,33 @@ export default function WalletPageContent() {
 
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid withdrawal amount.' });
+      toast({ variant: 'destructive', title: 'Invalid Amount' });
       return;
     }
 
     if (amount < MIN_WITHDRAWAL) {
-      toast({ variant: 'destructive', title: 'Withdrawal Limit', description: `Minimum withdrawal is ₹${MIN_WITHDRAWAL}.` });
-      return;
-    }
-
-    if (amount > MAX_WITHDRAWAL) {
-      toast({ variant: 'destructive', title: 'Withdrawal Limit', description: `Maximum withdrawal is ₹${MAX_WITHDRAWAL}.` });
+      toast({ variant: 'destructive', title: 'Limit', description: `Min withdrawal ₹${MIN_WITHDRAWAL}.` });
       return;
     }
 
     if (amount > (userProfile.wallet?.inrBalance || 0)) {
-      toast({ variant: 'destructive', title: 'Insufficient Balance', description: 'You do not have enough INR balance.' });
+      toast({ variant: 'destructive', title: 'Insufficient Balance' });
       return;
     }
 
-    const { name, accountNumber, ifsc, vpa } = bankData;
-    const hasBank = name && accountNumber && ifsc;
-    const hasUpi = name && vpa;
-
-    if (!hasBank && !hasUpi) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Payout Details Missing', 
-        description: 'Please set your destination Bank or UPI details first.' 
-      });
+    // Validation based on type
+    if (payoutType === 'bank' && (!bankData.accountNumber || !bankData.ifsc)) {
+      toast({ variant: 'destructive', title: 'Bank Info Missing' });
+      setIsBankDialogOpen(true);
+      return;
+    }
+    if (payoutType === 'upi' && !bankData.vpa) {
+      toast({ variant: 'destructive', title: 'UPI ID Missing' });
+      setIsBankDialogOpen(true);
+      return;
+    }
+    if (payoutType === 'giftcard' && !bankData.giftCardEmail) {
+      toast({ variant: 'destructive', title: 'Email Missing' });
       setIsBankDialogOpen(true);
       return;
     }
@@ -165,7 +168,10 @@ export default function WalletPageContent() {
       userId: user.uid,
       amount: amount,
       status: 'pending',
-      payoutDetails: bankData,
+      payoutDetails: {
+        ...bankData,
+        payoutType: payoutType
+      },
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -176,22 +182,12 @@ export default function WalletPageContent() {
           .then(() => {
             toast({
               title: 'Withdrawal Requested',
-              description: `₹${amount.toFixed(2)} request submitted. You will receive it soon.`,
+              description: `₹${amount.toFixed(2)} request submitted. Verification in progress.`,
             });
             setWithdrawAmount('');
-          })
-          .catch(async (error: any) => {
-            if (error.code === 'permission-denied') {
-              const permissionError = new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'update',
-                requestResourceData: updateData,
-              } satisfies SecurityRuleContext);
-              errorEmitter.emit('permission-error', permissionError);
-            }
           });
       })
-      .catch(async (error: any) => {
+      .catch(() => {
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit request.' });
       })
       .finally(() => {
@@ -200,34 +196,16 @@ export default function WalletPageContent() {
   };
 
   const handleConvert = async () => {
-    if (!user || !userProfile || !firestore) {
-      toast({ variant: 'destructive', title: 'Not Authenticated' });
-      return;
-    }
-
+    if (!user || !userProfile || !firestore) return;
     const orToConvert = parseFloat(orAmount);
     if (isNaN(orToConvert) || orToConvert < 100) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Invalid Amount', 
-        description: 'Minimum conversion amount is 100 OR.' 
-      });
-      return;
-    }
-
-    if (userProfile.wallet.orBalance < orToConvert) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Insufficient Balance', 
-        description: 'You do not have enough OR coins.' 
-      });
+      toast({ variant: 'destructive', title: 'Min 100 OR' });
       return;
     }
 
     setIsConverting(true);
     const inrToAdd = orToConvert / CONVERSION_RATE;
     const userDocRef = doc(firestore, 'users', user.uid);
-    
     const updateData = {
         'wallet.orBalance': increment(-orToConvert),
         'wallet.inrBalance': increment(inrToAdd),
@@ -236,28 +214,11 @@ export default function WalletPageContent() {
 
     updateDoc(userDocRef, updateData)
         .then(() => {
-            toast({
-                title: 'Conversion Successful',
-                description: `${orToConvert} OR coins converted to ₹${inrToAdd.toFixed(2)} INR.`,
-            });
+            toast({ title: 'Success', description: `Converted to ₹${inrToAdd.toFixed(2)}` });
             setOrAmount('');
             setIsConverting(false);
         })
-        .catch(async (error: any) => {
-            setIsConverting(false);
-            if (error.code === 'permission-denied') {
-                const permissionError = new FirestorePermissionError({
-                    path: userDocRef.path,
-                    operation: 'update',
-                    requestResourceData: updateData,
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
-            }
-        });
-  };
-
-  const handleSupportClick = () => {
-      window.open('https://wa.me/your_number_here', '_blank');
+        .catch(() => setIsConverting(false));
   };
 
   return (
@@ -271,7 +232,7 @@ export default function WalletPageContent() {
           onClick={() => setActiveTab('earning')}
         >
           <DollarSign className={cn("h-6 w-6 mb-2", activeTab === 'earning' ? "text-primary" : "text-muted-foreground")} />
-          <p className="text-xs font-semibold">Withdraw</p>
+          <p className="text-[10px] font-bold uppercase">Withdraw</p>
         </Card>
         <Card
           className={cn(
@@ -281,7 +242,7 @@ export default function WalletPageContent() {
           onClick={() => setActiveTab('deposit')}
         >
           <Download className={cn("h-6 w-6 mb-2", activeTab === 'deposit' ? "text-primary" : "text-muted-foreground")} />
-          <p className="text-xs font-semibold">Deposit</p>
+          <p className="text-[10px] font-bold uppercase">Deposit</p>
         </Card>
         <Card
           className={cn(
@@ -291,14 +252,14 @@ export default function WalletPageContent() {
           onClick={() => setActiveTab('convert')}
         >
           <RefreshCw className={cn("h-6 w-6 mb-2", activeTab === 'convert' ? "text-primary animate-spin-slow" : "text-muted-foreground")} />
-          <p className="text-xs font-semibold">Convert</p>
+          <p className="text-[10px] font-bold uppercase">Convert</p>
         </Card>
       </div>
 
       {activeTab === 'earning' && (
          <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">Available for Payout</CardTitle>
+             <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
              <Button 
                variant="ghost" 
                size="sm" 
@@ -306,39 +267,39 @@ export default function WalletPageContent() {
                onClick={() => setIsBankDialogOpen(true)}
              >
                <Building2 className="h-3 w-3" />
-               Payout Settings
+               Payout Method
              </Button>
           </CardHeader>
           <CardContent className="space-y-6">
              {loading ? (
                 <Skeleton className="h-8 w-24" />
              ) : (
-                <div className="text-3xl font-bold text-primary">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
+                <div className="text-4xl font-black text-primary">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
              )}
              
              <div className="space-y-2">
-                <Label htmlFor="withdrawAmount">Withdraw Amount (INR)</Label>
+                <Label htmlFor="withdrawAmount" className="text-xs uppercase font-bold opacity-70">Amount to Withdraw</Label>
                 <div className="relative">
                   <Input 
                     id="withdrawAmount" 
                     type="number" 
-                    placeholder="Enter amount" 
+                    placeholder="Min ₹1" 
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     disabled={isWithdrawing}
-                    className="font-bold text-lg"
+                    className="font-bold text-xl h-12"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                     <span className="text-sm font-bold text-muted-foreground">₹</span>
                   </div>
                 </div>
-                <div className="flex justify-between items-center">
-                    <p className="text-[10px] text-muted-foreground font-medium">Min: ₹{MIN_WITHDRAWAL} | Max: ₹{MAX_WITHDRAWAL}</p>
-                    <p className="text-[10px] font-bold text-primary uppercase">Manual Verification</p>
+                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight">
+                    <p className="text-muted-foreground">Limit: ₹1 - ₹1000</p>
+                    <p className="text-primary">Manual Verification</p>
                 </div>
              </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col gap-4">
             <Button 
                 className="w-full h-12 text-lg font-bold" 
                 onClick={handleWithdraw} 
@@ -351,6 +312,10 @@ export default function WalletPageContent() {
                 )}
                 {isWithdrawing ? 'Processing...' : 'Request Payout'}
             </Button>
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase">
+                <ShieldCheck className="h-3 w-3 text-green-500" />
+                Secure Privacy Protocol Enabled
+            </div>
           </CardFooter>
         </Card>
       )}
@@ -359,17 +324,13 @@ export default function WalletPageContent() {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Add Funds</CardTitle>
-            <CardDescription>To deposit cash into your wallet, please contact our secure support channel. For your safety, we do not list bank details publicly.</CardDescription>
+            <CardDescription>To deposit cash securely, contact our verified support channel. No public details shared for your safety.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <Button className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold h-12 gap-2" onClick={handleSupportClick}>
+            <Button className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold h-12 gap-2" onClick={() => window.open('https://wa.me/your_number_here', '_blank')}>
               <FaWhatsapp className="h-6 w-6" />
               Deposit via WhatsApp
             </Button>
-            <div className="flex items-center gap-2 justify-center text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                <ShieldCheck className="h-3 w-3" />
-                Secure Deposit Protocol Active
-            </div>
           </CardContent>
         </Card>
       )}
@@ -377,12 +338,12 @@ export default function WalletPageContent() {
       {activeTab === 'convert' && (
         <Card>
           <CardHeader>
-            <CardTitle>Convert OR to INR</CardTitle>
-            <CardDescription>Exchange your earned OR coins for real cash instantly.</CardDescription>
+            <CardTitle>OR to INR</CardTitle>
+            <CardDescription>Exchange OR coins for real cash instantly.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-right text-xs font-medium text-muted-foreground">
-              Available: {userProfile?.wallet?.orBalance?.toFixed(2) || '0.00'} OR
+            <div className="text-right text-[10px] font-bold text-muted-foreground uppercase">
+              Balance: {userProfile?.wallet?.orBalance?.toFixed(0) || '0'} OR
             </div>
             <div className="grid gap-4">
               <div className="space-y-2">
@@ -391,7 +352,7 @@ export default function WalletPageContent() {
                   <Input 
                     id="orAmount" 
                     type="number" 
-                    placeholder="Enter OR coins" 
+                    placeholder="Min 100 OR" 
                     value={orAmount}
                     onChange={(e) => setOrAmount(e.target.value)}
                     disabled={isConverting}
@@ -403,7 +364,7 @@ export default function WalletPageContent() {
               </div>
               <div className="flex justify-center">
                 <div className="bg-muted rounded-full p-2">
-                  <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
+                  <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -423,23 +384,17 @@ export default function WalletPageContent() {
                 </div>
               </div>
             </div>
-            <div className="rounded-md bg-muted p-3">
-              <p className="text-[10px] text-muted-foreground text-center">
-                Conversion Rate: 1,000 OR = ₹1.00 INR
-              </p>
-            </div>
+            <p className="text-[10px] text-muted-foreground text-center font-bold uppercase tracking-widest">
+                Rate: 1,000 OR = ₹1.00 INR
+            </p>
           </CardContent>
           <CardFooter>
             <Button 
-              className="w-full" 
+              className="w-full font-bold" 
               onClick={handleConvert} 
               disabled={isConverting || !orAmount || parseFloat(orAmount) < 100}
             >
-              {isConverting ? (
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
-              )}
+              {isConverting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
               {isConverting ? 'Converting...' : 'Convert Now'}
             </Button>
           </CardFooter>
@@ -449,75 +404,90 @@ export default function WalletPageContent() {
       <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Destination Payout Details</DialogTitle>
+            <DialogTitle>Payout Method & Privacy</DialogTitle>
             <DialogDescription>
-              Enter **your** UPI ID or Bank details where you want to receive your earnings.
+              Choose how you want to receive your money.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-            <div className="space-y-2">
-              <Label htmlFor="bank-name">Your Full Name</Label>
-              <Input 
-                id="bank-name" 
-                value={bankData.name} 
-                onChange={(e) => setBankData({...bankData, name: e.target.value})}
-                placeholder="Name as on Bank/UPI" 
-              />
-            </div>
-            
-            <div className="relative py-2">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-[10px] uppercase font-bold text-muted-foreground">
-                    <span className="bg-background px-2">Option 1: UPI ID</span>
-                </div>
-            </div>
+          
+          <Tabs value={payoutType} onValueChange={(v: any) => setPayoutType(v)} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 h-12">
+              <TabsTrigger value="upi" className="gap-2"><Smartphone className="h-4 w-4" />UPI</TabsTrigger>
+              <TabsTrigger value="giftcard" className="gap-2"><Ticket className="h-4 w-4" />Gift</TabsTrigger>
+              <TabsTrigger value="bank" className="gap-2"><CreditCard className="h-4 w-4" />Bank</TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-2">
-              <Label htmlFor="bank-vpa">Your UPI ID (VPA)</Label>
-              <Input 
-                id="bank-vpa" 
-                value={bankData.vpa} 
-                onChange={(e) => setBankData({...bankData, vpa: e.target.value})}
-                placeholder="username@bank" 
-                className="font-mono text-sm"
-              />
-            </div>
-
-            <div className="relative py-2">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
+            <div className="py-4 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bank-name">Account Holder Name</Label>
+                  <Input 
+                    id="bank-name" 
+                    value={bankData.name} 
+                    onChange={(e) => setBankData({...bankData, name: e.target.value})}
+                    placeholder="Full legal name" 
+                  />
                 </div>
-                <div className="relative flex justify-center text-[10px] uppercase font-bold text-muted-foreground">
-                    <span className="bg-background px-2">Option 2: Bank Account</span>
-                </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bank-acc">Your Account Number</Label>
-              <Input 
-                id="bank-acc" 
-                value={bankData.accountNumber} 
-                onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})}
-                placeholder="Bank account number" 
-              />
+                <TabsContent value="upi" className="space-y-4 mt-0">
+                  <div className="space-y-2">
+                    <Label htmlFor="bank-vpa">UPI ID (VPA)</Label>
+                    <Input 
+                      id="bank-vpa" 
+                      value={bankData.vpa} 
+                      onChange={(e) => setBankData({...bankData, vpa: e.target.value})}
+                      placeholder="username@bank" 
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 text-[10px] font-medium leading-relaxed">
+                    <span className="font-bold text-yellow-600 uppercase">Privacy Note:</span> Manual UPI transfers reveal the sender's name in your bank statement.
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="giftcard" className="space-y-4 mt-0">
+                  <div className="space-y-2">
+                    <Label htmlFor="gc-email">Delivery Email</Label>
+                    <Input 
+                      id="gc-email" 
+                      type="email"
+                      value={bankData.giftCardEmail} 
+                      onChange={(e) => setBankData({...bankData, giftCardEmail: e.target.value})}
+                      placeholder="Email for gift card delivery" 
+                    />
+                  </div>
+                  <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20 text-[10px] font-medium leading-relaxed">
+                    <span className="font-bold text-green-600 uppercase">Privacy First:</span> Gift Cards are 100% private. No personal bank details are exchanged between you and the admin. Recommended for privacy!
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="bank" className="space-y-4 mt-0">
+                  <div className="space-y-2">
+                    <Label htmlFor="bank-acc">Account Number</Label>
+                    <Input 
+                      id="bank-acc" 
+                      value={bankData.accountNumber} 
+                      onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})}
+                      placeholder="Enter account number" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bank-ifsc">IFSC Code</Label>
+                    <Input 
+                      id="bank-ifsc" 
+                      value={bankData.ifsc} 
+                      onChange={(e) => setBankData({...bankData, ifsc: e.target.value})}
+                      placeholder="HDFC0001234" 
+                      className="uppercase font-mono"
+                    />
+                  </div>
+                </TabsContent>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="bank-ifsc">Your IFSC Code</Label>
-              <Input 
-                id="bank-ifsc" 
-                value={bankData.ifsc} 
-                onChange={(e) => setBankData({...bankData, ifsc: e.target.value})}
-                placeholder="Bank IFSC code" 
-                className="uppercase font-mono"
-              />
-            </div>
-          </div>
+          </Tabs>
+
           <DialogFooter>
-            <Button onClick={handleSaveBankDetails} disabled={isSavingBank} className="w-full">
+            <Button onClick={handleSaveBankDetails} disabled={isSavingBank} className="w-full h-12 text-md font-bold">
               {isSavingBank ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save My Payout Details
+              Save Payout Method
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -19,6 +19,8 @@ export type UserProfile = {
     accountNumber: string;
     ifsc: string;
     vpa?: string;
+    payoutType?: 'bank' | 'upi' | 'giftcard';
+    giftCardEmail?: string;
   };
   referral: {
     referralCode: string;
@@ -86,6 +88,8 @@ export type WithdrawalRequest = {
     accountNumber?: string;
     ifsc?: string;
     vpa?: string;
+    payoutType: 'bank' | 'upi' | 'giftcard';
+    giftCardEmail?: string;
   };
   createdAt: any;
   updatedAt: any;
