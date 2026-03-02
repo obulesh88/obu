@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save, Send, CreditCard } from 'lucide-react';
+import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save, Send, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
@@ -15,6 +15,7 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { FaWhatsapp } from 'react-icons/fa';
 import {
   Dialog,
   DialogContent,
@@ -88,7 +89,7 @@ export default function WalletPageContent() {
       .then(() => {
         toast({
           title: 'Details Saved',
-          description: 'Your payout information has been updated.',
+          description: 'Your destination payout details have been updated.',
         });
         setIsBankDialogOpen(false);
       })
@@ -137,7 +138,6 @@ export default function WalletPageContent() {
       return;
     }
 
-    // Check if bank details are set (either Bank Account OR UPI ID)
     const { name, accountNumber, ifsc, vpa } = bankData;
     const hasBank = name && accountNumber && ifsc;
     const hasUpi = name && vpa;
@@ -146,7 +146,7 @@ export default function WalletPageContent() {
       toast({ 
         variant: 'destructive', 
         title: 'Payout Details Missing', 
-        description: 'Please save your Bank or UPI details first.' 
+        description: 'Please set your destination Bank or UPI details first.' 
       });
       setIsBankDialogOpen(true);
       return;
@@ -170,15 +170,13 @@ export default function WalletPageContent() {
       updatedAt: serverTimestamp()
     };
 
-    // 1. Create the request log
     addDoc(requestsRef, requestData)
       .then(() => {
-        // 2. Deduct the user's balance
         updateDoc(userDocRef, updateData)
           .then(() => {
             toast({
               title: 'Withdrawal Requested',
-              description: `₹${amount.toFixed(2)} request submitted. Our admin will process it shortly.`,
+              description: `₹${amount.toFixed(2)} request submitted. You will receive it soon.`,
             });
             setWithdrawAmount('');
           })
@@ -254,14 +252,12 @@ export default function WalletPageContent() {
                     requestResourceData: updateData,
                 } satisfies SecurityRuleContext);
                 errorEmitter.emit('permission-error', permissionError);
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Conversion Failed',
-                    description: error.message || 'An unexpected error occurred.'
-                });
             }
         });
+  };
+
+  const handleSupportClick = () => {
+      window.open('https://wa.me/your_number_here', '_blank');
   };
 
   return (
@@ -310,7 +306,7 @@ export default function WalletPageContent() {
                onClick={() => setIsBankDialogOpen(true)}
              >
                <Building2 className="h-3 w-3" />
-               Payout Details
+               Payout Settings
              </Button>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -362,17 +358,18 @@ export default function WalletPageContent() {
       {activeTab === 'deposit' && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Deposit Options</CardTitle>
+            <CardTitle className="text-sm font-medium">Add Funds</CardTitle>
+            <CardDescription>To deposit cash into your wallet, please contact our secure support channel. For your safety, we do not list bank details publicly.</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4">
-            <Button variant="outline" className="justify-start">
-              <CreditCard className="mr-2 h-4 w-4" />
-              Add Cash via Bank Transfer
+          <CardContent className="flex flex-col gap-4">
+            <Button className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold h-12 gap-2" onClick={handleSupportClick}>
+              <FaWhatsapp className="h-6 w-6" />
+              Deposit via WhatsApp
             </Button>
-            <Button variant="outline" className="justify-start">
-              <Download className="mr-2 h-4 w-4" />
-              Deposit via UPI
-            </Button>
+            <div className="flex items-center gap-2 justify-center text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                <ShieldCheck className="h-3 w-3" />
+                Secure Deposit Protocol Active
+            </div>
           </CardContent>
         </Card>
       )}
@@ -449,18 +446,17 @@ export default function WalletPageContent() {
         </Card>
       )}
 
-      {/* Manual Payout Details Dialog */}
       <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Payout Settings</DialogTitle>
+            <DialogTitle>Destination Payout Details</DialogTitle>
             <DialogDescription>
-              Enter your Bank or UPI details where you wish to receive your earnings.
+              Enter **your** UPI ID or Bank details where you want to receive your earnings.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
             <div className="space-y-2">
-              <Label htmlFor="bank-name">Account Holder Name</Label>
+              <Label htmlFor="bank-name">Your Full Name</Label>
               <Input 
                 id="bank-name" 
                 value={bankData.name} 
@@ -473,13 +469,13 @@ export default function WalletPageContent() {
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">UPI Transfer</span>
+                <div className="relative flex justify-center text-[10px] uppercase font-bold text-muted-foreground">
+                    <span className="bg-background px-2">Option 1: UPI ID</span>
                 </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bank-vpa">UPI ID (VPA)</Label>
+              <Label htmlFor="bank-vpa">Your UPI ID (VPA)</Label>
               <Input 
                 id="bank-vpa" 
                 value={bankData.vpa} 
@@ -493,13 +489,13 @@ export default function WalletPageContent() {
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Bank Transfer</span>
+                <div className="relative flex justify-center text-[10px] uppercase font-bold text-muted-foreground">
+                    <span className="bg-background px-2">Option 2: Bank Account</span>
                 </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bank-acc">Account Number</Label>
+              <Label htmlFor="bank-acc">Your Account Number</Label>
               <Input 
                 id="bank-acc" 
                 value={bankData.accountNumber} 
@@ -508,7 +504,7 @@ export default function WalletPageContent() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bank-ifsc">IFSC Code</Label>
+              <Label htmlFor="bank-ifsc">Your IFSC Code</Label>
               <Input 
                 id="bank-ifsc" 
                 value={bankData.ifsc} 
@@ -521,7 +517,7 @@ export default function WalletPageContent() {
           <DialogFooter>
             <Button onClick={handleSaveBankDetails} disabled={isSavingBank} className="w-full">
               {isSavingBank ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save Payout Details
+              Save My Payout Details
             </Button>
           </DialogFooter>
         </DialogContent>
