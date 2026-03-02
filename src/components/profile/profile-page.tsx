@@ -9,9 +9,18 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, FileText, Shield, Ticket, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function ProfilePage() {
   const { user, userProfile, loading } = useUser();
@@ -37,8 +46,59 @@ export default function ProfilePage() {
     return <div>Please log in to view your profile.</div>;
   }
 
+  const policies = [
+    { 
+      title: "Terms and Conditions", 
+      icon: <FileText className="h-4 w-4" />, 
+      content: `Welcome to OR Wallet (“we,” “our,” or “us”). By accessing or using the OR Wallet website and services (the “Service”), you agree to these Terms and Conditions, including our privacy, rewards, referral, and withdrawal policies.
+
+1. Eligibility: You must be at least 13 years old to use OR Wallet. If you are under 18, you must use the website with permission from a parent or legal guardian.
+
+2. User Accounts: You are responsible for maintaining account confidentiality and all activity under your account.
+
+3. Rewards: Rewards have no cash value until withdrawn. Fraud, VPN, bots, scripts, automation, or multiple accounts are prohibited.
+
+4. Limitation of Liability: OR Wallet is not liable for loss of earnings, loss of data, or service interruptions.`
+    },
+    { 
+      title: "Privacy Policy", 
+      icon: <Shield className="h-4 w-4" />, 
+      content: `We respect your privacy and collect limited information to operate OR Wallet.
+
+Information We Collect: Name/username, Email address, Device/browser data, IP address, and transaction records.
+
+How We Use Information: To provide and operate the website, track rewards and referrals, and prevent fraud and abuse.
+
+Data Security: We use reasonable security measures to protect user information. We do not sell personal data.`
+    },
+    { 
+      title: "Withdrawal Policy", 
+      icon: <Ticket className="h-4 w-4" />, 
+      content: `Users may withdraw earnings once minimum withdrawal limits (₹1.00) are reached.
+
+Conditions:
+- Identity verification may be required.
+- Incorrect payment details are user responsibility.
+- Fraud checks may delay or cancel withdrawals.
+- Processing time depends on payment providers.
+- OR Wallet may refuse payouts for policy violations.`
+    },
+    { 
+      title: "Referral Policy", 
+      icon: <Users className="h-4 w-4" />, 
+      content: `Users may earn referral rewards for inviting new genuine users.
+
+Not allowed:
+- Self-referrals.
+- Duplicate accounts.
+- Fake or incentivized sign-ups.
+
+We may cancel referral rewards or suspend accounts for abuse. Referral rewards are subject to manual verification.`
+    }
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>
@@ -53,6 +113,7 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Account Details</CardTitle>
@@ -67,21 +128,51 @@ export default function ProfilePage() {
                 <Input id="email" type="email" value={userProfile.email ?? ''} readOnly />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number</Label>
-                <Input id="phoneNumber" value={userProfile.phoneNumber ?? ''} readOnly />
+                <Label htmlFor="wallet-addr">Wallet Address</Label>
+                <Input id="wallet-addr" value={userProfile.wallet.walletAddress} readOnly className="font-mono text-xs" />
             </div>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader>
-          <CardTitle>Theme</CardTitle>
+          <CardTitle>Legal & Policies</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2">
+          {policies.map((policy) => (
+            <Dialog key={policy.title}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  {policy.icon}
+                  {policy.title}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{policy.title}</DialogTitle>
+                  <DialogDescription>Review our official {policy.title.toLowerCase()}.</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] mt-4 pr-4">
+                  <div className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
+                    {policy.content}
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-4">
-          <Button variant="outline" onClick={() => setTheme('light')}>
-            <Sun className="mr-2" /> Light Mode
+          <Button variant="outline" onClick={() => setTheme('light')} className="flex-1">
+            <Sun className="mr-2 h-4 w-4" /> Light
           </Button>
-          <Button variant="outline" onClick={() => setTheme('dark')}>
-            <Moon className="mr-2" /> Dark Mode
+          <Button variant="outline" onClick={() => setTheme('dark')} className="flex-1">
+            <Moon className="mr-2 h-4 w-4" /> Dark
           </Button>
         </CardContent>
       </Card>
