@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, RefreshCw, Wallet, User, CircleDollarSign, Gift } from 'lucide-react';
+import { Home, RefreshCw, Wallet, User, CircleDollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useLayout } from '@/context/layout-context';
@@ -18,14 +18,13 @@ export function BottomNav() {
   const navItems = [
     { href: '/', icon: <Home className="h-5 w-5" />, label: 'Home' },
     { href: '/earning', icon: <CircleDollarSign className="h-5 w-5" />, label: 'Earn' },
-    { href: '/referral', icon: <Gift className="h-5 w-5" />, label: 'Refer' },
     { href: '/wallet', icon: <Wallet className="h-5 w-5" />, label: 'Wallet' },
     { href: '/profile', icon: <User className="h-5 w-5" />, label: 'Profile' },
   ];
 
   return (
     <div className="z-50 w-full border-t bg-background shrink-0">
-      <div className="grid h-16 grid-cols-5 items-center">
+      <div className="grid h-16 grid-cols-4 items-center">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (

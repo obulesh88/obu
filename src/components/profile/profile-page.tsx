@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -9,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, FileText, Shield, Ticket, Users } from 'lucide-react';
+import { Moon, Sun, FileText, Shield, Ticket } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -50,7 +49,7 @@ export default function ProfilePage() {
     { 
       title: "Terms and Conditions", 
       icon: <FileText className="h-4 w-4" />, 
-      content: `Welcome to OR Wallet (“we,” “our,” or “us”). By accessing or using the OR Wallet website and services (the “Service”), you agree to these Terms and Conditions, including our privacy, rewards, referral, and withdrawal policies.
+      content: `Welcome to OR Wallet (“we,” “our,” or “us”). By accessing or using the OR Wallet website and services (the “Service”), you agree to these Terms and Conditions, including our privacy, rewards, and withdrawal policies.
 
 1. Eligibility: You must be at least 13 years old to use OR Wallet. If you are under 18, you must use the website with permission from a parent or legal guardian.
 
@@ -67,7 +66,7 @@ export default function ProfilePage() {
 
 Information We Collect: Name/username, Email address, Device/browser data, IP address, and transaction records.
 
-How We Use Information: To provide and operate the website, track rewards and referrals, and prevent fraud and abuse.
+How We Use Information: To provide and operate the website, track rewards, and prevent fraud and abuse.
 
 Data Security: We use reasonable security measures to protect user information. We do not sell personal data.`
     },
@@ -82,18 +81,6 @@ Conditions:
 - Fraud checks may delay or cancel withdrawals.
 - Processing time depends on payment providers.
 - OR Wallet may refuse payouts for policy violations.`
-    },
-    { 
-      title: "Referral Policy", 
-      icon: <Users className="h-4 w-4" />, 
-      content: `Users may earn referral rewards for inviting new genuine users.
-
-Not allowed:
-- Self-referrals.
-- Duplicate accounts.
-- Fake or incentivized sign-ups.
-
-We may cancel referral rewards or suspend accounts for abuse. Referral rewards are subject to manual verification.`
     }
   ];
 

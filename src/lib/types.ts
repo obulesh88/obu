@@ -21,12 +21,6 @@ export type UserProfile = {
     payoutType?: 'bank' | 'upi' | 'giftcard';
     giftCardEmail?: string;
   };
-  referral: {
-    referralCode: string;
-    referredBy: string | null;
-    referralCount: number;
-    totalReferralEarnings: number;
-  };
   createdAt: any;
   updatedAt: any;
   captcha: {
@@ -51,19 +45,9 @@ export type EarningTransaction = {
   id: string;
   userId: string;
   amount: number;
-  type: 'ad' | 'captcha' | 'referral';
+  type: 'ad' | 'captcha';
   description: string;
   createdAt: Date;
-};
-
-export type ReferralRecord = {
-  id?: string;
-  referralId: string;
-  referrerUid: string;
-  referredUid: string;
-  referralCode: string;
-  referralDate: any;
-  claimed: boolean;
 };
 
 export type WithdrawalRequest = {

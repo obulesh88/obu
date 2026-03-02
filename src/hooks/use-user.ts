@@ -48,12 +48,6 @@ export function useUser() {
           ifsc: '',
           vpa: '',
         },
-        referral: {
-          referralCode: guestUid.toUpperCase().substring(0, 8),
-          referredBy: null,
-          referralCount: 0,
-          totalReferralEarnings: 0,
-        },
         captcha: {
           is_active: false,
           verifiedAt: null,

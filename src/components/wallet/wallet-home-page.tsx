@@ -1,9 +1,8 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, History, Link as LinkIcon, ArrowRight, Gift } from 'lucide-react';
+import { Copy, History, Link as LinkIcon, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
@@ -75,31 +74,6 @@ export default function WalletHomePage() {
           <CardContent>
             <div className="text-4xl font-bold">{userProfile?.wallet?.orBalance?.toFixed(2) || '0.00'}</div>
             <p className="text-xs text-muted-foreground">OR Coins</p>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2 bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="h-5 w-5 text-primary" />
-              Refer & Earn
-            </CardTitle>
-            <CardDescription>
-              Invite your friends and earn bonus OR coins for every sign-up!
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between bg-card p-3 rounded-lg border">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase">Your Code</p>
-                <p className="font-bold text-lg uppercase">{userProfile?.referral?.referralCode || '------'}</p>
-              </div>
-              <Button asChild>
-                <Link href="/referral">
-                  Refer Friends <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
