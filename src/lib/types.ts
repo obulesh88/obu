@@ -18,6 +18,7 @@ export type UserProfile = {
     email: string;
     accountNumber: string;
     ifsc: string;
+    vpa?: string;
   };
   referral: {
     referralCode: string;

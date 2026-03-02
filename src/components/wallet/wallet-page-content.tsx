@@ -1,8 +1,9 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save, Send } from 'lucide-react';
+import { DollarSign, Download, RefreshCw, ArrowRightLeft, Building2, Save, Send, CreditCard } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
@@ -25,7 +26,7 @@ import {
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 const MIN_WITHDRAWAL = 1;
-const MAX_WITHDRAWAL = 10;
+const MAX_WITHDRAWAL = 1000;
 
 export default function WalletPageContent() {
   const [activeTab, setActiveTab] = useState<'earning' | 'deposit' | 'convert'>('earning');
@@ -47,6 +48,7 @@ export default function WalletPageContent() {
     email: '',
     accountNumber: '',
     ifsc: '',
+    vpa: '',
   });
 
   useEffect(() => {
@@ -57,6 +59,7 @@ export default function WalletPageContent() {
         email: userProfile.bankDetails.email || '',
         accountNumber: userProfile.bankDetails.accountNumber || '',
         ifsc: userProfile.bankDetails.ifsc || '',
+        vpa: userProfile.bankDetails.vpa || '',
       });
     }
   }, [userProfile]);
@@ -84,8 +87,8 @@ export default function WalletPageContent() {
     updateDoc(userDocRef, updateData)
       .then(() => {
         toast({
-          title: 'Bank Details Saved',
-          description: 'Your payment information has been updated.',
+          title: 'Details Saved',
+          description: 'Your payout information has been updated for Razorpay.',
         });
         setIsBankDialogOpen(false);
       })
@@ -134,13 +137,16 @@ export default function WalletPageContent() {
       return;
     }
 
-    // Check if bank details are set
-    const { name, accountNumber, ifsc } = bankData;
-    if (!name || !accountNumber || !ifsc) {
+    // Check if bank details are set (either Bank Account OR UPI ID)
+    const { name, accountNumber, ifsc, vpa } = bankData;
+    const hasBank = name && accountNumber && ifsc;
+    const hasUpi = name && vpa;
+
+    if (!hasBank && !hasUpi) {
       toast({ 
         variant: 'destructive', 
-        title: 'Missing Bank Details', 
-        description: 'Please save your bank details first using the button above.' 
+        title: 'Payout Details Missing', 
+        description: 'Please save your Bank or UPI details first.' 
       });
       setIsBankDialogOpen(true);
       return;
@@ -157,7 +163,7 @@ export default function WalletPageContent() {
       .then(() => {
         toast({
           title: 'Withdrawal Initiated',
-          description: `₹${amount.toFixed(2)} will be credited to your bank account shortly.`,
+          description: `₹${amount.toFixed(2)} will be processed via Razorpay shortly.`,
         });
         setWithdrawAmount('');
       })
@@ -256,7 +262,7 @@ export default function WalletPageContent() {
           onClick={() => setActiveTab('earning')}
         >
           <DollarSign className={cn("h-6 w-6 mb-2", activeTab === 'earning' ? "text-primary" : "text-muted-foreground")} />
-          <p className="text-xs font-semibold">Earnings</p>
+          <p className="text-xs font-semibold">Withdraw</p>
         </Card>
         <Card
           className={cn(
@@ -283,7 +289,7 @@ export default function WalletPageContent() {
       {activeTab === 'earning' && (
          <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">Available to Withdraw</CardTitle>
+             <CardTitle className="text-sm font-medium">Available for Payout</CardTitle>
              <Button 
                variant="ghost" 
                size="sm" 
@@ -291,7 +297,7 @@ export default function WalletPageContent() {
                onClick={() => setIsBankDialogOpen(true)}
              >
                <Building2 className="h-3 w-3" />
-               Bank Details
+               Razorpay Details
              </Button>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -317,7 +323,10 @@ export default function WalletPageContent() {
                     <span className="text-sm font-bold text-muted-foreground">₹</span>
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground font-medium">Min: ₹{MIN_WITHDRAWAL} | Max: ₹{MAX_WITHDRAWAL}</p>
+                <div className="flex justify-between items-center">
+                    <p className="text-[10px] text-muted-foreground font-medium">Min: ₹{MIN_WITHDRAWAL} | Max: ₹{MAX_WITHDRAWAL}</p>
+                    <p className="text-[10px] font-bold text-primary uppercase">Powered by Razorpay</p>
+                </div>
              </div>
           </CardContent>
           <CardFooter>
@@ -331,7 +340,7 @@ export default function WalletPageContent() {
                 ) : (
                     <Send className="mr-2 h-5 w-5" />
                 )}
-                {isWithdrawing ? 'Processing...' : 'Withdraw Now'}
+                {isWithdrawing ? 'Processing...' : 'Withdraw to Bank/UPI'}
             </Button>
           </CardFooter>
         </Card>
@@ -344,12 +353,12 @@ export default function WalletPageContent() {
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4">
             <Button variant="outline" className="justify-start">
-              <Download className="mr-2 h-4 w-4" />
-              Add Cash via UPI
+              <CreditCard className="mr-2 h-4 w-4" />
+              Add Cash via Razorpay
             </Button>
             <Button variant="outline" className="justify-start">
               <Download className="mr-2 h-4 w-4" />
-              Deposit via Wallet
+              Deposit via UPI
             </Button>
           </CardContent>
         </Card>
@@ -427,51 +436,62 @@ export default function WalletPageContent() {
         </Card>
       )}
 
-      {/* Bank Details Dialog */}
+      {/* Razorpay Details Dialog */}
       <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Bank Details</DialogTitle>
+            <DialogTitle>Payout Settings (Razorpay)</DialogTitle>
             <DialogDescription>
-              Enter your bank account information to receive payments.
+              Enter your Bank or UPI details to receive payments via Razorpay.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
             <div className="space-y-2">
-              <Label htmlFor="bank-name">Full Name (Bank Record)</Label>
+              <Label htmlFor="bank-name">Account Holder Name</Label>
               <Input 
                 id="bank-name" 
                 value={bankData.name} 
                 onChange={(e) => setBankData({...bankData, name: e.target.value})}
-                placeholder="John Doe" 
+                placeholder="Name as on Bank/UPI" 
               />
             </div>
+            
+            <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">UPI Transfer</span>
+                </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="bank-contact">Contact Number</Label>
+              <Label htmlFor="bank-vpa">UPI ID (VPA)</Label>
               <Input 
-                id="bank-contact" 
-                value={bankData.contact} 
-                onChange={(e) => setBankData({...bankData, contact: e.target.value})}
-                placeholder="10-digit number" 
+                id="bank-vpa" 
+                value={bankData.vpa} 
+                onChange={(e) => setBankData({...bankData, vpa: e.target.value})}
+                placeholder="username@bank" 
+                className="font-mono text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="bank-email">Email</Label>
-              <Input 
-                id="bank-email" 
-                type="email"
-                value={bankData.email} 
-                onChange={(e) => setBankData({...bankData, email: e.target.value})}
-                placeholder="email@example.com" 
-              />
+
+            <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Bank Transfer</span>
+                </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="bank-acc">Account Number</Label>
               <Input 
                 id="bank-acc" 
                 value={bankData.accountNumber} 
                 onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})}
-                placeholder="Your account number" 
+                placeholder="Bank account number" 
               />
             </div>
             <div className="space-y-2">
@@ -481,14 +501,14 @@ export default function WalletPageContent() {
                 value={bankData.ifsc} 
                 onChange={(e) => setBankData({...bankData, ifsc: e.target.value})}
                 placeholder="Bank IFSC code" 
-                className="uppercase"
+                className="uppercase font-mono"
               />
             </div>
           </div>
           <DialogFooter>
             <Button onClick={handleSaveBankDetails} disabled={isSavingBank} className="w-full">
               {isSavingBank ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save Details
+              Save Payout Details
             </Button>
           </DialogFooter>
         </DialogContent>

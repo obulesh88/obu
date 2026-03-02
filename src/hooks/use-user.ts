@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo, useEffect, useState } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -39,6 +40,14 @@ export function useUser() {
           orBalance: 0,
           inrBalance: 0,
           walletAddress: `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+        },
+        bankDetails: {
+          name: '',
+          contact: '',
+          email: '',
+          accountNumber: '',
+          ifsc: '',
+          vpa: '',
         },
         referral: {
           referralCode: guestUid.toUpperCase().substring(0, 8),

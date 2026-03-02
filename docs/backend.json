@@ -35,7 +35,8 @@
             "contact": { "type": "string" },
             "email": { "type": "string" },
             "accountNumber": { "type": "string" },
-            "ifsc": { "type": "string" }
+            "ifsc": { "type": "string" },
+            "vpa": { "type": "string", "description": "UPI ID for Razorpay VPA payouts." }
           }
         },
         "referral": {
