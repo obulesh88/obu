@@ -1,6 +1,6 @@
-# OR-wallet
+# Reward Mela
 
-OR-wallet is a Next.js application that allows users to earn rewards by completing tasks. The app features AI-powered task recommendations to help users find relevant opportunities.
+Reward Mela is a Next.js application that allows users to earn rewards by completing tasks. The app features AI-powered task recommendations to help users find relevant opportunities.
 
 To get started, run the development server:
 

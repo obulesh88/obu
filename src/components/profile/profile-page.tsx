@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, FileText, Shield, Ticket, Info, Mail, Undo2, LifeBuoy } from 'lucide-react';
+import { Moon, Sun, FileText, Shield, Ticket, Info, Undo2, LifeBuoy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import {
@@ -49,34 +49,34 @@ export default function ProfilePage() {
     { 
       title: "About Us", 
       icon: <Info className="h-4 w-4" />, 
-      content: `OR Wallet is a professional digital rewards and micro-tasking platform. We connect users with advertisers and market researchers, providing a platform where users can earn micro-incentives (OR coins) by completing verified digital tasks such as captcha solving and content engagement.
+      content: `Reward Mela is a professional digital rewards and micro-tasking platform. We connect users with advertisers and market researchers, providing a platform where users can earn micro-incentives (OR coins) by completing verified digital tasks such as captcha solving and content engagement.
 
 Our mission is to democratize digital earning opportunities while maintaining the highest standards of transparency and user data protection. We are a registered business entity committed to building a trusted ecosystem for earners in India.`
     },
     { 
       title: "Customer Support", 
       icon: <LifeBuoy className="h-4 w-4" />, 
-      content: `OR-Wallet provides customer support to help users resolve issues related to accounts, rewards, or withdrawals. Users can contact the support team by sending an email to obuleswaror@gmail.com with a detailed explanation of the issue they are facing. Our support team aims to respond to all queries within 24 to 48 hours during business days. OR-Wallet is committed to providing timely assistance and maintaining a smooth and reliable user experience for all users of the platform.`
+      content: `Reward Mela provides customer support to help users resolve issues related to accounts, rewards, or withdrawals. Users can contact the support team by sending an email to obuleswaror@gmail.com with a detailed explanation of the issue they are facing. Our support team aims to respond to all queries within 24 to 48 hours during business days. Reward Mela is committed to providing timely assistance and maintaining a smooth and reliable user experience for all users of the platform.`
     },
     { 
       title: "Terms and Conditions", 
       icon: <FileText className="h-4 w-4" />, 
-      content: `By accessing and using the OR-Wallet application, users agree to comply with the terms and conditions of the platform. OR-Wallet is a digital rewards platform that allows users to earn reward points by completing promotional activities such as watching advertisements, solving simple tasks, or participating in other in-app activities. These reward points can be converted into wallet balance according to the conversion rules defined within the application. Users are responsible for maintaining accurate account information and ensuring that their activities follow the platform rules. Any attempt to misuse the system, including creating multiple accounts, using automated tools, or engaging in fraudulent activities, may result in suspension or termination of the account. OR-Wallet reserves the right to modify, update, or discontinue its services or reward system at any time without prior notice. Continued use of the application indicates acceptance of these terms.`
+      content: `By accessing and using the Reward Mela application, users agree to comply with the terms and conditions of the platform. Reward Mela is a digital rewards platform that allows users to earn reward points by completing promotional activities such as watching advertisements, solving simple tasks, or participating in other in-app activities. These reward points can be converted into wallet balance according to the conversion rules defined within the application. Users are responsible for maintaining accurate account information and ensuring that their activities follow the platform rules. Any attempt to misuse the system, including creating multiple accounts, using automated tools, or engaging in fraudulent activities, may result in suspension or termination of the account. Reward Mela reserves the right to modify, update, or discontinue its services or reward system at any time without prior notice. Continued use of the application indicates acceptance of these terms.`
     },
     { 
       title: "Privacy Policy", 
       icon: <Shield className="h-4 w-4" />, 
-      content: `OR-Wallet respects the privacy of its users and is committed to protecting personal information. When users access or use the OR-Wallet application, we may collect certain information such as name, email address, device information, and usage data to provide and improve our services. This information is used to manage user accounts, track reward activities, process reward conversions, and handle withdrawal requests. OR-Wallet may also display advertisements from third-party ad networks which may collect anonymous data to provide relevant advertisements. We take reasonable steps to protect user information, but no internet service is completely secure. OR-Wallet does not knowingly collect personal information from children under the age of 13. By using the application, users agree to the collection and use of information according to this privacy policy. If users have any questions regarding this policy, they can contact us at obuleswaror@gmail.com.`
+      content: `Reward Mela respects the privacy of its users and is committed to protecting personal information. When users access or use the Reward Mela application, we may collect certain information such as name, email address, device information, and usage data to provide and improve our services. This information is used to manage user accounts, track reward activities, process reward conversions, and handle withdrawal requests. Reward Mela may also display advertisements from third-party ad networks which may collect anonymous data to provide relevant advertisements. We take reasonable steps to protect user information, but no internet service is completely secure. Reward Mela does not knowingly collect personal information from children under the age of 13. By using the application, users agree to the collection and use of information according to this privacy policy. If users have any questions regarding this policy, they can contact us at obuleswaror@gmail.com.`
     },
     { 
       title: "Withdrawal Policy", 
       icon: <Ticket className="h-4 w-4" />, 
-      content: `OR-Wallet allows users to request withdrawals from their wallet balance once the minimum withdrawal limit specified in the application is reached. Reward points earned from completing tasks and promotional activities can be converted into wallet balance based on the conversion rate defined in the app. Users must provide valid payment details such as UPI ID or bank account information when submitting a withdrawal request. Withdrawal requests are usually processed within 1 to 7 business days depending on verification and system processing times. OR-Wallet reserves the right to verify user accounts before approving withdrawals to prevent fraud or misuse of the platform. Withdrawal requests may be rejected if incorrect payment details are provided, suspicious activity is detected, or if the user violates the platform’s terms and conditions.`
+      content: `Reward Mela allows users to request withdrawals from their wallet balance once the minimum withdrawal limit specified in the application is reached. Reward points earned from completing tasks and promotional activities can be converted into wallet balance based on the conversion rate defined in the app. Users must provide valid payment details such as UPI ID or bank account information when submitting a withdrawal request. Withdrawal requests are usually processed within 1 to 7 business days depending on verification and system processing times. Reward Mela reserves the right to verify user accounts before approving withdrawals to prevent fraud or misuse of the platform. Withdrawal requests may be rejected if incorrect payment details are provided, suspicious activity is detected, or if the user violates the platform’s terms and conditions.`
     },
     { 
       title: "Refund & Cancellation Policy", 
       icon: <Undo2 className="h-4 w-4" />, 
-      content: `OR Wallet is an earning platform; we do not accept payments or deposits from users.
+      content: `Reward Mela is an earning platform; we do not accept payments or deposits from users.
 
 1. No Deposits: As a zero-deposit platform, there are no refunds for user payments.
 2. Reward Adjustments: If a task is found to be completed incorrectly or through automated means, we reserve the right to cancel the associated OR coins.
