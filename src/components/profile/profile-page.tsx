@@ -78,12 +78,7 @@ For legal inquiries or business partnerships, please use the email address provi
     { 
       title: "Privacy Policy", 
       icon: <Shield className="h-4 w-4" />, 
-      content: `OR Wallet respects your privacy. We collect minimal data necessary to provide our services:
-
-1. Data Collection: We collect guest IDs, email addresses (for payout delivery), and basic device information to prevent fraud.
-2. Data Usage: Your data is used exclusively for account management, reward tracking, and processing payouts.
-3. Third Parties: We do not sell your personal data. We may share anonymized data with advertising partners for task verification.
-4. Security: We implement standard security protocols to protect our database and your payout information.`
+      content: `OR-Wallet respects the privacy of its users and is committed to protecting personal information. When users access or use the OR-Wallet application, we may collect certain information such as name, email address, device information, and usage data to provide and improve our services. This information is used to manage user accounts, track reward activities, process reward conversions, and handle withdrawal requests. OR-Wallet may also display advertisements from third-party ad networks which may collect anonymous data to provide relevant advertisements. We take reasonable steps to protect user information, but no internet service is completely secure. OR-Wallet does not knowingly collect personal information from children under the age of 13. By using the application, users agree to the collection and use of information according to this privacy policy. If users have any questions regarding this policy, they can contact us at obuleswaror@gmail.com.`
     },
     { 
       title: "Withdrawal Policy", 
