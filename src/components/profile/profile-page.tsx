@@ -67,13 +67,7 @@ For legal inquiries or business partnerships, please use the email address provi
     { 
       title: "Terms and Conditions", 
       icon: <FileText className="h-4 w-4" />, 
-      content: `By using the OR Wallet platform, you agree to comply with the following terms:
-
-1. User Eligibility: Users must be at least 18 years of age or have legal guardian consent.
-2. Acceptable Use: You agree not to use VPNs, bots, scripts, or multiple accounts to manipulate earning activities.
-3. Digital Rewards: OR coins are internal platform credits that represent potential eligibility for payouts and carry no independent cash value.
-4. Account Security: You are responsible for maintaining the security of your guest session and account data.
-5. Termination: We reserve the right to suspend accounts found engaging in fraudulent activities without prior notice.`
+      content: `By accessing and using the OR-Wallet application, users agree to comply with the terms and conditions of the platform. OR-Wallet is a digital rewards platform that allows users to earn reward points by completing promotional activities such as watching advertisements, solving simple tasks, or participating in other in-app activities. These reward points can be converted into wallet balance according to the conversion rules defined within the application. Users are responsible for maintaining accurate account information and ensuring that their activities follow the platform rules. Any attempt to misuse the system, including creating multiple accounts, using automated tools, or engaging in fraudulent activities, may result in suspension or termination of the account. OR-Wallet reserves the right to modify, update, or discontinue its services or reward system at any time without prior notice. Continued use of the application indicates acceptance of these terms.`
     },
     { 
       title: "Privacy Policy", 
