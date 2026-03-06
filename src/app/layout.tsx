@@ -40,8 +40,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>OR-wallet</title>
-        <meta name="description" content="Complete tasks and earn rewards with AI-powered recommendations." />
+        <title>OR Wallet - Digital Rewards Platform</title>
+        <meta name="description" content="Earn digital rewards by completing simple micro-tasks and engaging with content." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

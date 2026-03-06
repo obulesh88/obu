@@ -49,65 +49,61 @@ export default function ProfilePage() {
     { 
       title: "About Us", 
       icon: <Info className="h-4 w-4" />, 
-      content: `OR Wallet is a leading digital rewards platform designed to help users earn micro-incentives through simple daily tasks. Our mission is to provide a transparent and accessible way for everyone to participate in the digital economy.
+      content: `OR Wallet is a professional digital rewards and micro-tasking platform. We connect users with advertisers and market researchers, providing a platform where users can earn micro-incentives (OR coins) by completing verified digital tasks such as captcha solving and content engagement.
 
-We focus on user experience, security, and prompt reward fulfillment. Based in India, we are committed to building a trusted community of earners and providing high-quality traffic to our advertising partners.`
+Our mission is to democratize digital earning opportunities while maintaining the highest standards of transparency and user data protection. We are a registered business entity committed to building a trusted ecosystem for earners in India.`
     },
     { 
       title: "Contact Us", 
       icon: <Mail className="h-4 w-4" />, 
-      content: `For any queries, support, or business inquiries, please reach out to us:
+      content: `If you have questions about your account, rewards, or our services, please contact our support team.
 
-Email: obuleswaror@gmail.com
-Business Hours: Monday to Friday (10:00 AM - 6:00 PM IST)
-Response Time: We usually respond within 24-48 hours.
+Business Email: obuleswaror@gmail.com
+Support Hours: Monday - Friday, 10:00 AM to 6:00 PM IST
+Estimated Response Time: 24-48 business hours.
 
-Our support team is dedicated to helping you with any issues regarding your wallet, rewards, or technical difficulties.`
+For legal inquiries or business partnerships, please use the email address provided above.`
     },
     { 
       title: "Terms and Conditions", 
       icon: <FileText className="h-4 w-4" />, 
-      content: `Welcome to OR Wallet (“we,” “our,” or “us”). By accessing or using the OR Wallet website and services (the “Service”), you agree to these Terms and Conditions, including our privacy, rewards, and withdrawal policies.
+      content: `By using the OR Wallet platform, you agree to comply with the following terms:
 
-1. Eligibility: You must be at least 13 years old to use OR Wallet. If you are under 18, you must use the website with permission from a parent or legal guardian.
-
-2. User Accounts: You are responsible for maintaining account confidentiality and all activity under your account.
-
-3. Rewards: Rewards have no cash value until withdrawn. Fraud, VPN, bots, scripts, automation, or multiple accounts are prohibited.
-
-4. Limitation of Liability: OR Wallet is not liable for loss of earnings, loss of data, or service interruptions.`
+1. User Eligibility: Users must be at least 18 years of age or have legal guardian consent.
+2. Acceptable Use: You agree not to use VPNs, bots, scripts, or multiple accounts to manipulate earning activities.
+3. Digital Rewards: OR coins are internal platform credits that represent potential eligibility for payouts and carry no independent cash value.
+4. Account Security: You are responsible for maintaining the security of your guest session and account data.
+5. Termination: We reserve the right to suspend accounts found engaging in fraudulent activities without prior notice.`
     },
     { 
       title: "Privacy Policy", 
       icon: <Shield className="h-4 w-4" />, 
-      content: `We respect your privacy and collect limited information to operate OR Wallet.
+      content: `OR Wallet respects your privacy. We collect minimal data necessary to provide our services:
 
-Information We Collect: Name/username, Email address, Device/browser data, IP address, and transaction records.
-
-How We Use Information: To provide and operate the website, track rewards, and prevent fraud and abuse.
-
-Data Security: We use reasonable security measures to protect user information. We do not sell personal data.`
+1. Data Collection: We collect guest IDs, email addresses (for payout delivery), and basic device information to prevent fraud.
+2. Data Usage: Your data is used exclusively for account management, reward tracking, and processing payouts.
+3. Third Parties: We do not sell your personal data. We may share anonymized data with advertising partners for task verification.
+4. Security: We implement standard security protocols to protect our database and your payout information.`
     },
     { 
       title: "Withdrawal Policy", 
       icon: <Ticket className="h-4 w-4" />, 
-      content: `Users may withdraw earnings once minimum withdrawal limits (₹1.00) are reached.
+      content: `Withdrawals are subject to verification to maintain platform integrity.
 
-Conditions:
-- Identity verification may be required.
-- Incorrect payment details are user responsibility.
-- Fraud checks may delay or cancel withdrawals.
-- Processing time depends on payment providers.
-- OR Wallet may refuse payouts for policy violations.`
+1. Minimum Limit: The minimum withdrawal threshold is ₹1.00.
+2. Maximum Limit: For security and manual verification purposes, the maximum single withdrawal is ₹10.00.
+3. Verification: All payout requests are manually audited. Verification typically takes 1-3 business days.
+4. Payout Methods: We currently support UPI, Bank Transfer, and Digital Gift Cards.
+5. Compliance: Any account found violating terms of service will have their pending withdrawals cancelled.`
     },
     { 
       title: "Refund & Cancellation Policy", 
       icon: <Undo2 className="h-4 w-4" />, 
-      content: `As OR Wallet is a platform for earning rewards and does not charge users for services or sell physical goods, the following policy applies:
+      content: `OR Wallet is an earning platform; we do not accept payments or deposits from users.
 
-1. No Deposits: Since we do not accept deposits or payments from users, there are no refunds for "payments."
-2. Reward Adjustments: We reserve the right to cancel or reverse rewards earned through fraudulent means, VPN usage, or technical exploits.
-3. Withdrawal Cancellation: Users can request a cancellation of a 'Pending' withdrawal if it hasn't been processed yet. Once 'Completed', the transaction is final and cannot be refunded.`
+1. No Deposits: As a zero-deposit platform, there are no refunds for user payments.
+2. Reward Adjustments: If a task is found to be completed incorrectly or through automated means, we reserve the right to cancel the associated OR coins.
+3. Withdrawal Cancellation: Users may request to cancel a 'Pending' withdrawal through our contact email before it has been processed. Once 'Completed', transactions are final and non-refundable.`
     }
   ];
 
@@ -134,15 +130,15 @@ Conditions:
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="displayName">Display Name</Label>
-                <Input id="displayName" value={userProfile.profile?.displayName ?? ''} readOnly />
+                <Label htmlFor="displayName">Account Type</Label>
+                <Input id="displayName" value="Verified Earner" readOnly />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
                 <Input id="email" type="email" value={userProfile.email ?? ''} readOnly />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="wallet-addr">Wallet Address</Label>
+                <Label htmlFor="wallet-addr">Internal Wallet ID</Label>
                 <Input id="wallet-addr" value={userProfile.wallet.walletAddress} readOnly className="font-mono text-xs" />
             </div>
         </CardContent>
@@ -150,7 +146,7 @@ Conditions:
 
       <Card>
         <CardHeader>
-          <CardTitle>Business & Legal Policies</CardTitle>
+          <CardTitle>Legal & Compliance</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2">
           {policies.map((policy) => (
@@ -164,7 +160,7 @@ Conditions:
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>{policy.title}</DialogTitle>
-                  <DialogDescription>Review our official {policy.title.toLowerCase()}.</DialogDescription>
+                  <DialogDescription>Review our professional {policy.title.toLowerCase()}.</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[60vh] mt-4 pr-4">
                   <div className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
