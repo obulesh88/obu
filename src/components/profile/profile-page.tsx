@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, FileText, Shield, Ticket, Info, Mail, Undo2 } from 'lucide-react';
+import { Moon, Sun, FileText, Shield, Ticket, Info, Mail, Undo2, LifeBuoy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import {
@@ -54,15 +54,9 @@ export default function ProfilePage() {
 Our mission is to democratize digital earning opportunities while maintaining the highest standards of transparency and user data protection. We are a registered business entity committed to building a trusted ecosystem for earners in India.`
     },
     { 
-      title: "Contact Us", 
-      icon: <Mail className="h-4 w-4" />, 
-      content: `If you have questions about your account, rewards, or our services, please contact our support team.
-
-Business Email: obuleswaror@gmail.com
-Support Hours: Monday - Friday, 10:00 AM to 6:00 PM IST
-Estimated Response Time: 24-48 business hours.
-
-For legal inquiries or business partnerships, please use the email address provided above.`
+      title: "Customer Support", 
+      icon: <LifeBuoy className="h-4 w-4" />, 
+      content: `OR-Wallet provides customer support to help users resolve issues related to accounts, rewards, or withdrawals. Users can contact the support team by sending an email to obuleswaror@gmail.com with a detailed explanation of the issue they are facing. Our support team aims to respond to all queries within 24 to 48 hours during business days. OR-Wallet is committed to providing timely assistance and maintaining a smooth and reliable user experience for all users of the platform.`
     },
     { 
       title: "Terms and Conditions", 
