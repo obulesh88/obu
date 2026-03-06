@@ -77,13 +77,7 @@ For legal inquiries or business partnerships, please use the email address provi
     { 
       title: "Withdrawal Policy", 
       icon: <Ticket className="h-4 w-4" />, 
-      content: `Withdrawals are subject to verification to maintain platform integrity.
-
-1. Minimum Limit: The minimum withdrawal threshold is ₹1.00.
-2. Maximum Limit: For security and manual verification purposes, the maximum single withdrawal is ₹10.00.
-3. Verification: All payout requests are manually audited. Verification typically takes 1-3 business days.
-4. Payout Methods: We currently support UPI, Bank Transfer, and Digital Gift Cards.
-5. Compliance: Any account found violating terms of service will have their pending withdrawals cancelled.`
+      content: `OR-Wallet allows users to request withdrawals from their wallet balance once the minimum withdrawal limit specified in the application is reached. Reward points earned from completing tasks and promotional activities can be converted into wallet balance based on the conversion rate defined in the app. Users must provide valid payment details such as UPI ID or bank account information when submitting a withdrawal request. Withdrawal requests are usually processed within 1 to 7 business days depending on verification and system processing times. OR-Wallet reserves the right to verify user accounts before approving withdrawals to prevent fraud or misuse of the platform. Withdrawal requests may be rejected if incorrect payment details are provided, suspicious activity is detected, or if the user violates the platform’s terms and conditions.`
     },
     { 
       title: "Refund & Cancellation Policy", 
