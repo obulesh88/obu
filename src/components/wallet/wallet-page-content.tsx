@@ -296,43 +296,45 @@ export default function WalletPageContent() {
 
       <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="uppercase font-black">Payout Details</DialogTitle>
-          </DialogHeader>
-          <Tabs value={payoutType} onValueChange={(v: any) => setPayoutType(v)} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="upi" className="text-[10px] uppercase font-bold">UPI</TabsTrigger>
-              <TabsTrigger value="giftcard" className="text-[10px] uppercase font-bold">Gift</TabsTrigger>
-              <TabsTrigger value="bank" className="text-[10px] uppercase font-bold">Bank</TabsTrigger>
-            </TabsList>
-            <div className="py-4 space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold">Name</Label>
-                  <Input value={bankData.name} onChange={(e) => setBankData({...bankData, name: e.target.value})} placeholder="A/C Holder Name" />
-                </div>
-                {payoutType === 'upi' && (
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="uppercase font-black">Payout Details</DialogTitle>
+            </DialogHeader>
+            <Tabs value={payoutType} onValueChange={(v: any) => setPayoutType(v)} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="upi" className="text-[10px] uppercase font-bold">UPI</TabsTrigger>
+                <TabsTrigger value="giftcard" className="text-[10px] uppercase font-bold">Gift</TabsTrigger>
+                <TabsTrigger value="bank" className="text-[10px] uppercase font-bold">Bank</TabsTrigger>
+              </TabsList>
+              <div className="py-4 space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold">UPI ID</Label>
-                    <Input value={bankData.vpa} onChange={(e) => setBankData({...bankData, vpa: e.target.value})} placeholder="example@upi" />
+                    <Label className="text-[10px] uppercase font-bold">Name</Label>
+                    <Input value={bankData.name} onChange={(e) => setBankData({...bankData, name: e.target.value})} placeholder="A/C Holder Name" />
                   </div>
-                )}
-                {payoutType === 'giftcard' && (
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold">Email</Label>
-                    <Input type="email" value={bankData.giftCardEmail} onChange={(e) => setBankData({...bankData, giftCardEmail: e.target.value})} placeholder="Email for delivery" />
-                  </div>
-                )}
-                {payoutType === 'bank' && (
-                  <>
-                    <Input value={bankData.accountNumber} onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})} placeholder="Account Number" />
-                    <Input value={bankData.ifsc} onChange={(e) => setBankData({...bankData, ifsc: e.target.value})} placeholder="IFSC" className="uppercase" />
-                  </>
-                )}
-            </div>
-          </Tabs>
-          <DialogFooter>
-            <Button onClick={handleSaveBankDetails} className="w-full font-bold" disabled={isSavingBank}>Save Details</Button>
-          </DialogFooter>
+                  {payoutType === 'upi' && (
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold">UPI ID</Label>
+                      <Input value={bankData.vpa} onChange={(e) => setBankData({...bankData, vpa: e.target.value})} placeholder="example@upi" />
+                    </div>
+                  )}
+                  {payoutType === 'giftcard' && (
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold">Email</Label>
+                      <Input type="email" value={bankData.giftCardEmail} onChange={(e) => setBankData({...bankData, giftCardEmail: e.target.value})} placeholder="Email for delivery" />
+                    </div>
+                  )}
+                  {payoutType === 'bank' && (
+                    <>
+                      <Input value={bankData.accountNumber} onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})} placeholder="Account Number" />
+                      <Input value={bankData.ifsc} onChange={(e) => setBankData({...bankData, ifsc: e.target.value})} placeholder="IFSC" className="uppercase" />
+                    </>
+                  )}
+              </div>
+            </Tabs>
+            <DialogFooter>
+              <Button onClick={handleSaveBankDetails} className="w-full font-bold" disabled={isSavingBank}>Save Details</Button>
+            </DialogFooter>
+          </DialogContent>
         </DialogContent>
       </Dialog>
     </div>

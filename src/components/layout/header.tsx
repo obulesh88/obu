@@ -49,7 +49,7 @@ export function Header() {
         className="flex items-center gap-2 font-semibold text-foreground"
       >
         <Logo className="h-6 w-6" />
-        <span className="font-headline text-xl">Orgames</span>
+        <span className="font-headline text-xl">OR wallet</span>
       </Link>
       <div className="absolute right-4">
         {user ? <UserNav user={user} /> : null}
