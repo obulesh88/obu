@@ -21,7 +21,7 @@ export default function ReferralPage() {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'Join Reward Mela',
+        title: 'Join Orgames',
         text: `Earn money by solving tasks! Use my code: ${userProfile?.referral?.code}`,
         url: window.location.origin,
       }).catch(() => {});
@@ -81,7 +81,7 @@ export default function ReferralPage() {
         <CardContent className="space-y-4">
           {[
             { icon: <Share2 className="h-4 w-4" />, text: 'Share your unique referral code with friends.' },
-            { icon: <Users className="h-4 w-4" />, text: 'Friends join Reward Mela using your link/code.' },
+            { icon: <Users className="h-4 w-4" />, text: 'Friends join Orgames using your link/code.' },
             { icon: <Gift className="h-4 w-4" />, text: 'Receive 100 OR coins once they complete 5 tasks.' },
           ].map((item, i) => (
             <div key={i} className="flex gap-4 items-start">

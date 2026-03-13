@@ -45,8 +45,8 @@ export default function WalletHomePage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold">
-        <span className="text-primary">Reward</span>
-        <span className="text-foreground"> Mela</span>
+        <span className="text-primary">Or</span>
+        <span className="text-foreground">games</span>
       </h1>
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
@@ -84,7 +84,7 @@ export default function WalletHomePage() {
                 <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 gap-1">
-                <p className="font-semibold">Your Reward Mela Wallet Address</p>
+                <p className="font-semibold">Your Orgames Wallet Address</p>
                 <p className="font-mono text-sm text-muted-foreground break-all">{userProfile?.wallet?.walletAddress}</p>
                 <p className="text-xs text-muted-foreground">Share this address to receive OR coins.</p>
               </div>
