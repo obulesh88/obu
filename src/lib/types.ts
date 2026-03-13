@@ -36,6 +36,11 @@ export type UserProfile = {
     ad_completed: boolean;
     reward_comm: number;
   };
+  referral?: {
+    code: string;
+    count: number;
+    earnings: number;
+  };
   status: {
     status: string;
   };
@@ -45,9 +50,10 @@ export type EarningTransaction = {
   id: string;
   userId: string;
   amount: number;
-  type: 'ad' | 'captcha';
+  type: 'ad' | 'captcha' | 'game' | 'referral';
   description: string;
   createdAt: Date;
+  playTimeInSeconds?: number;
 };
 
 export type WithdrawalRequest = {

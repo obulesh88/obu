@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, RefreshCw, ArrowRightLeft, Building2, Save, Send, ShieldCheck, Ticket, CreditCard, Smartphone } from 'lucide-react';
+import { DollarSign, RefreshCw, ArrowRightLeft, Building2, Save, Send, ShieldCheck, Ticket, CreditCard, Smartphone, Landmark, MessageCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
@@ -26,10 +26,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 const MIN_WITHDRAWAL = 1;
-const MAX_WITHDRAWAL = 10; // Updated limit
 
 export default function WalletPageContent() {
-  const [activeTab, setActiveTab] = useState<'earning' | 'convert'>('earning');
+  const [activeTab, setActiveTab] = useState<'withdraw' | 'convert' | 'deposit'>('withdraw');
   const { user, userProfile, loading } = useUser();
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -98,7 +97,7 @@ export default function WalletPageContent() {
       .then(() => {
         toast({
           title: 'Details Saved',
-          description: 'Your destination payout details have been updated.',
+          description: 'Your payout details have been updated.',
         });
         setIsBankDialogOpen(false);
       })
@@ -121,19 +120,9 @@ export default function WalletPageContent() {
     if (!user || !userProfile || !firestore) return;
 
     const amount = parseFloat(withdrawAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast({ variant: 'destructive', title: 'Invalid Amount' });
+    if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
+      toast({ variant: 'destructive', title: 'Invalid Amount', description: `Min withdrawal is ₹${MIN_WITHDRAWAL}` });
       return;
-    }
-
-    if (amount < MIN_WITHDRAWAL) {
-      toast({ variant: 'destructive', title: 'Limit', description: `Min withdrawal ₹${MIN_WITHDRAWAL}.` });
-      return;
-    }
-
-    if (amount > MAX_WITHDRAWAL) {
-        toast({ variant: 'destructive', title: 'Limit Exceeded', description: `Max withdrawal ₹${MAX_WITHDRAWAL}.` });
-        return;
     }
 
     if (amount > (userProfile.wallet?.inrBalance || 0)) {
@@ -141,61 +130,30 @@ export default function WalletPageContent() {
       return;
     }
 
-    // Validation based on type
-    if (payoutType === 'bank' && (!bankData.accountNumber || !bankData.ifsc)) {
-      toast({ variant: 'destructive', title: 'Bank Info Missing' });
-      setIsBankDialogOpen(true);
-      return;
-    }
-    if (payoutType === 'upi' && !bankData.vpa) {
-      toast({ variant: 'destructive', title: 'UPI ID Missing' });
-      setIsBankDialogOpen(true);
-      return;
-    }
-    if (payoutType === 'giftcard' && !bankData.giftCardEmail) {
-      toast({ variant: 'destructive', title: 'Email Missing' });
-      setIsBankDialogOpen(true);
-      return;
-    }
-
     setIsWithdrawing(true);
     const userDocRef = doc(firestore, 'users', user.uid);
     const requestsRef = collection(firestore, 'payout_requests');
     
-    const updateData = {
-      'wallet.inrBalance': increment(-amount),
-      'updatedAt': serverTimestamp()
-    };
-
     const requestData = {
       userId: user.uid,
       amount: amount,
       status: 'pending',
-      payoutDetails: {
-        ...bankData,
-        payoutType: payoutType
-      },
+      payoutDetails: { ...bankData, payoutType: payoutType },
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
 
     addDoc(requestsRef, requestData)
       .then(() => {
-        updateDoc(userDocRef, updateData)
-          .then(() => {
-            toast({
-              title: 'Withdrawal Requested',
-              description: `₹${amount.toFixed(2)} request submitted. Verification in progress.`,
-            });
-            setWithdrawAmount('');
-          });
+        updateDoc(userDocRef, {
+          'wallet.inrBalance': increment(-amount),
+          'updatedAt': serverTimestamp()
+        }).then(() => {
+          toast({ title: 'Success', description: `Withdrawal request for ₹${amount} submitted.` });
+          setWithdrawAmount('');
+        });
       })
-      .catch(() => {
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to submit request.' });
-      })
-      .finally(() => {
-        setIsWithdrawing(false);
-      });
+      .finally(() => setIsWithdrawing(false));
   };
 
   const handleConvert = async () => {
@@ -209,171 +167,128 @@ export default function WalletPageContent() {
     setIsConverting(true);
     const inrToAdd = orToConvert / CONVERSION_RATE;
     const userDocRef = doc(firestore, 'users', user.uid);
-    const updateData = {
+    
+    updateDoc(userDocRef, {
         'wallet.orBalance': increment(-orToConvert),
         'wallet.inrBalance': increment(inrToAdd),
         'updatedAt': serverTimestamp()
-    };
-
-    updateDoc(userDocRef, updateData)
-        .then(() => {
-            toast({ title: 'Success', description: `Converted to ₹${inrToAdd.toFixed(2)}` });
-            setOrAmount('');
-            setIsConverting(false);
-        })
-        .catch(() => setIsConverting(false));
+    }).then(() => {
+        toast({ title: 'Success', description: `Converted to ₹${inrToAdd.toFixed(2)}` });
+        setOrAmount('');
+    }).finally(() => setIsConverting(false));
   };
 
   return (
     <div className="grid gap-6">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-2">
         <Card
           className={cn(
-            'flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:bg-primary/5',
-            activeTab === 'earning' && 'ring-2 ring-primary bg-primary/5'
+            'flex flex-col items-center justify-center p-3 cursor-pointer transition-all border-primary/10',
+            activeTab === 'withdraw' && 'ring-2 ring-primary bg-primary/5 border-primary'
           )}
-          onClick={() => setActiveTab('earning')}
+          onClick={() => setActiveTab('withdraw')}
         >
-          <DollarSign className={cn("h-6 w-6 mb-2", activeTab === 'earning' ? "text-primary" : "text-muted-foreground")} />
+          <DollarSign className={cn("h-5 w-5 mb-1", activeTab === 'withdraw' ? "text-primary" : "text-muted-foreground")} />
           <p className="text-[10px] font-bold uppercase">Withdraw</p>
         </Card>
         <Card
           className={cn(
-            'flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:bg-primary/5',
-            activeTab === 'convert' && 'ring-2 ring-primary bg-primary/5'
+            'flex flex-col items-center justify-center p-3 cursor-pointer transition-all border-primary/10',
+            activeTab === 'convert' && 'ring-2 ring-primary bg-primary/5 border-primary'
           )}
           onClick={() => setActiveTab('convert')}
         >
-          <RefreshCw className={cn("h-6 w-6 mb-2", activeTab === 'convert' ? "text-primary animate-spin-slow" : "text-muted-foreground")} />
+          <RefreshCw className={cn("h-5 w-5 mb-1", activeTab === 'convert' ? "text-primary animate-spin-slow" : "text-muted-foreground")} />
           <p className="text-[10px] font-bold uppercase">Convert</p>
+        </Card>
+        <Card
+          className={cn(
+            'flex flex-col items-center justify-center p-3 cursor-pointer transition-all border-primary/10',
+            activeTab === 'deposit' && 'ring-2 ring-primary bg-primary/5 border-primary'
+          )}
+          onClick={() => setActiveTab('deposit')}
+        >
+          <Landmark className={cn("h-5 w-5 mb-1", activeTab === 'deposit' ? "text-primary" : "text-muted-foreground")} />
+          <p className="text-[10px] font-bold uppercase">Deposit</p>
         </Card>
       </div>
 
-      {activeTab === 'earning' && (
+      {activeTab === 'withdraw' && (
          <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
-             <Button 
-               variant="ghost" 
-               size="sm" 
-               className="h-8 gap-1 text-[10px] uppercase font-bold text-primary hover:text-primary/80 hover:bg-primary/10" 
-               onClick={() => setIsBankDialogOpen(true)}
-             >
-               <Building2 className="h-3 w-3" />
-               Payout Method
+             <CardTitle className="text-sm font-medium">Balance: ₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</CardTitle>
+             <Button variant="ghost" size="sm" className="h-8 gap-1 text-[10px] uppercase font-bold text-primary" onClick={() => setIsBankDialogOpen(true)}>
+               <Building2 className="h-3 w-3" /> Payout Info
              </Button>
           </CardHeader>
-          <CardContent className="space-y-6">
-             {loading ? (
-                <Skeleton className="h-8 w-24" />
-             ) : (
-                <div className="text-4xl font-black text-primary">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</div>
-             )}
-             
+          <CardContent className="space-y-4">
              <div className="space-y-2">
-                <Label htmlFor="withdrawAmount" className="text-xs uppercase font-bold opacity-70">Amount to Withdraw</Label>
+                <Label className="text-[10px] font-bold uppercase">Amount to Withdraw</Label>
                 <div className="relative">
-                  <Input 
-                    id="withdrawAmount" 
-                    type="number" 
-                    placeholder={`Min ₹${MIN_WITHDRAWAL}`} 
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    disabled={isWithdrawing}
-                    className="font-bold text-xl h-12"
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <span className="text-sm font-bold text-muted-foreground">₹</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight">
-                    <p className="text-muted-foreground">Limit: ₹{MIN_WITHDRAWAL} - ₹{MAX_WITHDRAWAL}</p>
-                    <p className="text-primary">Manual Verification</p>
+                  <Input type="number" placeholder="Min ₹1" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} className="h-12 font-bold text-lg" />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">₹</div>
                 </div>
              </div>
+             <Button className="w-full h-12 font-bold" onClick={handleWithdraw} disabled={isWithdrawing}>
+               {isWithdrawing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />} Withdraw Now
+             </Button>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button 
-                className="w-full h-12 text-lg font-bold" 
-                onClick={handleWithdraw} 
-                disabled={isWithdrawing || !withdrawAmount || parseFloat(withdrawAmount) <= 0}
-            >
-                {isWithdrawing ? (
-                    <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                    <Send className="mr-2 h-5 w-5" />
-                )}
-                {isWithdrawing ? 'Processing...' : 'Request Payout'}
-            </Button>
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase">
-                <ShieldCheck className="h-3 w-3 text-green-500" />
-                Secure Privacy Protocol Enabled
-            </div>
-          </CardFooter>
         </Card>
       )}
 
       {activeTab === 'convert' && (
         <Card>
           <CardHeader>
-            <CardTitle>OR to INR</CardTitle>
-            <CardDescription>Exchange OR coins for real cash instantly.</CardDescription>
+            <CardTitle className="text-sm">Balance: {userProfile?.wallet?.orBalance?.toFixed(0) || '0'} OR</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-right text-[10px] font-bold text-muted-foreground uppercase">
-              Balance: {userProfile?.wallet?.orBalance?.toFixed(0) || '0'} OR
-            </div>
             <div className="grid gap-4">
               <div className="space-y-2">
-                <Label htmlFor="orAmount">Amount (OR)</Label>
-                <div className="relative">
-                  <Input 
-                    id="orAmount" 
-                    type="number" 
-                    placeholder="Min 100 OR" 
-                    value={orAmount}
-                    onChange={(e) => setOrAmount(e.target.value)}
-                    disabled={isConverting}
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <span className="text-xs font-bold text-primary">OR</span>
-                  </div>
-                </div>
+                <Label className="text-[10px] font-bold uppercase">OR Amount</Label>
+                <Input type="number" placeholder="Min 100 OR" value={orAmount} onChange={(e) => setOrAmount(e.target.value)} />
               </div>
-              <div className="flex justify-center">
-                <div className="bg-muted rounded-full p-2">
-                  <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
+              <div className="flex justify-center text-muted-foreground"><ArrowRightLeft className="h-4 w-4" /></div>
               <div className="space-y-2">
-                <Label htmlFor="inrAmount">Receiving (INR)</Label>
-                <div className="relative">
-                  <Input 
-                    id="inrAmount" 
-                    type="number" 
-                    placeholder="0.00" 
-                    value={convertInrAmount}
-                    readOnly 
-                    className="bg-muted font-bold text-green-600"
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <span className="text-xs font-bold text-green-600">₹</span>
-                  </div>
-                </div>
+                <Label className="text-[10px] font-bold uppercase">Receiving (INR)</Label>
+                <Input type="number" value={convertInrAmount} readOnly className="bg-muted font-bold text-green-600" />
               </div>
             </div>
-            <p className="text-[10px] text-muted-foreground text-center font-bold uppercase tracking-widest">
-                Rate: 1,000 OR = ₹1.00 INR
-            </p>
+            <p className="text-[10px] text-center font-bold text-muted-foreground uppercase tracking-tighter">Rate: 1,000 OR = ₹1.00</p>
+            <Button className="w-full font-bold" onClick={handleConvert} disabled={isConverting}>Convert Now</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'deposit' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-black uppercase">Manual Deposit</CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase">Add funds to your wallet</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-2">
+              <p className="text-xs font-bold leading-relaxed">Deposit funds manually via WhatsApp Support. Our team will verify and add the balance to your account within 30 minutes.</p>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-600 font-bold">1</div>
+                <p className="text-[10px] font-bold uppercase">Message us on WhatsApp</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-600 font-bold">2</div>
+                <p className="text-[10px] font-bold uppercase">Send Screenshot of Payment</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-600 font-bold">3</div>
+                <p className="text-[10px] font-bold uppercase">Provide your Wallet ID</p>
+              </div>
+            </div>
           </CardContent>
           <CardFooter>
-            <Button 
-              className="w-full font-bold" 
-              onClick={handleConvert} 
-              disabled={isConverting || !orAmount || parseFloat(orAmount) < 100}
-            >
-              {isConverting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-              {isConverting ? 'Converting...' : 'Convert Now'}
+            <Button className="w-full h-12 bg-green-600 hover:bg-green-700 font-bold" asChild>
+              <a href="https://wa.me/910000000000" target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="mr-2 h-5 w-5" /> CHAT WITH SUPPORT
+              </a>
             </Button>
           </CardFooter>
         </Card>
@@ -382,91 +297,41 @@ export default function WalletPageContent() {
       <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Payout Method & Privacy</DialogTitle>
-            <DialogDescription>
-              Choose how you want to receive your money.
-            </DialogDescription>
+            <DialogTitle className="uppercase font-black">Payout Details</DialogTitle>
           </DialogHeader>
-          
           <Tabs value={payoutType} onValueChange={(v: any) => setPayoutType(v)} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 h-12">
-              <TabsTrigger value="upi" className="gap-2"><Smartphone className="h-4 w-4" />UPI</TabsTrigger>
-              <TabsTrigger value="giftcard" className="gap-2"><Ticket className="h-4 w-4" />Gift</TabsTrigger>
-              <TabsTrigger value="bank" className="gap-2"><CreditCard className="h-4 w-4" />Bank</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="upi" className="text-[10px] uppercase font-bold">UPI</TabsTrigger>
+              <TabsTrigger value="giftcard" className="text-[10px] uppercase font-bold">Gift</TabsTrigger>
+              <TabsTrigger value="bank" className="text-[10px] uppercase font-bold">Bank</TabsTrigger>
             </TabsList>
-
             <div className="py-4 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="bank-name">Account Holder Name</Label>
-                  <Input 
-                    id="bank-name" 
-                    value={bankData.name} 
-                    onChange={(e) => setBankData({...bankData, name: e.target.value})}
-                    placeholder="Full legal name" 
-                  />
+                  <Label className="text-[10px] uppercase font-bold">Name</Label>
+                  <Input value={bankData.name} onChange={(e) => setBankData({...bankData, name: e.target.value})} placeholder="A/C Holder Name" />
                 </div>
-
-                <TabsContent value="upi" className="space-y-4 mt-0">
+                {payoutType === 'upi' && (
                   <div className="space-y-2">
-                    <Label htmlFor="bank-vpa">UPI ID (VPA)</Label>
-                    <Input 
-                      id="bank-vpa" 
-                      value={bankData.vpa} 
-                      onChange={(e) => setBankData({...bankData, vpa: e.target.value})}
-                      placeholder="username@bank" 
-                      className="font-mono text-sm"
-                    />
+                    <Label className="text-[10px] uppercase font-bold">UPI ID</Label>
+                    <Input value={bankData.vpa} onChange={(e) => setBankData({...bankData, vpa: e.target.value})} placeholder="example@upi" />
                   </div>
-                  <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 text-[10px] font-medium leading-relaxed">
-                    <span className="font-bold text-yellow-600 uppercase">Privacy Note:</span> Manual UPI transfers reveal the sender's name in your bank statement.
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="giftcard" className="space-y-4 mt-0">
+                )}
+                {payoutType === 'giftcard' && (
                   <div className="space-y-2">
-                    <Label htmlFor="gc-email">Delivery Email</Label>
-                    <Input 
-                      id="gc-email" 
-                      type="email"
-                      value={bankData.giftCardEmail} 
-                      onChange={(e) => setBankData({...bankData, giftCardEmail: e.target.value})}
-                      placeholder="Email for gift card delivery" 
-                    />
+                    <Label className="text-[10px] uppercase font-bold">Email</Label>
+                    <Input type="email" value={bankData.giftCardEmail} onChange={(e) => setBankData({...bankData, giftCardEmail: e.target.value})} placeholder="Email for delivery" />
                   </div>
-                  <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20 text-[10px] font-medium leading-relaxed">
-                    <span className="font-bold text-green-600 uppercase">Privacy First:</span> Gift Cards are 100% private. No personal bank details are exchanged between you and the admin. Recommended for privacy!
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="bank" className="space-y-4 mt-0">
-                  <div className="space-y-2">
-                    <Label htmlFor="bank-acc">Account Number</Label>
-                    <Input 
-                      id="bank-acc" 
-                      value={bankData.accountNumber} 
-                      onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})}
-                      placeholder="Enter account number" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bank-ifsc">IFSC Code</Label>
-                    <Input 
-                      id="bank-ifsc" 
-                      value={bankData.ifsc} 
-                      onChange={(e) => setBankData({...bankData, ifsc: e.target.value})}
-                      placeholder="HDFC0001234" 
-                      className="uppercase font-mono"
-                    />
-                  </div>
-                </TabsContent>
+                )}
+                {payoutType === 'bank' && (
+                  <>
+                    <Input value={bankData.accountNumber} onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})} placeholder="Account Number" />
+                    <Input value={bankData.ifsc} onChange={(e) => setBankData({...bankData, ifsc: e.target.value})} placeholder="IFSC" className="uppercase" />
+                  </>
+                )}
             </div>
           </Tabs>
-
           <DialogFooter>
-            <Button onClick={handleSaveBankDetails} disabled={isSavingBank} className="w-full h-12 text-md font-bold">
-              {isSavingBank ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save Payout Method
-            </Button>
+            <Button onClick={handleSaveBankDetails} className="w-full font-bold" disabled={isSavingBank}>Save Details</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

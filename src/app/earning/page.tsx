@@ -2,39 +2,37 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Key, Tv } from 'lucide-react';
+import { Key, Tv, Gamepad2, Users } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EarningPage() {
   const earningOptions = [
-    { name: 'Solve Captcha', icon: <Key className="h-8 w-8" />, href: '/earning/captcha-list' },
-    { name: 'Watch Ads', icon: <Tv className="h-8 w-8" />, href: '/earning/ad-list' },
+    { name: 'Solve Captcha', icon: <Key className="h-8 w-8 text-primary" />, href: '/earning/captcha-list', description: 'Quick & Easy' },
+    { name: 'Watch Ads', icon: <Tv className="h-8 w-8 text-blue-500" />, href: '/earning/ad-list', description: 'High Rewards' },
+    { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8 text-green-500" />, href: '/earning/games', description: 'Fun Tasks' },
+    { name: 'Refer & Earn', icon: <Users className="h-8 w-8 text-purple-500" />, href: '/referral', description: 'Invite Friends' },
   ];
 
   return (
       <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Choose How to Earn</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            {earningOptions.map((option) => (
-              <Card key={option.name} className="flex flex-col items-center justify-center p-6 text-center">
-                {option.icon}
-                <p className="mt-4 font-semibold">{option.name}</p>
-                {option.href ? (
-                  <Button asChild variant="secondary" className="mt-4">
-                    <Link href={option.href}>Start</Link>
-                  </Button>
-                ) : (
-                  <Button variant="secondary" className="mt-4">
-                    Start
-                  </Button>
-                )}
-              </Card>
-            ))}
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-black uppercase tracking-tight">Earning Zone</h1>
+          <p className="text-sm text-muted-foreground">Pick a task and start accumulating OR coins.</p>
+        </div>
+        
+        <div className="grid gap-4 grid-cols-2">
+          {earningOptions.map((option) => (
+            <Card key={option.name} className="flex flex-col overflow-hidden border-primary/10 transition-all hover:border-primary/40 active:scale-95">
+              <Link href={option.href} className="flex flex-col items-center justify-center p-6 text-center h-full">
+                <div className="rounded-2xl bg-muted p-4 mb-4">
+                  {option.icon}
+                </div>
+                <p className="font-bold text-sm uppercase tracking-tight">{option.name}</p>
+                <p className="text-[10px] text-muted-foreground font-bold uppercase mt-1">{option.description}</p>
+              </Link>
+            </Card>
+          ))}
+        </div>
       </div>
   );
 }
