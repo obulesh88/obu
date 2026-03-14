@@ -16,7 +16,7 @@ import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-const REWARD_AMOUNT = 5;
+const DEFAULT_REWARD = 5;
 const WATCH_DELAY = 15; // 15 seconds
 
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
@@ -56,9 +56,10 @@ interface AdDialogProps {
   onComplete: () => void;
   gameId: string;
   division: 'A' | 'B' | 'C';
+  rewardAmount?: number;
 }
 
-export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogProps) {
+export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmount = DEFAULT_REWARD }: AdDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -104,7 +105,6 @@ export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogP
         return;
     }
 
-    // Open window immediately to bypass popup blocker
     const adWindow = window.open('about:blank', '_blank');
     setStatus('Connecting to ad server...');
     setIsWatchButtonDisabled(true);
@@ -137,10 +137,10 @@ export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogP
     const userDocRef = doc(firestore, 'users', user.uid);
     
     const updateData = {
-        'wallet.orBalance': increment(REWARD_AMOUNT),
+        'wallet.orBalance': increment(rewardAmount),
         'watchAds.verifiedAt': serverTimestamp(),
         'watchAds.ad_completed': true,
-        'watchAds.reward_comm': REWARD_AMOUNT,
+        'watchAds.reward_comm': rewardAmount,
         'updatedAt': serverTimestamp()
     };
 
@@ -148,7 +148,7 @@ export function AdDialog({ open, onOpenChange, onComplete, division }: AdDialogP
         .then(() => {
             toast({
                 title: 'Success!',
-                description: `You earned ${REWARD_AMOUNT} OR coins.`,
+                description: `You earned ${rewardAmount} OR coins.`,
             });
             onComplete();
             onOpenChange(false);

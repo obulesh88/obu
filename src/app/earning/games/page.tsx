@@ -7,6 +7,7 @@ import { Gamepad2, Star, Timer, Trophy } from 'lucide-react';
 import { AdDialog } from '@/components/earning/ad-dialog';
 
 const GAMES = [
+  { id: 'g_pool', name: 'Mini Pool 3D', reward: 30, time: '60s', difficulty: 'Medium', division: 'C' },
   { id: 'g1', name: 'Memory Match', reward: 10, time: '30s', difficulty: 'Easy', division: 'A' },
   { id: 'g2', name: 'Speed Clicker', reward: 15, time: '20s', difficulty: 'Medium', division: 'B' },
   { id: 'g3', name: 'Pattern Quest', reward: 25, time: '45s', difficulty: 'Hard', division: 'C' },
@@ -34,7 +35,12 @@ export default function GamesPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {GAMES.map((game) => (
-          <Card key={game.id} className="overflow-hidden border-primary/10">
+          <Card key={game.id} className="overflow-hidden border-primary/10 relative group">
+            {game.id === 'g_pool' && (
+              <div className="absolute top-2 right-2 z-10">
+                <span className="bg-primary text-primary-foreground text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Hot</span>
+              </div>
+            )}
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <div className="bg-primary/10 p-2 rounded-lg">
@@ -72,6 +78,7 @@ export default function GamesPage() {
           onComplete={() => {}}
           gameId={selectedGame.id}
           division={selectedGame.division as 'A' | 'B' | 'C'}
+          rewardAmount={selectedGame.reward}
         />
       )}
     </div>
