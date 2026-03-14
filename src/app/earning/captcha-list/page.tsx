@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RefreshCw, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { cn } from '@/lib/utils';
@@ -61,7 +61,7 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
     return { success: true, adUrl: division === 'A' ? redirectUrl : (data.adUrl || redirectUrl) };
   } catch (err) {
     console.error("Error calling ad function:", err);
-    return { success: false, adUrl: redirectUrl };
+    return { success: false, adUrl: division === 'A' ? redirectUrl : redirectUrl };
   }
 }
 
@@ -85,8 +85,14 @@ export default function CaptchaListPage() {
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_CAPTCHAS).fill(false));
   const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
   const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
+  const [interrupted, setInterrupted] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [allCaptchasCompleted, setAllCaptchasCompleted] = useState(false);
   const [isClient, setIsClient] = useState(false);
+
+  const countdownsRef = useRef(countdown);
+  useEffect(() => {
+    countdownsRef.current = countdown;
+  }, [countdown]);
 
   useEffect(() => {
     setIsClient(true);
@@ -122,6 +128,42 @@ export default function CaptchaListPage() {
     setCaptchas(newCaptchas);
   }, []);
 
+  // Anti-cheat visibility listener
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const activeIndices = countdownsRef.current.map((c, i) => c > 0 ? i : -1).filter(idx => idx !== -1);
+        if (activeIndices.length > 0) {
+          activeIndices.forEach(index => {
+            setInterrupted(prev => {
+              const newState = [...prev];
+              newState[index] = true;
+              return newState;
+            });
+            setSubmitting(prev => {
+              const newState = [...prev];
+              newState[index] = false;
+              return newState;
+            });
+            setCountdown(prev => {
+              const newState = [...prev];
+              newState[index] = 0;
+              return newState;
+            });
+          });
+          toast({
+            variant: 'destructive',
+            title: 'Early Return Detected',
+            description: 'You returned to the app before the 15-second task finished. No reward will be given. Please try again.',
+          });
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [toast]);
+
   useEffect(() => {
     if (captchas.length > 0 && completed.every(c => c)) {
         setAllCaptchasCompleted(true);
@@ -141,6 +183,11 @@ export default function CaptchaListPage() {
         const newUserInputs = [...prev];
         newUserInputs[index] = '';
         return newUserInputs;
+    });
+    setInterrupted(prev => {
+      const newState = [...prev];
+      newState[index] = false;
+      return newState;
     });
   };
   
@@ -169,6 +216,11 @@ export default function CaptchaListPage() {
       window.open(data.adUrl, '_blank');
     }
 
+    setInterrupted(prev => {
+      const newState = [...prev];
+      newState[index] = false;
+      return newState;
+    });
     setSubmitting(prev => {
       const newState = [...prev];
       newState[index] = true;
@@ -185,18 +237,21 @@ export default function CaptchaListPage() {
         currentCountdown -= 1;
         setCountdown(prev => {
             const newState = [...prev];
-            newState[index] = currentCountdown;
+            newState[index] = Math.max(0, currentCountdown);
             return newState;
         });
 
         if (currentCountdown <= 0) {
             clearInterval(timer);
-            setReadyToClaim(prev => {
-                const newState = [...prev];
-                newState[index] = true;
-                return newState;
-            });
+            // Check if it was interrupted while the timer was running
             setSubmitting(prev => {
+                if (prev[index]) {
+                  setReadyToClaim(rPrev => {
+                      const rState = [...rPrev];
+                      rState[index] = true;
+                      return rState;
+                  });
+                }
                 const newState = [...prev];
                 newState[index] = false;
                 return newState;
@@ -249,6 +304,7 @@ export default function CaptchaListPage() {
   
   const getButtonContent = (index: number) => {
       if(completed[index]) return 'Completed';
+      if(interrupted[index]) return 'Retry Task';
       if(readyToClaim[index]) return `Claim ${REWARD_PER_CAPTCHA} OR`;
       if(submitting[index]) return `Wait ${countdown[index]}s`;
       return 'Submit';
@@ -283,13 +339,20 @@ export default function CaptchaListPage() {
           className="font-mono uppercase"
         />
       </div>
-      <Button 
-          onClick={readyToClaim[index] ? () => handleClaim(index) : () => handleStart(index)}
-          disabled={submitting[index] || completed[index] || (!userInputs[index] && !readyToClaim[index])} 
-          className="w-full"
-      >
-        {getButtonContent(index)}
-      </Button>
+      <div className="flex flex-col gap-1">
+        <Button 
+            onClick={readyToClaim[index] ? () => handleClaim(index) : () => handleStart(index)}
+            disabled={submitting[index] || completed[index] || (!userInputs[index] && !readyToClaim[index])} 
+            className={cn("w-full font-bold uppercase", interrupted[index] && "bg-destructive hover:bg-destructive/90")}
+        >
+          {getButtonContent(index)}
+        </Button>
+        {interrupted[index] && (
+          <p className="text-[10px] text-destructive font-black uppercase text-center flex items-center justify-center gap-1">
+            <AlertTriangle className="h-2 w-2" /> Returned early
+          </p>
+        )}
+      </div>
     </div>
   );
 
@@ -298,7 +361,7 @@ export default function CaptchaListPage() {
       <Card>
         <CardHeader>
           <CardTitle>Solve the Captchas</CardTitle>
-          <CardDescription>Enter the characters for each captcha, click submit, and wait {SUBMIT_DELAY} seconds to claim your reward.</CardDescription>
+          <CardDescription>Enter text, click submit, and stay on the ad page for {SUBMIT_DELAY}s to claim your reward.</CardDescription>
         </CardHeader>
         <CardContent>
             {!isClient ? (

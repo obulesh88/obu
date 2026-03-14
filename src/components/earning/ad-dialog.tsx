@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_REWARD = 5;
@@ -62,7 +62,7 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
     return { success: true, adUrl: division === 'A' ? redirectUrl : (data.adUrl || redirectUrl) };
   } catch (err) {
     console.error("Error calling ad function:", err);
-    return { success: false, adUrl: redirectUrl };
+    return { success: false, adUrl: division === 'A' ? redirectUrl : "https://google.com" };
   }
 }
 
@@ -106,12 +106,38 @@ export function AdDialog({
   const [captchaText, setCaptchaText] = useState('');
   const [userInput, setUserInput] = useState('');
   const [isVerified, setIsVerified] = useState(false);
+  const [wasInterrupted, setWasInterrupted] = useState(false);
+
+  const countdownRef = useRef(countdown);
+  useEffect(() => {
+    countdownRef.current = countdown;
+  }, [countdown]);
 
   const resetVerification = useCallback(() => {
     setCaptchaText(generateCaptcha());
     setUserInput('');
     setIsVerified(false);
   }, []);
+
+  // Anti-cheat: Listen for user returning to the app early
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && hasStarted && countdownRef.current > 0) {
+        setWasInterrupted(true);
+        setHasStarted(false);
+        setCountdown(0);
+        setStatus("Interrupted! You returned too early. Please try again.");
+        toast({
+          variant: 'destructive',
+          title: 'Task Interrupted',
+          description: 'You returned to the app too early. You must stay on the ad/task page for the full duration.',
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [hasStarted, toast]);
 
   useEffect(() => {
     if (open) {
@@ -123,6 +149,7 @@ export function AdDialog({
       setHasStarted(false);
       setNeedsVerification(false);
       setIsVerified(false);
+      setWasInterrupted(false);
     }
   }, [open, gameUrl]);
 
@@ -150,6 +177,7 @@ export function AdDialog({
 
     setStatus('Connecting to session...');
     setIsStartButtonDisabled(true);
+    setWasInterrupted(false);
 
     const data = await startAdSession(user.uid, division);
     
@@ -218,8 +246,7 @@ export function AdDialog({
 
   return (
     <Dialog open={open} onOpenChange={(val) => {
-      // Prevent closing if game is active or verification is pending
-      if (!hasStarted || showClaimButton) {
+      if (!hasStarted || showClaimButton || wasInterrupted) {
         onOpenChange(val);
       }
     }}>
@@ -306,6 +333,19 @@ export function AdDialog({
                   </Button>
                 </div>
               </div>
+            ) : wasInterrupted ? (
+              <div className="text-center p-8 space-y-6 animate-in fade-in zoom-in">
+                <div className="bg-destructive/10 p-6 rounded-full inline-block border border-destructive/20">
+                  <AlertCircle className="h-16 w-16 text-destructive" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black uppercase text-white">Reward Denied</h3>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">You returned to the app before the 15-second timer finished. You must stay on the ad page to earn rewards.</p>
+                </div>
+                <Button onClick={handleStart} variant="destructive" className="h-12 px-8 font-black uppercase">
+                  Try Again
+                </Button>
+              </div>
             ) : (
               <div className="text-center p-12 flex flex-col items-center justify-center gap-8">
                  <div className="rounded-full bg-primary/10 p-10 animate-pulse border-4 border-primary/5">
@@ -323,14 +363,13 @@ export function AdDialog({
 
         <DialogFooter className={cn(
           "p-4 flex flex-col sm:flex-row gap-4 bg-background border-t",
-          (isGameActive || needsVerification) && "hidden"
+          (isGameActive || needsVerification || wasInterrupted) && "hidden"
         )}>
           {!hasStarted && (
              <Button 
                 type="button" 
                 size="lg" 
                 onClick={handleStart} 
-                disabled={isStartButtonDisabled}
                 className="flex-1 h-14 font-black uppercase tracking-tight text-xl rounded-xl shadow-xl active:scale-95 transition-all bg-primary hover:bg-primary/90"
               >
                 {gameUrl ? 'Play Now' : 'Watch Ad'}
