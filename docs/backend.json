@@ -28,6 +28,14 @@
           },
           "required": ["orBalance", "inrBalance", "walletAddress"]
         },
+        "referral": {
+          "type": "object",
+          "properties": {
+            "code": { "type": "string" },
+            "count": { "type": "number" },
+            "earnings": { "type": "number" }
+          }
+        },
         "bankDetails": {
           "type": "object",
           "properties": {

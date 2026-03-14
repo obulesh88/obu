@@ -1,14 +1,28 @@
+
 'use client';
 import { useMemo, useEffect, useState } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
-import { doc, setDoc, serverTimestamp, type DocumentReference, getDoc } from 'firebase/firestore';
+import { 
+  doc, 
+  setDoc, 
+  serverTimestamp, 
+  type DocumentReference, 
+  getDoc, 
+  query, 
+  collection, 
+  where, 
+  getDocs, 
+  updateDoc, 
+  increment 
+} from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 
 /**
  * Hook to manage user authentication state and Firestore profile synchronization.
- * It automatically initializes a Firestore profile for newly authenticated users.
+ * It automatically initializes a Firestore profile for newly authenticated users
+ * and handles referral logic instantly.
  */
 export function useUser() {
   const { user: authUser, loading: authLoading } = useFirebaseAuth();
@@ -30,14 +44,26 @@ export function useUser() {
           const guestUid = authUser.uid;
           const userDocRef = doc(firestore, 'users', guestUid);
           
-          // Double check existence to prevent race conditions
           const docSnap = await getDoc(userDocRef);
           if (docSnap.exists()) {
             setIsInitializing(false);
             return;
           }
 
-          const newProfile = {
+          // Generate Unique Wallet Address
+          const generateWalletAddress = () => {
+            const chars = '0123456789abcdef';
+            let addr = '0x';
+            for (let i = 0; i < 40; i++) {
+              addr += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return addr;
+          };
+
+          // Generate Referral Code
+          const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+          const newProfile: UserProfile = {
             uid: guestUid,
             email: authUser.email || '',
             phoneNumber: authUser.phoneNumber || 'Not provided',
@@ -50,10 +76,10 @@ export function useUser() {
             wallet: {
               orBalance: 0,
               inrBalance: 0,
-              walletAddress: `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+              walletAddress: generateWalletAddress(),
             },
             referral: {
-              code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+              code: referralCode,
               count: 0,
               earnings: 0,
             },
@@ -84,6 +110,31 @@ export function useUser() {
           };
 
           await setDoc(userDocRef, newProfile);
+
+          // Instant Referral Logic
+          const pendingReferralCode = localStorage.getItem('or_wallet_referral_code');
+          if (pendingReferralCode) {
+            const usersRef = collection(firestore, 'users');
+            const q = query(usersRef, where('referral.code', '==', pendingReferralCode));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+              const referrerDoc = querySnapshot.docs[0];
+              const referrerRef = doc(firestore, 'users', referrerDoc.id);
+              
+              // Update referrer instantly: +1 count, +100 OR coins
+              await updateDoc(referrerRef, {
+                'referral.count': increment(1),
+                'referral.earnings': increment(100),
+                'wallet.orBalance': increment(100),
+                'updatedAt': serverTimestamp()
+              });
+              
+              console.log(`Referral reward given to user: ${referrerDoc.id}`);
+            }
+            localStorage.removeItem('or_wallet_referral_code');
+          }
+
         } catch (error) {
           console.error("Error initializing user profile:", error);
         } finally {

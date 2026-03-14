@@ -1,3 +1,4 @@
+
 export type UserProfile = {
   uid: string;
   email: string;
@@ -36,7 +37,7 @@ export type UserProfile = {
     ad_completed: boolean;
     reward_comm: number;
   };
-  referral?: {
+  referral: {
     code: string;
     count: number;
     earnings: number;

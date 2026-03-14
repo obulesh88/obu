@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -22,8 +23,8 @@ export default function ReferralPage() {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const referralCode = userProfile?.referral?.code || '------';
-  const shareText = `Join OR wallet and earn money by completing simple tasks! Use my referral code: ${referralCode}`;
-  const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/r/${referralCode}` : '';
+  const shareText = `Join OR wallet and earn money by completing simple tasks! Use my link to join: ${shareUrl}`;
 
   const handleCopyCode = () => {
     if (userProfile?.referral?.code) {
@@ -33,7 +34,7 @@ export default function ReferralPage() {
   };
 
   const shareToWhatsApp = () => {
-    const url = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
     window.open(url, '_blank');
     setIsShareDialogOpen(false);
   };
@@ -74,7 +75,7 @@ export default function ReferralPage() {
         </CardContent>
         <CardFooter>
           <Button variant="secondary" className="w-full h-12 font-bold" onClick={() => setIsShareDialogOpen(true)}>
-            <Share2 className="mr-2 h-5 w-5" /> SHARE NOW
+            <Share2 className="mr-2 h-5 w-5" /> SHARE LINK
           </Button>
         </CardFooter>
       </Card>
@@ -96,9 +97,9 @@ export default function ReferralPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {[
-            { icon: <Share2 className="h-4 w-4" />, text: 'Share your unique referral code with friends.' },
-            { icon: <Users className="h-4 w-4" />, text: 'Friends join OR wallet using your link/code.' },
-            { icon: <Gift className="h-4 w-4" />, text: 'Receive 100 OR coins once they complete 5 tasks.' },
+            { icon: <Share2 className="h-4 w-4" />, text: 'Share your unique referral link with friends.' },
+            { icon: <Users className="h-4 w-4" />, text: 'Friends join OR wallet using your link.' },
+            { icon: <Gift className="h-4 w-4" />, text: 'Receive 100 OR coins instantly upon their registration.' },
           ].map((item, i) => (
             <div key={i} className="flex gap-4 items-start">
               <div className="bg-primary/10 p-2 rounded-lg shrink-0">
@@ -113,7 +114,7 @@ export default function ReferralPage() {
       <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-black uppercase">Share Referral</DialogTitle>
+            <DialogTitle className="font-black uppercase">Share Referral Link</DialogTitle>
             <DialogDescription className="text-xs font-bold uppercase">
               Choose a platform to invite your friends
             </DialogDescription>
