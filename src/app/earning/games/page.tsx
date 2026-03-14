@@ -10,16 +10,16 @@ const GAMES = [
   { 
     id: 'g_pool', 
     name: 'Mini Pool 3D', 
-    reward: 50, 
+    reward: 20, 
     time: 300, // 5 minutes
     difficulty: 'Medium', 
     division: 'C',
     gameUrl: 'https://html5.gamemonetize.co/ehi2vjrem0ya35imcjiofupvjerb5mhr/'
   },
-  { id: 'g1', name: 'Memory Match', reward: 10, time: 30, difficulty: 'Easy', division: 'A' },
-  { id: 'g2', name: 'Speed Clicker', reward: 15, time: 20, difficulty: 'Medium', division: 'B' },
-  { id: 'g3', name: 'Pattern Quest', reward: 25, time: 45, difficulty: 'Hard', division: 'C' },
-  { id: 'g4', name: 'Color Swap', reward: 12, time: 25, difficulty: 'Easy', division: 'A' },
+  { id: 'g1', name: 'Memory Match', reward: 20, time: 30, difficulty: 'Easy', division: 'A' },
+  { id: 'g2', name: 'Speed Clicker', reward: 20, time: 20, difficulty: 'Medium', division: 'B' },
+  { id: 'g3', name: 'Pattern Quest', reward: 20, time: 45, difficulty: 'Hard', division: 'C' },
+  { id: 'g4', name: 'Color Swap', reward: 20, time: 25, difficulty: 'Easy', division: 'A' },
 ];
 
 export default function GamesPage() {
