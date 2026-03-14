@@ -22,7 +22,7 @@ import type { UserProfile } from '@/lib/types';
 /**
  * Hook to manage user authentication state and Firestore profile synchronization.
  * It automatically initializes a Firestore profile for newly authenticated users
- * and handles referral logic instantly.
+ * and handles referral logic instantly and directly.
  */
 export function useUser() {
   const { user: authUser, loading: authLoading } = useFirebaseAuth();
@@ -51,8 +51,6 @@ export function useUser() {
             setIsInitializing(false);
             return;
           }
-
-          console.log("Initializing new user profile for:", guestUid);
 
           // Generate Unique Wallet Address
           const generateWalletAddress = () => {
@@ -113,15 +111,13 @@ export function useUser() {
             },
           };
 
-          // Save the new user profile
+          // 1. Create the new user profile first
           await setDoc(currentUserRef, newProfile);
-          console.log("New profile created successfully.");
 
-          // Handle Referral Logic
+          // 2. Immediately handle Referral Logic
           const pendingReferralCode = localStorage.getItem('or_wallet_referral_code');
           if (pendingReferralCode && !referralProcessed.current) {
             referralProcessed.current = true;
-            console.log("Found pending referral code:", pendingReferralCode);
             
             const usersRef = collection(firestore, 'users');
             const q = query(usersRef, where('referral.code', '==', pendingReferralCode.toUpperCase()));
@@ -131,25 +127,19 @@ export function useUser() {
               const referrerDoc = querySnapshot.docs[0];
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
               
-              console.log("Referrer found, updating rewards for:", referrerDoc.id);
-              
-              // Update referrer instantly
+              // Update referrer directly with increment
               await updateDoc(referrerRef, {
                 'referral.count': increment(1),
                 'referral.earnings': increment(100),
                 'wallet.orBalance': increment(100),
                 'updatedAt': serverTimestamp()
               });
-              
-              console.log(`Referral reward of 100 OR given to user: ${referrerDoc.id}`);
-            } else {
-              console.log("No referrer found with code:", pendingReferralCode);
             }
             localStorage.removeItem('or_wallet_referral_code');
           }
 
         } catch (error) {
-          console.error("Error during user initialization:", error);
+          console.error("Error during direct user/referral initialization:", error);
         } finally {
           setIsInitializing(false);
         }
