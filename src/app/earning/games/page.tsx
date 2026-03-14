@@ -14,7 +14,7 @@ const GAMES = [
     time: 300, // 5 minutes
     difficulty: 'Easy', 
     division: 'A',
-    gameUrl: 'https://html5.gamemonetize.co/' 
+    gameUrl: 'https://html5.gamemonetize.co/fx0o3r69oqzzat8ha5lvjmkdxjlmztxy/' 
   },
   { 
     id: 'g_neon', 
