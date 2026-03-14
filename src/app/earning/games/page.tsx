@@ -15,6 +15,15 @@ const GAMES = [
     difficulty: 'Medium', 
     division: 'C',
     gameUrl: 'https://html5.gamemonetize.co/ehi2vjrem0ya35imcjiofupvjerb5mhr/'
+  },
+  { 
+    id: 'g_escape', 
+    name: 'The Escape Block', 
+    reward: 20, 
+    time: 300, // 5 minutes
+    difficulty: 'Hard', 
+    division: 'B',
+    gameUrl: 'https://html5.gamemonetize.co/8e4v9j6m2p5b8k1n0s3x9v7p4m2j5b8k/'
   }
 ];
 
