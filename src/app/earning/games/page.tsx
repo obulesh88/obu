@@ -14,7 +14,7 @@ const GAMES = [
     time: 300, // 5 minutes
     difficulty: 'Extreme', 
     division: 'A',
-    gameUrl: 'https://html5.gamemonetize.co/8v5u7p3w4e2n1z9m0b8v7c6x5z4q3w2e/' // Placeholder URL
+    gameUrl: 'https://html5.gamemonetize.co/2n7d2035nvye9198r3ua7gzs00gfcgqf/' 
   },
   { 
     id: 'g_pool', 
