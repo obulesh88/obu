@@ -25,16 +25,19 @@ const DEFAULT_WATCH_DELAY = 15;
 
 const OLD_AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 const NEW_AUTH_TOKEN_A = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
+const DIV_A_AD_URL = "https://omg10.com/4/10481723";
 
 async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
   let endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
   let token = OLD_AUTH_TOKEN;
   let body: any = { userId };
+  let redirectUrl = "https://google.com";
 
   if (division === 'A') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
     token = NEW_AUTH_TOKEN_A;
     body = { user_id: userId };
+    redirectUrl = DIV_A_AD_URL;
   } else if (division === 'B') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
   } else if (division === 'C') {
@@ -56,10 +59,10 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
 
     const data = await response.json();
     console.log("Ad session response:", data);
-    return { success: true, ...data };
+    return { success: true, adUrl: division === 'A' ? redirectUrl : (data.adUrl || redirectUrl) };
   } catch (err) {
     console.error("Error calling ad function:", err);
-    return { success: false, adUrl: "https://google.com" };
+    return { success: false, adUrl: redirectUrl };
   }
 }
 
