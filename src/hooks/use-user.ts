@@ -1,6 +1,6 @@
 
 'use client';
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
@@ -28,6 +28,7 @@ export function useUser() {
   const { user: authUser, loading: authLoading } = useFirebaseAuth();
   const firestore = useFirestore();
   const [isInitializing, setIsInitializing] = useState(false);
+  const referralProcessed = useRef(false);
 
   const userDocRef = useMemo(() => {
     if (!firestore || !authUser?.uid) return null;
@@ -38,17 +39,20 @@ export function useUser() {
 
   useEffect(() => {
     const initProfile = async () => {
+      // Check if we have an auth user but no firestore profile yet
       if (!authLoading && authUser && !profileLoading && !userProfile && firestore && !isInitializing) {
         setIsInitializing(true);
         try {
           const guestUid = authUser.uid;
-          const userDocRef = doc(firestore, 'users', guestUid);
+          const currentUserRef = doc(firestore, 'users', guestUid);
           
-          const docSnap = await getDoc(userDocRef);
+          const docSnap = await getDoc(currentUserRef);
           if (docSnap.exists()) {
             setIsInitializing(false);
             return;
           }
+
+          console.log("Initializing new user profile for:", guestUid);
 
           // Generate Unique Wallet Address
           const generateWalletAddress = () => {
@@ -109,20 +113,27 @@ export function useUser() {
             },
           };
 
-          await setDoc(userDocRef, newProfile);
+          // Save the new user profile
+          await setDoc(currentUserRef, newProfile);
+          console.log("New profile created successfully.");
 
-          // Instant Referral Logic
+          // Handle Referral Logic
           const pendingReferralCode = localStorage.getItem('or_wallet_referral_code');
-          if (pendingReferralCode) {
+          if (pendingReferralCode && !referralProcessed.current) {
+            referralProcessed.current = true;
+            console.log("Found pending referral code:", pendingReferralCode);
+            
             const usersRef = collection(firestore, 'users');
-            const q = query(usersRef, where('referral.code', '==', pendingReferralCode));
+            const q = query(usersRef, where('referral.code', '==', pendingReferralCode.toUpperCase()));
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
               const referrerDoc = querySnapshot.docs[0];
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
               
-              // Update referrer instantly: +1 count, +100 OR coins
+              console.log("Referrer found, updating rewards for:", referrerDoc.id);
+              
+              // Update referrer instantly
               await updateDoc(referrerRef, {
                 'referral.count': increment(1),
                 'referral.earnings': increment(100),
@@ -130,13 +141,15 @@ export function useUser() {
                 'updatedAt': serverTimestamp()
               });
               
-              console.log(`Referral reward given to user: ${referrerDoc.id}`);
+              console.log(`Referral reward of 100 OR given to user: ${referrerDoc.id}`);
+            } else {
+              console.log("No referrer found with code:", pendingReferralCode);
             }
             localStorage.removeItem('or_wallet_referral_code');
           }
 
         } catch (error) {
-          console.error("Error initializing user profile:", error);
+          console.error("Error during user initialization:", error);
         } finally {
           setIsInitializing(false);
         }
