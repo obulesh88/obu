@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, Star, Timer, Trophy } from 'lucide-react';
+import { Gamepad2, Star, Timer, Trophy, Clock } from 'lucide-react';
 import { AdDialog } from '@/components/earning/ad-dialog';
+import { Separator } from '@/components/ui/separator';
 
 const GAMES = [
   { 
@@ -55,7 +56,7 @@ export default function GamesPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-20">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black uppercase">Game Station</h1>
@@ -98,6 +99,31 @@ export default function GamesPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Coming Soon Section */}
+      <div className="space-y-4 mt-4">
+        <div className="flex items-center gap-4">
+          <h3 className="text-lg font-bold text-muted-foreground uppercase tracking-tighter flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Coming Soon
+          </h3>
+          <Separator className="flex-1 opacity-20" />
+        </div>
+        
+        <div className="grid gap-4 grid-cols-2">
+          {[1, 2].map((i) => (
+            <Card key={i} className="border-dashed border-2 border-muted-foreground/20 bg-muted/5 flex flex-col items-center justify-center p-6 text-center gap-2 opacity-60">
+              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center animate-pulse">
+                <Gamepad2 className="h-5 w-5 text-muted-foreground/50" />
+              </div>
+              <div className="space-y-1">
+                <div className="h-3 w-20 bg-muted rounded animate-pulse mx-auto" />
+                <div className="h-2 w-12 bg-muted rounded animate-pulse mx-auto opacity-50" />
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {selectedGame && (
