@@ -7,7 +7,15 @@ import { Gamepad2, Star, Timer, Trophy } from 'lucide-react';
 import { AdDialog } from '@/components/earning/ad-dialog';
 
 const GAMES = [
-  { id: 'g_pool', name: 'Mini Pool 3D', reward: 30, time: '60s', difficulty: 'Medium', division: 'C' },
+  { 
+    id: 'g_pool', 
+    name: 'Mini Pool 3D', 
+    reward: 30, 
+    time: '60s', 
+    difficulty: 'Medium', 
+    division: 'C',
+    gameUrl: 'https://html5.gamemonetize.co/ehi2vjrem0ya35imcjiofupvjerb5mhr/'
+  },
   { id: 'g1', name: 'Memory Match', reward: 10, time: '30s', difficulty: 'Easy', division: 'A' },
   { id: 'g2', name: 'Speed Clicker', reward: 15, time: '20s', difficulty: 'Medium', division: 'B' },
   { id: 'g3', name: 'Pattern Quest', reward: 25, time: '45s', difficulty: 'Hard', division: 'C' },
@@ -79,6 +87,7 @@ export default function GamesPage() {
           gameId={selectedGame.id}
           division={selectedGame.division as 'A' | 'B' | 'C'}
           rewardAmount={selectedGame.reward}
+          gameUrl={selectedGame.gameUrl}
         />
       )}
     </div>

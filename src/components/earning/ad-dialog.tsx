@@ -15,6 +15,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { Gamepad2, Tv } from 'lucide-react';
 
 const DEFAULT_REWARD = 5;
 const WATCH_DELAY = 15; // 15 seconds
@@ -57,57 +58,59 @@ interface AdDialogProps {
   gameId: string;
   division: 'A' | 'B' | 'C';
   rewardAmount?: number;
+  gameUrl?: string;
 }
 
-export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmount = DEFAULT_REWARD }: AdDialogProps) {
+export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmount = DEFAULT_REWARD, gameUrl }: AdDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const [status, setStatus] = useState('Click "Watch Ad" to begin.');
+  const [status, setStatus] = useState('Click to begin.');
   const [isClaiming, setIsClaiming] = useState(false);
   const [showClaimButton, setShowClaimButton] = useState(false);
-  const [isWatchButtonDisabled, setIsWatchButtonDisabled] = useState(false);
+  const [isStartButtonDisabled, setIsStartButtonDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [hasStartedWatching, setHasStartedWatching] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setStatus('Click "Watch Ad" to begin.');
+      setStatus(gameUrl ? 'Click "Play Game" to start.' : 'Click "Watch Ad" to begin.');
       setShowClaimButton(false);
       setIsClaiming(false);
-      setIsWatchButtonDisabled(false);
+      setIsStartButtonDisabled(false);
       setCountdown(0);
-      setHasStartedWatching(false);
+      setHasStarted(false);
     }
-  }, [open]);
+  }, [open, gameUrl]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
-    if (hasStartedWatching && countdown > 0) {
+    if (hasStarted && countdown > 0) {
       timer = setInterval(() => {
         setCountdown((prev) => Math.max(0, prev - 1));
-        setStatus("Ad in progress. Keep watching...");
+        setStatus(gameUrl ? "Enjoy the game!" : "Ad in progress. Keep watching...");
       }, 1000);
-    } else if (hasStartedWatching && countdown === 0) {
+    } else if (hasStarted && countdown === 0) {
       setShowClaimButton(true);
-      setStatus("You can now claim your reward.");
+      setStatus("Mission accomplished! You can now claim your reward.");
     }
     
     return () => clearInterval(timer);
-  }, [countdown, hasStartedWatching]);
+  }, [countdown, hasStarted, gameUrl]);
 
 
-  const handleWatchAd = async () => {
+  const handleStart = async () => {
     if (!user) {
         toast({ variant: 'destructive', title: 'Not Authenticated' });
         return;
     }
 
+    // Always open the ad window for tracking if it's a standard ad division
     const adWindow = window.open('about:blank', '_blank');
-    setStatus('Connecting to ad server...');
-    setIsWatchButtonDisabled(true);
+    setStatus('Connecting...');
+    setIsStartButtonDisabled(true);
 
     const result = await startAdSession(user.uid, division);
     
@@ -115,17 +118,17 @@ export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmoun
         const adUrl = result.adUrl;
         if (adWindow) adWindow.location.href = adUrl;
         
-        setHasStartedWatching(true);
+        setHasStarted(true);
         setCountdown(WATCH_DELAY);
-        setStatus(`Watching ad...`);
+        setStatus(gameUrl ? `Playing...` : `Watching ad...`);
     } else {
         if (adWindow) adWindow.close();
-        setStatus('Failed to start ad. Please try again.');
-        setIsWatchButtonDisabled(false);
+        setStatus('Connection failed. Please try again.');
+        setIsStartButtonDisabled(false);
         toast({
             variant: 'destructive',
             title: 'Connection Error',
-            description: 'Could not initialize ad session.'
+            description: 'Could not initialize session.'
         });
     }
   };
@@ -169,27 +172,49 @@ export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmoun
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>🎥 Watch Ad & Earn</DialogTitle>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="flex items-center gap-2">
+            {gameUrl ? <Gamepad2 className="h-5 w-5" /> : <Tv className="h-5 w-5" />}
+            {gameUrl ? 'Play & Earn' : 'Watch Ad & Earn'}
+          </DialogTitle>
           <DialogDescription>
-            Watch an ad for {WATCH_DELAY} seconds to earn rewards. Division {division} active.
+            {gameUrl ? 'Play the game for at least 15 seconds to unlock your reward.' : `Watch an ad for ${WATCH_DELAY} seconds to earn rewards.`}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="text-center font-semibold p-6 border rounded-md bg-muted flex flex-col items-center justify-center gap-2 min-h-[120px]">
-            <span className={countdown > 0 ? "text-primary animate-pulse" : ""}>{status}</span>
-            {countdown > 0 && (
-              <span className="text-4xl font-mono text-primary">{countdown}s</span>
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] bg-muted relative">
+            {hasStarted && gameUrl ? (
+              <iframe 
+                src={gameUrl} 
+                className="absolute inset-0 w-full h-full border-0" 
+                allowFullScreen
+              />
+            ) : (
+              <div className="text-center p-6 flex flex-col items-center justify-center gap-4">
+                 <span className={countdown > 0 ? "text-primary animate-pulse font-bold" : "font-medium"}>{status}</span>
+                 {countdown > 0 && (
+                   <span className="text-5xl font-black font-mono text-primary drop-shadow-sm">{countdown}s</span>
+                 )}
+              </div>
+            )}
+            
+            {/* Overlay timer when playing game */}
+            {hasStarted && gameUrl && countdown > 0 && (
+              <div className="absolute bottom-4 left-4 right-4 flex justify-center pointer-events-none">
+                 <div className="bg-black/80 text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-sm border border-white/10">
+                    Reward Unlocks in: {countdown}s
+                 </div>
+              </div>
             )}
         </div>
 
-        <DialogFooter className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-          <Button type="button" onClick={handleWatchAd} disabled={isWatchButtonDisabled || (hasStartedWatching && countdown > 0)}>
-             {hasStartedWatching && countdown > 0 ? 'Ad in Progress...' : '▶ Watch Ad'}
+        <DialogFooter className='p-6 grid grid-cols-1 gap-4 sm:grid-cols-2 bg-background border-t'>
+          <Button type="button" size="lg" onClick={handleStart} disabled={isStartButtonDisabled || (hasStarted && countdown > 0)}>
+             {hasStarted && countdown > 0 ? 'In Progress...' : (gameUrl ? '🎮 Play Game' : '▶ Watch Ad')}
           </Button>
           {showClaimButton && (
-            <Button type="button" onClick={handleClaimReward} disabled={isClaiming}>
+            <Button type="button" size="lg" variant="default" onClick={handleClaimReward} disabled={isClaiming} className="bg-green-600 hover:bg-green-700 text-white border-none shadow-lg">
                 {isClaiming ? 'Claiming...' : '✔ Claim Reward'}
             </Button>
           )}
