@@ -8,30 +8,32 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
       fill="none"
       {...props}
     >
-      {/* Outer Glow/Background Stylization */}
-      <circle cx="50" cy="50" r="45" fill="currentColor" fillOpacity="0.05" />
-      
-      {/* O Character */}
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M42 28H18C12.4772 28 8 32.4772 8 38V62C8 67.5228 12.4772 72 18 72H42C47.5228 72 52 67.5228 52 62V38C52 32.4772 47.5228 28 42 28ZM38 58H22V42H38V58Z"
-        fill="hsl(var(--primary))"
+      {/* Unified Frame */}
+      <rect
+        x="5"
+        y="5"
+        width="90"
+        height="90"
+        rx="24"
+        fill="currentColor"
+        fillOpacity="0.08"
       />
       
-      {/* R Character */}
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M58 28V72H72V54H82C88.6274 54 94 48.6274 94 42C94 35.3726 88.6274 30 82 30L58 28ZM72 44V36H82C85.3137 36 88 38.6863 88 42C88 45.3137 85.3137 48 82 48H72V44Z"
-        fill="hsl(var(--primary))"
-      />
-      
-      {/* R Leg */}
-      <path
-        d="M82 54L96 72H84L72 54H82Z"
-        fill="hsl(var(--primary))"
-      />
+      {/* Combined OR Logo Mark */}
+      <g fill="hsl(var(--primary))">
+        {/* Stylized O - Outer Ring */}
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M45 25C31.1929 25 20 36.1929 20 50C20 63.8071 31.1929 75 45 75C58.8071 75 70 63.8071 70 50C70 36.1929 58.8071 25 45 25ZM32 50C32 42.8203 37.8203 37 45 37C52.1797 37 58 42.8203 58 50C58 57.1797 52.1797 63 45 63C37.8203 63 32 57.1797 32 50Z"
+        />
+        
+        {/* Stylized R - Integrated with the O */}
+        <path
+          d="M62 42V75H74V58H82L90 75H103L93 54C97.5 51 100 47 100 41C100 32 93 25 82 25H62V42ZM74 37H82C85.5 37 88 39.5 88 43C88 46.5 85.5 49 82 49H74V37Z"
+          transform="translate(-5, 0)"
+        />
+      </g>
     </svg>
   );
 }
