@@ -23,7 +23,7 @@ const GAMES = [
     time: 300, // 5 minutes
     difficulty: 'Hard', 
     division: 'B',
-    gameUrl: 'https://html5.gamemonetize.co/8e4v9j6m2p5b8k1n0s3x9v7p4m2j5b8k/'
+    gameUrl: 'https://html5.gamemonetize.co/qtba3xs4tqydx8kgmnbgl7pdzgkal9t3/'
   }
 ];
 
