@@ -27,6 +27,7 @@ const OLD_AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmF
 const NEW_AUTH_TOKEN_A = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
 const DIV_A_AD_URL = "https://omg10.com/4/10481723";
 const DIV_B_AD_URL = "https://rm358.com/4/10481073?var=";
+const DIV_C_AD_URL = "https://bony-teaching.com/bs3qVf0.Pt3BpWv/b/mcVjJnZ/DN0q2BNjzFQj2kOnTIgd2ALlTHYj3FNUDzYG5yOfDacH";
 
 async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
   let endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
@@ -44,6 +45,7 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
     redirectUrl = `${DIV_B_AD_URL}${userId}`;
   } else if (division === 'C') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-3";
+    redirectUrl = DIV_C_AD_URL;
   }
 
   try {
@@ -61,10 +63,10 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
 
     const data = await response.json();
     console.log("Ad session response:", data);
-    return { success: true, adUrl: (division === 'A' || division === 'B') ? redirectUrl : (data.adUrl || redirectUrl) };
+    return { success: true, adUrl: redirectUrl };
   } catch (err) {
     console.error("Error calling ad function:", err);
-    return { success: false, adUrl: (division === 'A' || division === 'B') ? redirectUrl : "https://google.com" };
+    return { success: false, adUrl: redirectUrl };
   }
 }
 
