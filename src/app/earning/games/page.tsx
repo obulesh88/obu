@@ -8,6 +8,15 @@ import { AdDialog } from '@/components/earning/ad-dialog';
 
 const GAMES = [
   { 
+    id: 'g_neon', 
+    name: 'Neon Velocity', 
+    reward: 20, 
+    time: 300, // 5 minutes
+    difficulty: 'Extreme', 
+    division: 'A',
+    gameUrl: 'https://html5.gamemonetize.co/8v5u7p3w4e2n1z9m0b8v7c6x5z4q3w2e/' // Placeholder URL
+  },
+  { 
     id: 'g_pool', 
     name: 'Mini Pool 3D', 
     reward: 20, 
