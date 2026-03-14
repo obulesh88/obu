@@ -9,12 +9,18 @@ import { RefreshCw, ArrowRightLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { useUser } from '@/hooks/use-user';
+import { useFirestore } from '@/firebase';
+import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
+const MIN_CONVERSION = 100;
 
 export default function ConvertPage() {
   const { toast } = useToast();
   const { user, userProfile, loading } = useUser();
+  const firestore = useFirestore();
 
   const [orAmount, setOrAmount] = useState('');
   const [inrAmount, setInrAmount] = useState('');
@@ -30,7 +36,7 @@ export default function ConvertPage() {
   }, [orAmount]);
 
   const handleConvert = async () => {
-    if (!user || !userProfile) {
+    if (!user || !userProfile || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Not Authenticated',
@@ -41,11 +47,11 @@ export default function ConvertPage() {
 
     const orToConvert = parseFloat(orAmount);
 
-    if (isNaN(orToConvert) || orToConvert <= 0) {
+    if (isNaN(orToConvert) || orToConvert < MIN_CONVERSION) {
       toast({
         variant: 'destructive',
         title: 'Invalid Amount',
-        description: 'Please enter a valid amount of OR coins to convert.',
+        description: `Minimum conversion is ${MIN_CONVERSION} OR coins.`,
       });
       return;
     }
@@ -60,42 +66,54 @@ export default function ConvertPage() {
     }
 
     setIsConverting(true);
-    try {
-      // Mock conversion
-      toast({
-        title: 'Conversion Successful',
-        description: `${orToConvert} OR coins have been converted to ₹${(orToConvert / CONVERSION_RATE).toFixed(2)} INR.`,
-      });
-      setOrAmount('');
-      setInrAmount('');
-    } catch (error: any) {
-      console.error('Conversion failed: ', error);
-      toast({
-        variant: 'destructive',
-        title: 'Conversion Failed',
-        description: error.message || 'An unexpected error occurred.',
-      });
-    } finally {
-      setIsConverting(false);
-    }
-  };
+    const inrToAdd = orToConvert / CONVERSION_RATE;
+    const userDocRef = doc(firestore, 'users', user.uid);
+    
+    const updateData = {
+        'wallet.orBalance': increment(-orToConvert),
+        'wallet.inrBalance': increment(inrToAdd),
+        'updatedAt': serverTimestamp()
+    };
 
+    updateDoc(userDocRef, updateData)
+      .then(() => {
+        toast({
+          title: 'Conversion Successful',
+          description: `${orToConvert} OR coins have been converted to ₹${inrToAdd.toFixed(2)} INR.`,
+        });
+        setOrAmount('');
+        setInrAmount('');
+      })
+      .catch(async (error: any) => {
+        if (error.code === 'permission-denied') {
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: updateData,
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+        }
+      })
+      .finally(() => {
+        setIsConverting(false);
+      });
+  };
 
   if (loading) {
     return (
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-4 w-64 mt-2" />
-            </CardHeader>
-            <CardContent>
-                <Skeleton className="h-32 w-full" />
-            </CardContent>
-            <CardFooter>
-                <Skeleton className="h-10 w-full" />
-            </CardFooter>
-        </Card>
-    )
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+        <CardFooter>
+          <Skeleton className="h-10 w-full" />
+        </CardFooter>
+      </Card>
+    );
   }
 
   return (
@@ -146,16 +164,16 @@ export default function ConvertPage() {
             </div>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">1,000 OR = ₹1.00</p>
+        <p className="text-sm text-muted-foreground">1,000 OR = ₹1.00 (Min: 100 OR)</p>
       </CardContent>
       <CardFooter>
-        <Button className="w-full" onClick={handleConvert} disabled={isConverting || !user}>
+        <Button className="w-full h-12 font-bold" onClick={handleConvert} disabled={isConverting || !user}>
           {isConverting ? (
             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <RefreshCw className="mr-2 h-4 w-4" />
           )}
-          {isConverting ? 'Converting...' : 'Convert Now'}
+          {isConverting ? 'Processing...' : 'Convert Now'}
         </Button>
       </CardFooter>
     </Card>
