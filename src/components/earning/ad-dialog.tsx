@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,12 +10,14 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import { Gamepad2, Tv, Timer, X } from 'lucide-react';
+import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_REWARD = 5;
@@ -38,7 +40,7 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
           "Authorization": `Bearer ${AUTH_TOKEN}`
         },
         body: JSON.stringify({ userId }),
-        signal: AbortSignal.timeout(8000) // 8 second timeout
+        signal: AbortSignal.timeout(8000)
       }
     );
 
@@ -48,6 +50,10 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
     console.error("Error calling ad function:", err);
     return { success: false, message: 'Connection timed out' };
   }
+}
+
+function generateCaptcha() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
 interface AdDialogProps {
@@ -80,6 +86,18 @@ export function AdDialog({
   const [isStartButtonDisabled, setIsStartButtonDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
+  
+  // Verification states
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [captchaText, setCaptchaText] = useState('');
+  const [userInput, setUserInput] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+
+  const resetVerification = useCallback(() => {
+    setCaptchaText(generateCaptcha());
+    setUserInput('');
+    setIsVerified(false);
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -89,6 +107,8 @@ export function AdDialog({
       setIsStartButtonDisabled(false);
       setCountdown(0);
       setHasStarted(false);
+      setNeedsVerification(false);
+      setIsVerified(false);
     }
   }, [open, gameUrl]);
 
@@ -100,13 +120,13 @@ export function AdDialog({
         setCountdown((prev) => Math.max(0, prev - 1));
       }, 1000);
     } else if (hasStarted && countdown === 0) {
-      setShowClaimButton(true);
-      setStatus("Mission accomplished! You can now claim your reward.");
+      setNeedsVerification(true);
+      resetVerification();
+      setStatus("Mission accomplished! Complete verification to claim.");
     }
     
     return () => clearInterval(timer);
-  }, [countdown, hasStarted]);
-
+  }, [countdown, hasStarted, resetVerification]);
 
   const handleStart = async () => {
     if (!user) {
@@ -129,7 +149,6 @@ export function AdDialog({
         setCountdown(playTimeSeconds);
         setStatus(gameUrl ? `Playing...` : `Watching ad...`);
     } else if (gameUrl) {
-        // Resilient fallback for Games: allow play even if tracking fails
         setHasStarted(true);
         setCountdown(playTimeSeconds);
         setStatus(`Playing...`);
@@ -144,8 +163,20 @@ export function AdDialog({
     }
   };
 
+  const handleVerify = () => {
+    if (userInput.toUpperCase() === captchaText) {
+      setIsVerified(true);
+      setNeedsVerification(false);
+      setShowClaimButton(true);
+      toast({ title: 'Verified!', description: 'You can now claim your reward.' });
+    } else {
+      toast({ variant: 'destructive', title: 'Incorrect Captcha', description: 'Please try again.' });
+      resetVerification();
+    }
+  };
+
   const handleClaimReward = () => {
-    if (!user || !firestore) return;
+    if (!user || !firestore || !isVerified) return;
     
     setIsClaiming(true);
     const userDocRef = doc(firestore, 'users', user.uid);
@@ -184,17 +215,25 @@ export function AdDialog({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const isGameActive = hasStarted && gameUrl;
+  const isGameActive = hasStarted && gameUrl && countdown > 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(
-        "flex flex-col p-0 overflow-hidden transition-all duration-300 border-none bg-background",
-        isGameActive ? "sm:max-w-none w-screen h-screen rounded-none" : 
-        gameUrl ? "sm:max-w-5xl h-[90vh] max-h-[90vh]" : "sm:max-w-2xl max-h-[80vh]"
-      )} onInteractOutside={(e) => e.preventDefault()}>
+    <Dialog open={open} onOpenChange={(val) => {
+      // Prevent closing if game is active or verification is pending
+      if (!hasStarted || showClaimButton) {
+        onOpenChange(val);
+      }
+    }}>
+      <DialogContent 
+        className={cn(
+          "flex flex-col p-0 overflow-hidden transition-all duration-300 border-none bg-background [&>button]:hidden",
+          isGameActive ? "sm:max-w-none w-screen h-screen rounded-none" : 
+          gameUrl ? "sm:max-w-4xl h-[85vh] max-h-[85vh]" : "sm:max-w-2xl max-h-[80vh]"
+        )} 
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         
-        {/* Only show header if game hasn't started */}
         {!isGameActive && (
           <DialogHeader className="p-4 pb-2 bg-background border-b">
             <DialogTitle className="flex items-center gap-2 text-lg font-black uppercase">
@@ -218,7 +257,6 @@ export function AdDialog({
                   allow="autoplay; fullscreen; keyboard"
                 />
                 
-                {/* Full Width Top Progress Bar */}
                 <div className="absolute top-0 left-0 w-full h-2 bg-white/5 z-[60]">
                    <div 
                     className="h-full bg-primary transition-all duration-1000 shadow-[0_0_15px_rgba(255,0,0,0.5)]" 
@@ -226,7 +264,6 @@ export function AdDialog({
                    />
                 </div>
 
-                {/* Overlay Countdown */}
                 {countdown > 0 && (
                   <div className="absolute top-6 right-6 pointer-events-none z-[60]">
                     <div className="bg-black/90 text-white px-6 py-3 rounded-2xl font-black text-3xl border border-white/10 shadow-2xl backdrop-blur-2xl flex items-center gap-4 animate-in fade-in zoom-in">
@@ -235,6 +272,40 @@ export function AdDialog({
                     </div>
                   </div>
                 )}
+              </div>
+            ) : needsVerification ? (
+              <div className="w-full max-w-md p-8 bg-card rounded-2xl border shadow-2xl space-y-6 animate-in zoom-in-95">
+                <div className="text-center space-y-2">
+                  <ShieldCheck className="h-12 w-12 text-primary mx-auto mb-2" />
+                  <h3 className="text-xl font-black uppercase">Verify Human</h3>
+                  <p className="text-xs text-muted-foreground font-bold uppercase">Solve this captcha to claim your {rewardAmount} OR</p>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-muted rounded-lg p-4 text-center font-mono text-3xl font-black tracking-widest select-none">
+                      {captchaText}
+                    </div>
+                    <Button variant="outline" size="icon" className="h-14 w-14" onClick={resetVerification}>
+                      <RefreshCw className="h-6 w-6" />
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase">Enter Characters</Label>
+                    <Input 
+                      value={userInput} 
+                      onChange={(e) => setUserInput(e.target.value.toUpperCase())}
+                      placeholder="TYPE HERE..."
+                      className="h-14 text-center font-mono text-xl tracking-widest uppercase font-bold"
+                      autoComplete="off"
+                    />
+                  </div>
+                  
+                  <Button onClick={handleVerify} disabled={!userInput} className="w-full h-14 font-black uppercase text-lg">
+                    Verify & Proceed
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="text-center p-12 flex flex-col items-center justify-center gap-8">
@@ -251,10 +322,9 @@ export function AdDialog({
             )}
         </div>
 
-        {/* Footer controls */}
         <DialogFooter className={cn(
           "p-4 flex flex-col sm:flex-row gap-4 bg-background border-t",
-          isGameActive && countdown > 0 && "hidden" // Hide footer while game is running
+          (isGameActive || needsVerification) && "hidden"
         )}>
           {!hasStarted && (
              <Button 
@@ -268,7 +338,7 @@ export function AdDialog({
              </Button>
           )}
           
-          {showClaimButton && (
+          {showClaimButton && isVerified && (
             <Button 
               type="button" 
               size="lg" 
