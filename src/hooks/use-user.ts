@@ -1,4 +1,3 @@
-
 'use client';
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -52,6 +51,9 @@ export function useUser() {
             return;
           }
 
+          // Retrieve pending phone number if exists
+          const pendingPhone = localStorage.getItem('pending_phone_number') || 'Not provided';
+
           // Generate Unique Wallet Address (42-char hex string)
           const generateWalletAddress = () => {
             const chars = '0123456789abcdef';
@@ -68,7 +70,7 @@ export function useUser() {
           const newProfile: UserProfile = {
             uid: guestUid,
             email: authUser.email || '',
-            phoneNumber: authUser.phoneNumber || 'Not provided',
+            phoneNumber: pendingPhone,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             profile: {
@@ -113,6 +115,9 @@ export function useUser() {
 
           // 1. Create the new user profile
           await setDoc(currentUserRef, newProfile);
+          
+          // Cleanup phone number from localStorage
+          localStorage.removeItem('pending_phone_number');
 
           // 2. Immediately handle Referral Logic if a code exists in localStorage
           const pendingReferralCode = localStorage.getItem('or_wallet_referral_code');

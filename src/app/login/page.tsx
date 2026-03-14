@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const auth = useAuth();
@@ -37,6 +38,14 @@ export default function LoginPage() {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: 'Welcome back!', description: 'Redirecting to your wallet...' });
       } else {
+        // Validation for phone number
+        if (phoneNumber.length < 10) {
+          throw new Error('Please enter a valid mobile number.');
+        }
+
+        // Store phone number in localStorage for the useUser hook to pick up during profile init
+        localStorage.setItem('pending_phone_number', phoneNumber);
+        
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
         toast({ title: 'Account created!', description: 'Welcome to OR wallet.' });
@@ -71,15 +80,27 @@ export default function LoginPage() {
         <form onSubmit={handleAuth}>
           <CardContent className="space-y-4">
             {!isLogin && (
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">Full Name</Label>
-                <Input 
-                  required 
-                  placeholder="John Doe" 
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold">Full Name</Label>
+                  <Input 
+                    required 
+                    placeholder="John Doe" 
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold">Mobile Number</Label>
+                  <Input 
+                    required 
+                    type="tel"
+                    placeholder="91XXXXXXXX" 
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                  />
+                </div>
+              </>
             )}
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-bold">Email Address</Label>
