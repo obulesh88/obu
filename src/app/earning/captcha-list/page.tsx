@@ -33,7 +33,7 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
   if (division === 'A') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
     token = NEW_AUTH_TOKEN_A;
-    body = { action: "start" }; // Exact body from user snippet
+    body = { user_id: userId }; // Updated to match user snippet
   } else if (division === 'B') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
   } else if (division === 'C') {
@@ -54,14 +54,13 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
     );
 
     const data = await response.json();
-    if (data.success) {
+    console.log("Response:", data);
+    if (data.success || data.adUrl) {
       return data.adUrl;
     }
-    // Return dummy URL if data structure is different but request succeeded
     return data.adUrl || "https://google.com";
   } catch (err) {
     console.error("Error calling ad function:", err);
-    // Return a dummy value to prevent blocking the user if it's just a network issue
     return "https://google.com";
   }
 }
