@@ -10,8 +10,8 @@ const GAMES = [
   { 
     id: 'g_pool', 
     name: 'Mini Pool 3D', 
-    reward: 30, 
-    time: 60, 
+    reward: 50, 
+    time: 300, // 5 minutes
     difficulty: 'Medium', 
     division: 'C',
     gameUrl: 'https://html5.gamemonetize.co/ehi2vjrem0ya35imcjiofupvjerb5mhr/'
@@ -66,7 +66,7 @@ export default function GamesPage() {
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                   <Timer className="h-3 w-3" />
-                  {game.time}s Session
+                  {Math.floor(game.time / 60)}m {game.time % 60}s
                 </div>
                 <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                   <Trophy className="h-3 w-3" />

@@ -98,7 +98,6 @@ export function AdDialog({
     if (hasStarted && countdown > 0) {
       timer = setInterval(() => {
         setCountdown((prev) => Math.max(0, prev - 1));
-        setStatus(gameUrl ? "Playing... Keep it up!" : "Ad in progress...");
       }, 1000);
     } else if (hasStarted && countdown === 0) {
       setShowClaimButton(true);
@@ -118,8 +117,6 @@ export function AdDialog({
     setStatus('Connecting to session...');
     setIsStartButtonDisabled(true);
 
-    // If it's a game, we attempt tracking but allow start regardless of tracking success 
-    // to avoid "Connection failed" for the user if the ad endpoint is unstable.
     const result = await startAdSession(user.uid, division);
     
     if (result && result.success) {
@@ -138,12 +135,12 @@ export function AdDialog({
         setStatus(`Playing...`);
         console.warn("Tracking session failed, but allowing game play fallback.");
     } else {
-        setStatus('Connection failed. Please check your internet.');
+        setStatus('Connection failed. Please try again.');
         setIsStartButtonDisabled(false);
         toast({
             variant: 'destructive',
             title: 'Connection Error',
-            description: 'Could not initialize session. Please try again later.'
+            description: 'Could not initialize session. Please try again.'
         });
     }
   };
@@ -182,25 +179,31 @@ export function AdDialog({
         });
   };
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(
         "flex flex-col p-0 overflow-hidden transition-all duration-300 border-none",
-        gameUrl ? "sm:max-w-4xl h-[85vh]" : "sm:max-w-2xl max-h-[80vh]"
+        gameUrl ? "sm:max-w-5xl h-[90vh] max-h-[90vh]" : "sm:max-w-2xl max-h-[80vh]"
       )} onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader className="p-6 pb-2 bg-background">
+        <DialogHeader className="p-4 pb-2 bg-background border-b">
           <DialogTitle className="flex items-center gap-2">
             {gameUrl ? <Gamepad2 className="h-5 w-5 text-primary" /> : <Tv className="h-5 w-5 text-primary" />}
-            {gameUrl ? 'Interactive Task' : 'Ad Engagement'}
+            {gameUrl ? 'In-App Game Task' : 'Ad Engagement'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-[10px] font-bold uppercase">
             {gameUrl 
-              ? `Play for ${playTimeSeconds}s to earn ${rewardAmount} OR coins.` 
-              : `Engagement time: ${playTimeSeconds}s. Reward: ${rewardAmount} OR.`}
+              ? `Play for ${formatTime(playTimeSeconds)} to earn ${rewardAmount} OR coins.` 
+              : `Duration: ${playTimeSeconds}s. Reward: ${rewardAmount} OR.`}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 flex flex-col items-center justify-center bg-zinc-950 relative">
+        <div className="flex-1 flex flex-col items-center justify-center bg-zinc-950 relative overflow-hidden">
             {hasStarted && gameUrl ? (
               <div className="w-full h-full relative">
                 <iframe 
@@ -209,48 +212,48 @@ export function AdDialog({
                   allow="autoplay; fullscreen; keyboard"
                 />
                 
-                {/* Floating Progress Bar */}
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 z-50">
+                {/* Fixed Top Progress Bar */}
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-white/5 z-50">
                    <div 
-                    className="h-full bg-primary transition-all duration-1000" 
+                    className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_rgba(var(--primary),0.5)]" 
                     style={{ width: `${( (playTimeSeconds - countdown) / playTimeSeconds ) * 100}%` }}
                    />
                 </div>
 
-                {/* Fixed Overlay for Countdown */}
+                {/* Floating HUD for Countdown */}
                 {countdown > 0 && (
-                  <div className="absolute top-4 right-4 pointer-events-none z-50">
-                    <div className="bg-black/90 text-white px-4 py-2 rounded-xl font-black text-xl border border-white/20 shadow-2xl backdrop-blur-md flex items-center gap-2">
-                      <Timer className="h-5 w-5 text-primary animate-pulse" />
-                      {countdown}s
+                  <div className="absolute top-6 right-6 pointer-events-none z-50">
+                    <div className="bg-black/80 text-white px-5 py-2.5 rounded-2xl font-black text-2xl border border-white/10 shadow-2xl backdrop-blur-xl flex items-center gap-3 animate-in fade-in zoom-in">
+                      <Timer className="h-6 w-6 text-primary animate-pulse" />
+                      <span className="font-mono tracking-tighter">{formatTime(countdown)}</span>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
               <div className="text-center p-12 flex flex-col items-center justify-center gap-6">
-                 <div className="rounded-full bg-primary/10 p-6 animate-pulse">
-                   {gameUrl ? <Gamepad2 className="h-12 w-12 text-primary" /> : <Tv className="h-12 w-12 text-primary" />}
+                 <div className="rounded-full bg-primary/10 p-8 animate-pulse">
+                   {gameUrl ? <Gamepad2 className="h-16 w-16 text-primary" /> : <Tv className="h-16 w-16 text-primary" />}
                  </div>
-                 <div className="space-y-2">
-                   <h3 className="text-xl font-bold text-white">{status}</h3>
+                 <div className="space-y-3">
+                   <h3 className="text-2xl font-black text-white uppercase tracking-tight">{status}</h3>
                    {countdown > 0 && (
-                     <p className="text-6xl font-black font-mono text-primary tracking-tighter">{countdown}s</p>
+                     <p className="text-7xl font-black font-mono text-primary tracking-tighter">{countdown}s</p>
                    )}
                  </div>
               </div>
             )}
         </div>
 
-        <DialogFooter className="p-6 grid grid-cols-1 gap-4 sm:grid-cols-2 bg-background border-t">
+        <DialogFooter className="p-4 grid grid-cols-1 gap-4 sm:grid-cols-2 bg-background border-t">
           <Button 
             type="button" 
             size="lg" 
             onClick={handleStart} 
             disabled={isStartButtonDisabled || (hasStarted && countdown > 0)}
-            className="h-14 font-black uppercase tracking-tight text-lg rounded-xl"
+            className="h-14 font-black uppercase tracking-tight text-lg rounded-xl shadow-lg active:scale-95 transition-transform"
           >
-             {hasStarted && countdown > 0 ? 'Work in progress' : (gameUrl ? '🎮 Start Task' : '▶ Start Ad')}
+             {hasStarted && countdown > 0 ? 'Session Active' : (gameUrl ? '🎮 Start Game' : '▶ Start Ad')}
           </Button>
           {showClaimButton && (
             <Button 
@@ -259,7 +262,7 @@ export function AdDialog({
               variant="default" 
               onClick={handleClaimReward} 
               disabled={isClaiming} 
-              className="h-14 bg-green-600 hover:bg-green-700 text-white border-none shadow-xl font-black uppercase text-lg animate-in zoom-in-95 rounded-xl"
+              className="h-14 bg-green-600 hover:bg-green-700 text-white border-none shadow-xl font-black uppercase text-lg animate-in slide-in-from-bottom-2 rounded-xl"
             >
                 {isClaiming ? 'Claiming...' : '✔ Claim Reward'}
             </Button>
