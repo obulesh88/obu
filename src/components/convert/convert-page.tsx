@@ -13,6 +13,7 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { Separator } from '@/components/ui/separator';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 const MIN_CONVERSION = 100;
@@ -122,13 +123,22 @@ export default function ConvertPage() {
         <CardTitle>Convert Coins</CardTitle>
         <CardDescription>Exchange your OR coins for INR instantly.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-right text-sm font-medium text-muted-foreground">
-          Available OR: {userProfile?.wallet?.orBalance?.toFixed(2) || '0.00'}
+      <CardContent className="space-y-6">
+        <div className="flex justify-between items-center bg-muted/50 p-4 rounded-xl border border-primary/10">
+          <div className="text-center flex-1">
+            <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Available OR</p>
+            <p className="text-lg font-black text-primary">{userProfile?.wallet?.orBalance?.toLocaleString() || '0'}</p>
+          </div>
+          <Separator orientation="vertical" className="h-10" />
+          <div className="text-center flex-1">
+            <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Available INR</p>
+            <p className="text-lg font-black text-green-600">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</p>
+          </div>
         </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto_1fr] items-center">
           <div className="space-y-2">
-            <Label htmlFor="fromAmount">From</Label>
+            <Label htmlFor="fromAmount" className="text-[10px] font-bold uppercase">From (OR)</Label>
             <div className="relative">
               <Input 
                 id="fromAmount" 
@@ -137,19 +147,20 @@ export default function ConvertPage() {
                 value={orAmount}
                 onChange={(e) => setOrAmount(e.target.value)}
                 disabled={isConverting}
+                className="h-12 font-bold"
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <span className="text-sm text-muted-foreground">OR</span>
+                <span className="text-xs font-bold text-muted-foreground">OR</span>
               </div>
             </div>
           </div>
-          <div className="flex justify-center">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-card" disabled>
-              <ArrowRightLeft className="h-4 w-4" />
-            </Button>
+          <div className="flex justify-center pt-6">
+            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center border shadow-sm">
+              <ArrowRightLeft className="h-4 w-4 text-primary" />
+            </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="toAmount">To</Label>
+            <Label htmlFor="toAmount" className="text-[10px] font-bold uppercase">To (INR)</Label>
             <div className="relative">
               <Input 
                 id="toAmount" 
@@ -157,21 +168,26 @@ export default function ConvertPage() {
                 placeholder="0.00" 
                 value={inrAmount}
                 readOnly 
+                className="h-12 font-bold bg-muted"
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <span className="text-sm text-muted-foreground">₹</span>
+                <span className="text-xs font-bold text-muted-foreground">₹</span>
               </div>
             </div>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">1,000 OR = ₹1.00 (Min: 100 OR)</p>
+        <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
+          <p className="text-[10px] text-center font-bold text-muted-foreground uppercase tracking-widest">
+            Conversion Rate: 1,000 OR = ₹1.00 (Minimum: 100 OR)
+          </p>
+        </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full h-12 font-bold" onClick={handleConvert} disabled={isConverting || !user}>
+        <Button className="w-full h-12 font-black uppercase text-lg" onClick={handleConvert} disabled={isConverting || !user || !orAmount}>
           {isConverting ? (
-            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
           ) : (
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className="mr-2 h-5 w-5" />
           )}
           {isConverting ? 'Processing...' : 'Convert Now'}
         </Button>

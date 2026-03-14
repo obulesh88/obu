@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 
 const CONVERSION_RATE = 1000; // 1000 OR = 1 INR
 const MIN_WITHDRAWAL = 1;
@@ -239,22 +240,36 @@ export default function WalletPageContent() {
       {activeTab === 'convert' && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Balance: {userProfile?.wallet?.orBalance?.toFixed(0) || '0'} OR</CardTitle>
+            <CardTitle className="text-sm font-black uppercase">Conversion Station</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            <div className="flex justify-between items-center bg-muted/50 p-3 rounded-lg border border-primary/10">
+              <div className="text-center flex-1">
+                <p className="text-[10px] font-bold uppercase text-muted-foreground">OR Balance</p>
+                <p className="text-md font-black text-primary">{userProfile?.wallet?.orBalance?.toLocaleString() || '0'}</p>
+              </div>
+              <Separator orientation="vertical" className="h-6" />
+              <div className="text-center flex-1">
+                <p className="text-[10px] font-bold uppercase text-muted-foreground">INR Balance</p>
+                <p className="text-md font-black text-green-600">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</p>
+              </div>
+            </div>
+
             <div className="grid gap-4">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase">OR Amount</Label>
-                <Input type="number" placeholder="Min 100 OR" value={orAmount} onChange={(e) => setOrAmount(e.target.value)} />
+                <Input type="number" placeholder="Min 100 OR" value={orAmount} onChange={(e) => setOrAmount(e.target.value)} className="h-11 font-bold" />
               </div>
               <div className="flex justify-center text-muted-foreground"><ArrowRightLeft className="h-4 w-4" /></div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase">Receiving (INR)</Label>
-                <Input type="number" value={convertInrAmount} readOnly className="bg-muted font-bold text-green-600" />
+                <Input type="number" value={convertInrAmount} readOnly className="h-11 bg-muted font-black text-green-600" />
               </div>
             </div>
-            <p className="text-[10px] text-center font-bold text-muted-foreground uppercase tracking-tighter">Rate: 1,000 OR = ₹1.00</p>
-            <Button className="w-full font-bold" onClick={handleConvert} disabled={isConverting}>Convert Now</Button>
+            <p className="text-[10px] text-center font-bold text-muted-foreground uppercase tracking-widest">Rate: 1,000 OR = ₹1.00</p>
+            <Button className="w-full h-12 font-black uppercase" onClick={handleConvert} disabled={isConverting || !orAmount}>
+              {isConverting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />} Convert Now
+            </Button>
           </CardContent>
         </Card>
       )}
