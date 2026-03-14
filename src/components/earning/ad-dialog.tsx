@@ -15,7 +15,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import { Gamepad2, Tv, X } from 'lucide-react';
+import { Gamepad2, Tv, Timer, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_REWARD = 5;
@@ -37,18 +37,16 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${AUTH_TOKEN}`
         },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ userId }),
+        signal: AbortSignal.timeout(8000) // 8 second timeout
       }
     );
 
     const data = await response.json();
-    if (data.success) {
-      return data;
-    }
-    return null;
+    return data;
   } catch (err) {
     console.error("Error calling ad function:", err);
-    return null;
+    return { success: false, message: 'Connection timed out' };
   }
 }
 
@@ -85,7 +83,7 @@ export function AdDialog({
 
   useEffect(() => {
     if (open) {
-      setStatus(gameUrl ? 'Click "Play Game" to start.' : 'Click "Watch Ad" to begin.');
+      setStatus(gameUrl ? 'Ready to play?' : 'Ready to watch?');
       setShowClaimButton(false);
       setIsClaiming(false);
       setIsStartButtonDisabled(false);
@@ -100,11 +98,11 @@ export function AdDialog({
     if (hasStarted && countdown > 0) {
       timer = setInterval(() => {
         setCountdown((prev) => Math.max(0, prev - 1));
-        setStatus(gameUrl ? "Enjoy the game!" : "Ad in progress. Keep watching...");
+        setStatus(gameUrl ? "Playing... Keep it up!" : "Ad in progress...");
       }, 1000);
     } else if (hasStarted && countdown === 0) {
       setShowClaimButton(true);
-      setStatus(gameUrl ? "Time's up! You can now claim your reward." : "Mission accomplished! You can now claim your reward.");
+      setStatus("Mission accomplished! You can now claim your reward.");
     }
     
     return () => clearInterval(timer);
@@ -117,28 +115,35 @@ export function AdDialog({
         return;
     }
 
-    // Always open the ad window for tracking
-    const adWindow = window.open('about:blank', '_blank');
-    setStatus('Connecting...');
+    setStatus('Connecting to session...');
     setIsStartButtonDisabled(true);
 
+    // If it's a game, we attempt tracking but allow start regardless of tracking success 
+    // to avoid "Connection failed" for the user if the ad endpoint is unstable.
     const result = await startAdSession(user.uid, division);
     
     if (result && result.success) {
         const adUrl = result.adUrl;
-        if (adWindow) adWindow.location.href = adUrl;
+        if (adUrl) {
+          window.open(adUrl, '_blank');
+        }
         
         setHasStarted(true);
         setCountdown(playTimeSeconds);
         setStatus(gameUrl ? `Playing...` : `Watching ad...`);
+    } else if (gameUrl) {
+        // Resilient fallback for Games: allow play even if tracking fails
+        setHasStarted(true);
+        setCountdown(playTimeSeconds);
+        setStatus(`Playing...`);
+        console.warn("Tracking session failed, but allowing game play fallback.");
     } else {
-        if (adWindow) adWindow.close();
-        setStatus('Connection failed. Please try again.');
+        setStatus('Connection failed. Please check your internet.');
         setIsStartButtonDisabled(false);
         toast({
             variant: 'destructive',
             title: 'Connection Error',
-            description: 'Could not initialize session.'
+            description: 'Could not initialize session. Please try again later.'
         });
     }
   };
@@ -151,17 +156,14 @@ export function AdDialog({
     
     const updateData = {
         'wallet.orBalance': increment(rewardAmount),
-        'watchAds.verifiedAt': serverTimestamp(),
-        'watchAds.ad_completed': true,
-        'watchAds.reward_comm': rewardAmount,
         'updatedAt': serverTimestamp()
     };
 
     updateDoc(userDocRef, updateData)
         .then(() => {
             toast({
-                title: 'Success!',
-                description: `You earned ${rewardAmount} OR coins.`,
+                title: 'Reward Claimed!',
+                description: `Successfully added ${rewardAmount} OR to your wallet.`,
             });
             onComplete();
             onOpenChange(false);
@@ -183,30 +185,38 @@ export function AdDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(
-        "flex flex-col p-0 overflow-hidden transition-all duration-300",
-        gameUrl ? "sm:max-w-4xl h-[90vh]" : "sm:max-w-2xl max-h-[80vh]"
+        "flex flex-col p-0 overflow-hidden transition-all duration-300 border-none",
+        gameUrl ? "sm:max-w-4xl h-[85vh]" : "sm:max-w-2xl max-h-[80vh]"
       )} onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader className="p-6 pb-2">
+        <DialogHeader className="p-6 pb-2 bg-background">
           <DialogTitle className="flex items-center gap-2">
             {gameUrl ? <Gamepad2 className="h-5 w-5 text-primary" /> : <Tv className="h-5 w-5 text-primary" />}
-            {gameUrl ? 'Play & Earn' : 'Watch Ad & Earn'}
+            {gameUrl ? 'Interactive Task' : 'Ad Engagement'}
           </DialogTitle>
           <DialogDescription>
             {gameUrl 
-              ? `Play for at least ${playTimeSeconds} seconds to unlock your reward of ${rewardAmount} OR coins.` 
-              : `Watch for ${playTimeSeconds} seconds to earn ${rewardAmount} OR coins.`}
+              ? `Play for ${playTimeSeconds}s to earn ${rewardAmount} OR coins.` 
+              : `Engagement time: ${playTimeSeconds}s. Reward: ${rewardAmount} OR.`}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 flex flex-col items-center justify-center bg-zinc-900 relative">
+        <div className="flex-1 flex flex-col items-center justify-center bg-zinc-950 relative">
             {hasStarted && gameUrl ? (
               <div className="w-full h-full relative">
                 <iframe 
                   src={gameUrl} 
                   className="absolute inset-0 w-full h-full border-0" 
-                  allowFullScreen
+                  allow="autoplay; fullscreen; keyboard"
                 />
                 
+                {/* Floating Progress Bar */}
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 z-50">
+                   <div 
+                    className="h-full bg-primary transition-all duration-1000" 
+                    style={{ width: `${( (playTimeSeconds - countdown) / playTimeSeconds ) * 100}%` }}
+                   />
+                </div>
+
                 {/* Fixed Overlay for Countdown */}
                 {countdown > 0 && (
                   <div className="absolute top-4 right-4 pointer-events-none z-50">
@@ -219,11 +229,11 @@ export function AdDialog({
               </div>
             ) : (
               <div className="text-center p-12 flex flex-col items-center justify-center gap-6">
-                 <div className="rounded-full bg-primary/10 p-6">
+                 <div className="rounded-full bg-primary/10 p-6 animate-pulse">
                    {gameUrl ? <Gamepad2 className="h-12 w-12 text-primary" /> : <Tv className="h-12 w-12 text-primary" />}
                  </div>
                  <div className="space-y-2">
-                   <h3 className="text-xl font-bold">{status}</h3>
+                   <h3 className="text-xl font-bold text-white">{status}</h3>
                    {countdown > 0 && (
                      <p className="text-6xl font-black font-mono text-primary tracking-tighter">{countdown}s</p>
                    )}
@@ -238,9 +248,9 @@ export function AdDialog({
             size="lg" 
             onClick={handleStart} 
             disabled={isStartButtonDisabled || (hasStarted && countdown > 0)}
-            className="h-14 font-black uppercase tracking-tight text-lg"
+            className="h-14 font-black uppercase tracking-tight text-lg rounded-xl"
           >
-             {hasStarted && countdown > 0 ? 'In Progress...' : (gameUrl ? '🎮 Start Game' : '▶ Start Ad')}
+             {hasStarted && countdown > 0 ? 'Work in progress' : (gameUrl ? '🎮 Start Task' : '▶ Start Ad')}
           </Button>
           {showClaimButton && (
             <Button 
@@ -249,7 +259,7 @@ export function AdDialog({
               variant="default" 
               onClick={handleClaimReward} 
               disabled={isClaiming} 
-              className="h-14 bg-green-600 hover:bg-green-700 text-white border-none shadow-xl font-black uppercase text-lg animate-in zoom-in-95"
+              className="h-14 bg-green-600 hover:bg-green-700 text-white border-none shadow-xl font-black uppercase text-lg animate-in zoom-in-95 rounded-xl"
             >
                 {isClaiming ? 'Claiming...' : '✔ Claim Reward'}
             </Button>
