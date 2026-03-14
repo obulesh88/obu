@@ -1,15 +1,29 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Share2, Users, Gift, ArrowRight } from 'lucide-react';
+import { Copy, Share2, Users, Gift } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { FaWhatsapp, FaTelegramPlane } from 'react-icons/fa';
 
 export default function ReferralPage() {
   const { userProfile, loading } = useUser();
   const { toast } = useToast();
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  const referralCode = userProfile?.referral?.code || '------';
+  const shareText = `Join OR wallet and earn money by completing simple tasks! Use my referral code: ${referralCode}`;
+  const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
   const handleCopyCode = () => {
     if (userProfile?.referral?.code) {
@@ -18,14 +32,16 @@ export default function ReferralPage() {
     }
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Join OR wallet',
-        text: `Earn money by solving tasks! Use my code: ${userProfile?.referral?.code}`,
-        url: window.location.origin,
-      }).catch(() => {});
-    }
+  const shareToWhatsApp = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
+    window.open(url, '_blank');
+    setIsShareDialogOpen(false);
+  };
+
+  const shareToTelegram = () => {
+    const url = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+    window.open(url, '_blank');
+    setIsShareDialogOpen(false);
   };
 
   if (loading) return <Skeleton className="h-[400px] w-full" />;
@@ -49,7 +65,7 @@ export default function ReferralPage() {
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
             <p className="text-xs font-bold uppercase mb-2 opacity-70">Your Referral Code</p>
             <div className="flex items-center justify-between gap-4">
-              <span className="text-4xl font-black tracking-tighter">{userProfile?.referral?.code || '------'}</span>
+              <span className="text-4xl font-black tracking-tighter">{referralCode}</span>
               <Button variant="secondary" size="icon" onClick={handleCopyCode} className="h-12 w-12 rounded-xl">
                 <Copy className="h-5 w-5" />
               </Button>
@@ -57,7 +73,7 @@ export default function ReferralPage() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button variant="secondary" className="w-full h-12 font-bold" onClick={handleShare}>
+          <Button variant="secondary" className="w-full h-12 font-bold" onClick={() => setIsShareDialogOpen(true)}>
             <Share2 className="mr-2 h-5 w-5" /> SHARE NOW
           </Button>
         </CardFooter>
@@ -93,6 +109,35 @@ export default function ReferralPage() {
           ))}
         </CardContent>
       </Card>
+
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-black uppercase">Share Referral</DialogTitle>
+            <DialogDescription className="text-xs font-bold uppercase">
+              Choose a platform to invite your friends
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <Button
+              variant="outline"
+              className="flex flex-col h-24 gap-2 border-green-500/20 hover:bg-green-500/10 hover:text-green-600"
+              onClick={shareToWhatsApp}
+            >
+              <FaWhatsapp className="h-8 w-8 text-green-500" />
+              <span className="font-bold uppercase text-[10px]">WhatsApp</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex flex-col h-24 gap-2 border-blue-400/20 hover:bg-blue-400/10 hover:text-blue-500"
+              onClick={shareToTelegram}
+            >
+              <FaTelegramPlane className="h-8 w-8 text-blue-400" />
+              <span className="font-bold uppercase text-[10px]">Telegram</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
