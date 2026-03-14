@@ -34,7 +34,7 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
   if (division === 'A') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
     token = NEW_AUTH_TOKEN_A;
-    body = { user_id: userId }; // Updated to match user snippet
+    body = { user_id: userId };
   } else if (division === 'B') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
   } else if (division === 'C') {
@@ -55,12 +55,11 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
     );
 
     const data = await response.json();
-    console.log("Ad session tracking response:", data);
+    console.log("Ad session response:", data);
     return { success: true, ...data };
   } catch (err) {
     console.error("Error calling ad function:", err);
-    // Return a dummy success to prevent blocking user progress if the tracker is down
-    return { success: true, message: 'Offline session started' };
+    return { success: false, adUrl: "https://google.com" };
   }
 }
 
@@ -149,23 +148,15 @@ export function AdDialog({
     setStatus('Connecting to session...');
     setIsStartButtonDisabled(true);
 
-    const result = await startAdSession(user.uid, division);
+    const data = await startAdSession(user.uid, division);
     
-    if (result && result.success) {
-        const adUrl = result.adUrl;
-        if (adUrl) {
-          window.open(adUrl, '_blank');
-        }
-        
-        setHasStarted(true);
-        setCountdown(playTimeSeconds);
-        setStatus(gameUrl ? `Playing...` : `Watching ad...`);
-    } else {
-        // Fallback for safety
-        setHasStarted(true);
-        setCountdown(playTimeSeconds);
-        setStatus(gameUrl ? `Playing...` : `Watching ad...`);
+    if (data && data.adUrl) {
+        window.open(data.adUrl, '_blank');
     }
+    
+    setHasStarted(true);
+    setCountdown(playTimeSeconds);
+    setStatus(gameUrl ? `Playing...` : `Watching ad...`);
   };
 
   const handleVerify = () => {

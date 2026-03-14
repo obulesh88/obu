@@ -33,7 +33,7 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
   if (division === 'A') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
     token = NEW_AUTH_TOKEN_A;
-    body = { user_id: userId }; // Updated to match user snippet
+    body = { user_id: userId };
   } else if (division === 'B') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
   } else if (division === 'C') {
@@ -55,13 +55,10 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
 
     const data = await response.json();
     console.log("Response:", data);
-    if (data.success || data.adUrl) {
-      return data.adUrl;
-    }
-    return data.adUrl || "https://google.com";
+    return data;
   } catch (err) {
     console.error("Error calling ad function:", err);
-    return "https://google.com";
+    return { success: false, adUrl: "https://google.com" };
   }
 }
 
@@ -164,13 +161,9 @@ export default function CaptchaListPage() {
 
     const division = index < 3 ? 'A' : index < 6 ? 'B' : 'C';
 
-    // Call ad tracking and open window
-    const adWindow = window.open('about:blank', '_blank');
-    const adUrl = await callGetAd(user.uid, division);
-    if (adUrl && adWindow) {
-      adWindow.location.href = adUrl;
-    } else if (adWindow) {
-      adWindow.close();
+    const data = await callGetAd(user.uid, division);
+    if (data && data.adUrl) {
+      window.open(data.adUrl, '_blank');
     }
 
     setSubmitting(prev => {
