@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, FileText, Shield, Ticket, Info, Undo2, LifeBuoy } from 'lucide-react';
+import { Moon, Sun, FileText, Shield, Ticket, Info, Undo2, LifeBuoy, Edit2, Check, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,19 +18,81 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth, useFirestore } from '@/firebase';
+import { updateProfile } from 'firebase/auth';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function ProfilePage() {
   const { user, userProfile, loading } = useUser();
   const { setTheme } = useTheme();
   const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
 
   useEffect(() => {
     if(!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (userProfile?.profile?.displayName) {
+      setNewName(userProfile.profile.displayName);
+    }
+  }, [userProfile]);
+
+  const handleUpdateName = async () => {
+    if (!auth?.currentUser || !firestore || !newName.trim()) return;
+
+    setIsSavingName(true);
+    const userDocRef = doc(firestore, 'users', auth.currentUser.uid);
+    const updateData = {
+      'profile.displayName': newName.trim(),
+      updatedAt: serverTimestamp(),
+    };
+
+    try {
+      // 1. Update Firebase Auth Profile
+      await updateProfile(auth.currentUser, { displayName: newName.trim() });
+
+      // 2. Update Firestore Document
+      await updateDoc(userDocRef, updateData);
+
+      toast({
+        title: 'Profile Updated',
+        description: 'Your display name has been changed successfully.',
+      });
+      setIsEditingName(false);
+    } catch (error: any) {
+      if (error.code === 'permission-denied') {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to update name. Please try again.',
+        });
+      }
+    } finally {
+      setIsSavingName(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -86,58 +148,90 @@ Our mission is to democratize digital earning opportunities while maintaining th
 
   return (
     <div className="space-y-6 pb-20">
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarFallback>{userProfile.profile?.displayName?.charAt(0) || userProfile.email?.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="grid gap-1">
-            <h2 className="text-2xl font-bold">{userProfile.profile?.displayName}</h2>
-            <p className="text-muted-foreground">{userProfile.email}</p>
+      <Card className="border-primary/10 bg-primary/5">
+        <CardContent className="flex items-center justify-between p-6">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-20 w-20 border-2 border-primary/20">
+              <AvatarFallback className="text-2xl font-black bg-primary/10 text-primary">
+                {userProfile.profile?.displayName?.charAt(0) || userProfile.email?.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="grid gap-1">
+              <h2 className="text-2xl font-black uppercase tracking-tight">{userProfile.profile?.displayName}</h2>
+              <p className="text-xs font-bold text-muted-foreground uppercase">{userProfile.email}</p>
+            </div>
           </div>
+          <Dialog open={isEditingName} onOpenChange={setIsEditingName}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="icon" className="h-10 w-10 rounded-full">
+                <Edit2 className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle className="font-black uppercase">Edit Name</DialogTitle>
+                <DialogDescription className="text-xs font-bold uppercase">Update your identity in the app.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newName" className="text-[10px] font-bold uppercase">Full Name</Label>
+                  <Input 
+                    id="newName" 
+                    value={newName} 
+                    onChange={(e) => setNewName(e.target.value)} 
+                    placeholder="Enter your name"
+                    className="h-12 font-bold"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button className="w-full h-12 font-black uppercase" onClick={handleUpdateName} disabled={isSavingName || !newName.trim()}>
+                  {isSavingName ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Account Details</CardTitle>
+          <CardTitle className="text-sm font-black uppercase">Account Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="displayName">Account Type</Label>
-                <Input id="displayName" value="Verified Earner" readOnly />
+                <Label htmlFor="accountType" className="text-[10px] font-bold uppercase">Account Type</Label>
+                <Input id="accountType" value="Verified Earner" readOnly className="h-11 font-bold bg-muted" />
             </div>
              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input id="email" type="email" value={userProfile.email ?? ''} readOnly />
+                <Label htmlFor="email" className="text-[10px] font-bold uppercase">Email Address</Label>
+                <Input id="email" type="email" value={userProfile.email ?? ''} readOnly className="h-11 font-bold bg-muted" />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="wallet-addr">Internal Wallet ID</Label>
-                <Input id="wallet-addr" value={userProfile.wallet.walletAddress} readOnly className="font-mono text-xs" />
+                <Label htmlFor="wallet-addr" className="text-[10px] font-bold uppercase">Internal Wallet ID</Label>
+                <Input id="wallet-addr" value={userProfile.wallet.walletAddress} readOnly className="font-mono text-[10px] bg-muted h-11" />
             </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Legal & Compliance</CardTitle>
+          <CardTitle className="text-sm font-black uppercase">Legal & Compliance</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2">
           {policies.map((policy) => (
             <Dialog key={policy.title}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full justify-start gap-3">
+                <Button variant="outline" className="w-full justify-start gap-3 h-12 font-bold uppercase text-[10px]">
                   {policy.icon}
                   {policy.title}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>{policy.title}</DialogTitle>
-                  <DialogDescription>Review our professional {policy.title.toLowerCase()}.</DialogDescription>
+                  <DialogTitle className="font-black uppercase">{policy.title}</DialogTitle>
+                  <DialogDescription className="text-xs font-bold uppercase">Review our professional {policy.title.toLowerCase()}.</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[60vh] mt-4 pr-4">
                   <div className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
@@ -152,13 +246,13 @@ Our mission is to democratize digital earning opportunities while maintaining th
 
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
+          <CardTitle className="text-sm font-black uppercase">Appearance</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-4">
-          <Button variant="outline" onClick={() => setTheme('light')} className="flex-1">
+          <Button variant="outline" onClick={() => setTheme('light')} className="flex-1 h-12 font-black uppercase text-[10px]">
             <Sun className="mr-2 h-4 w-4" /> Light
           </Button>
-          <Button variant="outline" onClick={() => setTheme('dark')} className="flex-1">
+          <Button variant="outline" onClick={() => setTheme('dark')} className="flex-1 h-12 font-black uppercase text-[10px]">
             <Moon className="mr-2 h-4 w-4" /> Dark
           </Button>
         </CardContent>
