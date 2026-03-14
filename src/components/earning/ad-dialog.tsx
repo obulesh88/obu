@@ -23,12 +23,23 @@ import { cn } from '@/lib/utils';
 const DEFAULT_REWARD = 5;
 const DEFAULT_WATCH_DELAY = 15;
 
-const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
+const OLD_AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
+const NEW_AUTH_TOKEN_A = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
 
 async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
   let endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
-  if (division === 'B') endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
-  if (division === 'C') endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-3";
+  let token = OLD_AUTH_TOKEN;
+  let body: any = { userId };
+
+  if (division === 'A') {
+    endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
+    token = NEW_AUTH_TOKEN_A;
+    body = { action: "start", userId }; // Including userId for app tracking context
+  } else if (division === 'B') {
+    endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
+  } else if (division === 'C') {
+    endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-3";
+  }
 
   try {
     const response = await fetch(
@@ -37,9 +48,9 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${AUTH_TOKEN}`
+          "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(8000)
       }
     );
