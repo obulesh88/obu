@@ -11,15 +11,15 @@ const GAMES = [
     id: 'g_pool', 
     name: 'Mini Pool 3D', 
     reward: 30, 
-    time: '60s', 
+    time: 60, 
     difficulty: 'Medium', 
     division: 'C',
     gameUrl: 'https://html5.gamemonetize.co/ehi2vjrem0ya35imcjiofupvjerb5mhr/'
   },
-  { id: 'g1', name: 'Memory Match', reward: 10, time: '30s', difficulty: 'Easy', division: 'A' },
-  { id: 'g2', name: 'Speed Clicker', reward: 15, time: '20s', difficulty: 'Medium', division: 'B' },
-  { id: 'g3', name: 'Pattern Quest', reward: 25, time: '45s', difficulty: 'Hard', division: 'C' },
-  { id: 'g4', name: 'Color Swap', reward: 12, time: '25s', difficulty: 'Easy', division: 'A' },
+  { id: 'g1', name: 'Memory Match', reward: 10, time: 30, difficulty: 'Easy', division: 'A' },
+  { id: 'g2', name: 'Speed Clicker', reward: 15, time: 20, difficulty: 'Medium', division: 'B' },
+  { id: 'g3', name: 'Pattern Quest', reward: 25, time: 45, difficulty: 'Hard', division: 'C' },
+  { id: 'g4', name: 'Color Swap', reward: 12, time: 25, difficulty: 'Easy', division: 'A' },
 ];
 
 export default function GamesPage() {
@@ -66,7 +66,7 @@ export default function GamesPage() {
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                   <Timer className="h-3 w-3" />
-                  {game.time}
+                  {game.time}s
                 </div>
                 <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                   <Trophy className="h-3 w-3" />
@@ -88,6 +88,7 @@ export default function GamesPage() {
           division={selectedGame.division as 'A' | 'B' | 'C'}
           rewardAmount={selectedGame.reward}
           gameUrl={selectedGame.gameUrl}
+          playTimeSeconds={selectedGame.time}
         />
       )}
     </div>

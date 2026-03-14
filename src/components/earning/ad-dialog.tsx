@@ -15,10 +15,11 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import { Gamepad2, Tv } from 'lucide-react';
+import { Gamepad2, Tv, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const DEFAULT_REWARD = 5;
-const WATCH_DELAY = 15; // 15 seconds
+const DEFAULT_WATCH_DELAY = 15;
 
 const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 
@@ -59,9 +60,18 @@ interface AdDialogProps {
   division: 'A' | 'B' | 'C';
   rewardAmount?: number;
   gameUrl?: string;
+  playTimeSeconds?: number;
 }
 
-export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmount = DEFAULT_REWARD, gameUrl }: AdDialogProps) {
+export function AdDialog({ 
+  open, 
+  onOpenChange, 
+  onComplete, 
+  division, 
+  rewardAmount = DEFAULT_REWARD, 
+  gameUrl,
+  playTimeSeconds = DEFAULT_WATCH_DELAY 
+}: AdDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -94,7 +104,7 @@ export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmoun
       }, 1000);
     } else if (hasStarted && countdown === 0) {
       setShowClaimButton(true);
-      setStatus("Mission accomplished! You can now claim your reward.");
+      setStatus(gameUrl ? "Time's up! You can now claim your reward." : "Mission accomplished! You can now claim your reward.");
     }
     
     return () => clearInterval(timer);
@@ -107,7 +117,7 @@ export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmoun
         return;
     }
 
-    // Always open the ad window for tracking if it's a standard ad division
+    // Always open the ad window for tracking
     const adWindow = window.open('about:blank', '_blank');
     setStatus('Connecting...');
     setIsStartButtonDisabled(true);
@@ -119,7 +129,7 @@ export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmoun
         if (adWindow) adWindow.location.href = adUrl;
         
         setHasStarted(true);
-        setCountdown(WATCH_DELAY);
+        setCountdown(playTimeSeconds);
         setStatus(gameUrl ? `Playing...` : `Watching ad...`);
     } else {
         if (adWindow) adWindow.close();
@@ -172,49 +182,75 @@ export function AdDialog({ open, onOpenChange, onComplete, division, rewardAmoun
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader className="p-6 pb-0">
+      <DialogContent className={cn(
+        "flex flex-col p-0 overflow-hidden transition-all duration-300",
+        gameUrl ? "sm:max-w-4xl h-[90vh]" : "sm:max-w-2xl max-h-[80vh]"
+      )} onInteractOutside={(e) => e.preventDefault()}>
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
-            {gameUrl ? <Gamepad2 className="h-5 w-5" /> : <Tv className="h-5 w-5" />}
+            {gameUrl ? <Gamepad2 className="h-5 w-5 text-primary" /> : <Tv className="h-5 w-5 text-primary" />}
             {gameUrl ? 'Play & Earn' : 'Watch Ad & Earn'}
           </DialogTitle>
           <DialogDescription>
-            {gameUrl ? 'Play the game for at least 15 seconds to unlock your reward.' : `Watch an ad for ${WATCH_DELAY} seconds to earn rewards.`}
+            {gameUrl 
+              ? `Play for at least ${playTimeSeconds} seconds to unlock your reward of ${rewardAmount} OR coins.` 
+              : `Watch for ${playTimeSeconds} seconds to earn ${rewardAmount} OR coins.`}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] bg-muted relative">
+        <div className="flex-1 flex flex-col items-center justify-center bg-zinc-900 relative">
             {hasStarted && gameUrl ? (
-              <iframe 
-                src={gameUrl} 
-                className="absolute inset-0 w-full h-full border-0" 
-                allowFullScreen
-              />
-            ) : (
-              <div className="text-center p-6 flex flex-col items-center justify-center gap-4">
-                 <span className={countdown > 0 ? "text-primary animate-pulse font-bold" : "font-medium"}>{status}</span>
-                 {countdown > 0 && (
-                   <span className="text-5xl font-black font-mono text-primary drop-shadow-sm">{countdown}s</span>
-                 )}
+              <div className="w-full h-full relative">
+                <iframe 
+                  src={gameUrl} 
+                  className="absolute inset-0 w-full h-full border-0" 
+                  allowFullScreen
+                />
+                
+                {/* Fixed Overlay for Countdown */}
+                {countdown > 0 && (
+                  <div className="absolute top-4 right-4 pointer-events-none z-50">
+                    <div className="bg-black/90 text-white px-4 py-2 rounded-xl font-black text-xl border border-white/20 shadow-2xl backdrop-blur-md flex items-center gap-2">
+                      <Timer className="h-5 w-5 text-primary animate-pulse" />
+                      {countdown}s
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            
-            {/* Overlay timer when playing game */}
-            {hasStarted && gameUrl && countdown > 0 && (
-              <div className="absolute bottom-4 left-4 right-4 flex justify-center pointer-events-none">
-                 <div className="bg-black/80 text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-sm border border-white/10">
-                    Reward Unlocks in: {countdown}s
+            ) : (
+              <div className="text-center p-12 flex flex-col items-center justify-center gap-6">
+                 <div className="rounded-full bg-primary/10 p-6">
+                   {gameUrl ? <Gamepad2 className="h-12 w-12 text-primary" /> : <Tv className="h-12 w-12 text-primary" />}
+                 </div>
+                 <div className="space-y-2">
+                   <h3 className="text-xl font-bold">{status}</h3>
+                   {countdown > 0 && (
+                     <p className="text-6xl font-black font-mono text-primary tracking-tighter">{countdown}s</p>
+                   )}
                  </div>
               </div>
             )}
         </div>
 
-        <DialogFooter className='p-6 grid grid-cols-1 gap-4 sm:grid-cols-2 bg-background border-t'>
-          <Button type="button" size="lg" onClick={handleStart} disabled={isStartButtonDisabled || (hasStarted && countdown > 0)}>
-             {hasStarted && countdown > 0 ? 'In Progress...' : (gameUrl ? '🎮 Play Game' : '▶ Watch Ad')}
+        <DialogFooter className="p-6 grid grid-cols-1 gap-4 sm:grid-cols-2 bg-background border-t">
+          <Button 
+            type="button" 
+            size="lg" 
+            onClick={handleStart} 
+            disabled={isStartButtonDisabled || (hasStarted && countdown > 0)}
+            className="h-14 font-black uppercase tracking-tight text-lg"
+          >
+             {hasStarted && countdown > 0 ? 'In Progress...' : (gameUrl ? '🎮 Start Game' : '▶ Start Ad')}
           </Button>
           {showClaimButton && (
-            <Button type="button" size="lg" variant="default" onClick={handleClaimReward} disabled={isClaiming} className="bg-green-600 hover:bg-green-700 text-white border-none shadow-lg">
+            <Button 
+              type="button" 
+              size="lg" 
+              variant="default" 
+              onClick={handleClaimReward} 
+              disabled={isClaiming} 
+              className="h-14 bg-green-600 hover:bg-green-700 text-white border-none shadow-xl font-black uppercase text-lg animate-in zoom-in-95"
+            >
                 {isClaiming ? 'Claiming...' : '✔ Claim Reward'}
             </Button>
           )}
