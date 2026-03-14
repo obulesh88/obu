@@ -52,7 +52,7 @@ export function useUser() {
             return;
           }
 
-          // Generate Unique Wallet Address
+          // Generate Unique Wallet Address (42-char hex string)
           const generateWalletAddress = () => {
             const chars = '0123456789abcdef';
             let addr = '0x';
@@ -62,7 +62,7 @@ export function useUser() {
             return addr;
           };
 
-          // Generate Referral Code
+          // Generate Unique Referral Code (6-char alphanumeric)
           const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
           const newProfile: UserProfile = {
@@ -111,10 +111,10 @@ export function useUser() {
             },
           };
 
-          // 1. Create the new user profile first
+          // 1. Create the new user profile
           await setDoc(currentUserRef, newProfile);
 
-          // 2. Immediately handle Referral Logic
+          // 2. Immediately handle Referral Logic if a code exists in localStorage
           const pendingReferralCode = localStorage.getItem('or_wallet_referral_code');
           if (pendingReferralCode && !referralProcessed.current) {
             referralProcessed.current = true;
@@ -127,19 +127,20 @@ export function useUser() {
               const referrerDoc = querySnapshot.docs[0];
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
               
-              // Update referrer directly with increment
+              // Update referrer directly and instantly with increment
               await updateDoc(referrerRef, {
                 'referral.count': increment(1),
                 'referral.earnings': increment(100),
                 'wallet.orBalance': increment(100),
                 'updatedAt': serverTimestamp()
               });
+              console.log(`Referral credited to ${referrerDoc.id} via code ${pendingReferralCode}`);
             }
             localStorage.removeItem('or_wallet_referral_code');
           }
 
         } catch (error) {
-          console.error("Error during direct user/referral initialization:", error);
+          console.error("Critical error during user/referral initialization:", error);
         } finally {
           setIsInitializing(false);
         }
