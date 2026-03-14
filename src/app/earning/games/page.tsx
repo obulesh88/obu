@@ -8,6 +8,15 @@ import { AdDialog } from '@/components/earning/ad-dialog';
 
 const GAMES = [
   { 
+    id: 'g_block_blast', 
+    name: 'Block Blast Puzzle', 
+    reward: 20, 
+    time: 300, // 5 minutes
+    difficulty: 'Easy', 
+    division: 'A',
+    gameUrl: 'https://html5.gamemonetize.co/' 
+  },
+  { 
     id: 'g_neon', 
     name: 'Neon Velocity', 
     reward: 20, 
