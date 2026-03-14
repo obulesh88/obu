@@ -25,6 +25,7 @@ const CAPTCHA_DAY_KEY = 'or_wallet_captchas_last_day';
 const OLD_AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 const NEW_AUTH_TOKEN_A = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
 const DIV_A_AD_URL = "https://omg10.com/4/10481723";
+const DIV_B_AD_URL = "https://rm358.com/4/10481073?var=";
 
 async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
   let endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
@@ -39,6 +40,7 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
     redirectUrl = DIV_A_AD_URL;
   } else if (division === 'B') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
+    redirectUrl = `${DIV_B_AD_URL}${userId}`;
   } else if (division === 'C') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-3";
   }
@@ -58,10 +60,10 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
 
     const data = await response.json();
     console.log("Response:", data);
-    return { success: true, adUrl: division === 'A' ? redirectUrl : (data.adUrl || redirectUrl) };
+    return { success: true, adUrl: (division === 'A' || division === 'B') ? redirectUrl : (data.adUrl || redirectUrl) };
   } catch (err) {
     console.error("Error calling ad function:", err);
-    return { success: false, adUrl: division === 'A' ? redirectUrl : redirectUrl };
+    return { success: false, adUrl: (division === 'A' || division === 'B') ? redirectUrl : redirectUrl };
   }
 }
 
@@ -243,7 +245,6 @@ export default function CaptchaListPage() {
 
         if (currentCountdown <= 0) {
             clearInterval(timer);
-            // Check if it was interrupted while the timer was running
             setSubmitting(prev => {
                 if (prev[index]) {
                   setReadyToClaim(rPrev => {
@@ -378,7 +379,6 @@ export default function CaptchaListPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-10">
-                {/* Division A */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <h3 className="text-lg font-bold text-primary">Division A</h3>
@@ -389,7 +389,6 @@ export default function CaptchaListPage() {
                   </div>
                 </div>
 
-                {/* Division B */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <h3 className="text-lg font-bold text-primary">Division B</h3>
@@ -400,7 +399,6 @@ export default function CaptchaListPage() {
                   </div>
                 </div>
 
-                {/* Division C */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <h3 className="text-lg font-bold text-primary">Division C</h3>

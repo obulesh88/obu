@@ -26,6 +26,7 @@ const DEFAULT_WATCH_DELAY = 15;
 const OLD_AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
 const NEW_AUTH_TOKEN_A = "cfa5ae94457b84ebfa62afb7b495ee588477ce82425d69be0040fb833a0f81be";
 const DIV_A_AD_URL = "https://omg10.com/4/10481723";
+const DIV_B_AD_URL = "https://rm358.com/4/10481073?var=";
 
 async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
   let endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ad";
@@ -40,6 +41,7 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
     redirectUrl = DIV_A_AD_URL;
   } else if (division === 'B') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-2";
+    redirectUrl = `${DIV_B_AD_URL}${userId}`;
   } else if (division === 'C') {
     endpoint = "https://wupwbynzlgdlgwbdqluw.supabase.co/functions/v1/start-ads-3";
   }
@@ -59,10 +61,10 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
 
     const data = await response.json();
     console.log("Ad session response:", data);
-    return { success: true, adUrl: division === 'A' ? redirectUrl : (data.adUrl || redirectUrl) };
+    return { success: true, adUrl: (division === 'A' || division === 'B') ? redirectUrl : (data.adUrl || redirectUrl) };
   } catch (err) {
     console.error("Error calling ad function:", err);
-    return { success: false, adUrl: division === 'A' ? redirectUrl : "https://google.com" };
+    return { success: false, adUrl: (division === 'A' || division === 'B') ? redirectUrl : "https://google.com" };
   }
 }
 
@@ -101,7 +103,6 @@ export function AdDialog({
   const [countdown, setCountdown] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
   
-  // Verification states
   const [needsVerification, setNeedsVerification] = useState(false);
   const [captchaText, setCaptchaText] = useState('');
   const [userInput, setUserInput] = useState('');
@@ -119,7 +120,6 @@ export function AdDialog({
     setIsVerified(false);
   }, []);
 
-  // Anti-cheat: Listen for user returning to the app early
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && hasStarted && countdownRef.current > 0) {
