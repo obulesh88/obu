@@ -4,7 +4,6 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { ThemeProvider } from '@/components/theme-provider';
 import { LayoutProvider, useLayout } from '@/context/layout-context';
@@ -16,7 +15,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
         <div className="flex h-full w-full flex-col overflow-hidden">
-          <Header />
+          {/* Sticky header removed as requested in visual feedback */}
           <SidebarInset className="flex-1 overflow-y-auto scrollbar-hide">
             <main className={cn(
               "flex flex-1 flex-col",

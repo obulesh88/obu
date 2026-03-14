@@ -10,6 +10,8 @@ import { useUser } from '@/hooks/use-user';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Logo } from '@/components/icons';
 
 
 export default function WalletHomePage() {
@@ -44,10 +46,14 @@ export default function WalletHomePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-3xl font-bold">
-        <span className="text-primary">OR</span>
-        <span className="text-foreground"> wallet</span>
-      </h1>
+      <div className="flex items-center justify-between py-2">
+        <SidebarTrigger />
+        <div className="flex items-center gap-2">
+          <Logo className="h-6 w-6" />
+          <span className="font-headline text-lg font-black uppercase tracking-tighter">OR wallet</span>
+        </div>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
