@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { RefreshCw, CheckCircle2, Timer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { cn } from '@/lib/utils';
@@ -87,15 +87,10 @@ export default function CaptchaListPage() {
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_CAPTCHAS).fill(false));
   const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
   const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
-  const [interrupted, setInterrupted] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [allCaptchasCompleted, setAllCaptchasCompleted] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // Use refs for tracking timing precisely in listeners
-  const startTimesRef = useRef<(number | null)[]>(Array(NUM_CAPTCHAS).fill(null));
   const endTimesRef = useRef<(number | null)[]>(Array(NUM_CAPTCHAS).fill(null));
-  const submittingRef = useRef<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
-  const readyToClaimRef = useRef<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
 
   useEffect(() => {
     setIsClient(true);
@@ -130,78 +125,10 @@ export default function CaptchaListPage() {
   }, []);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'visible') return;
-      
-      const now = Date.now();
-      
-      endTimesRef.current.forEach((endTime, index) => {
-        if (endTime && submittingRef.current[index] && !readyToClaimRef.current[index]) {
-          
-          // GRACE PERIOD: Ignore initial tab-switching events (2.5s)
-          const startTime = startTimesRef.current[index];
-          if (startTime && (now - startTime < 2500)) return;
-
-          // Check if returned before timer finished (with 1s safety buffer)
-          if (now < (endTime - 1000)) {
-            setInterrupted(prev => {
-              const newState = [...prev];
-              newState[index] = true;
-              return newState;
-            });
-            submittingRef.current[index] = false;
-            setSubmitting(prev => {
-              const newState = [...prev];
-              newState[index] = false;
-              return newState;
-            });
-            setCountdown(prev => {
-              const newState = [...prev];
-              newState[index] = 0;
-              return newState;
-            });
-            endTimesRef.current[index] = null;
-            startTimesRef.current[index] = null;
-            
-            toast({
-              variant: 'destructive',
-              title: 'Early Return Detected',
-              description: 'You returned before the task finished. No reward given.',
-            });
-          } else if (now >= (endTime - 500)) {
-            // Success! 
-            submittingRef.current[index] = false;
-            setSubmitting(prev => {
-              const newState = [...prev];
-              newState[index] = false;
-              return newState;
-            });
-            readyToClaimRef.current[index] = true;
-            setReadyToClaim(prev => {
-              const newState = [...prev];
-              newState[index] = true;
-              return newState;
-            });
-            endTimesRef.current[index] = null;
-            setCountdown(prev => {
-              const newState = [...prev];
-              newState[index] = 0;
-              return newState;
-            });
-          }
-        }
-      });
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [toast]);
-
-  useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
       endTimesRef.current.forEach((endTime, index) => {
-        if (endTime && submittingRef.current[index]) {
+        if (endTime) {
           const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
           
           setCountdown(prev => {
@@ -210,14 +137,12 @@ export default function CaptchaListPage() {
             return newState;
           });
 
-          if (remaining === 0 && document.visibilityState === 'visible') {
-            submittingRef.current[index] = false;
+          if (remaining === 0) {
             setSubmitting(prev => {
               const newState = [...prev];
               newState[index] = false;
               return newState;
             });
-            readyToClaimRef.current[index] = true;
             setReadyToClaim(prev => {
               const newState = [...prev];
               newState[index] = true;
@@ -249,11 +174,6 @@ export default function CaptchaListPage() {
         const newUserInputs = [...prev];
         newUserInputs[index] = '';
         return newUserInputs;
-    });
-    setInterrupted(prev => {
-      const newState = [...prev];
-      newState[index] = false;
-      return newState;
     });
   };
   
@@ -290,17 +210,8 @@ export default function CaptchaListPage() {
     const now = Date.now();
     const targetEndTime = now + (SUBMIT_DELAY * 1000);
     
-    // Set refs immediately
-    startTimesRef.current[index] = now;
     endTimesRef.current[index] = targetEndTime;
-    submittingRef.current[index] = true;
-    readyToClaimRef.current[index] = false;
 
-    setInterrupted(prev => {
-      const newState = [...prev];
-      newState[index] = false;
-      return newState;
-    });
     setSubmitting(prev => {
       const newState = [...prev];
       newState[index] = true;
@@ -352,7 +263,6 @@ export default function CaptchaListPage() {
         localStorage.setItem(CAPTCHA_STORAGE_KEY, JSON.stringify(newState));
         return newState;
     });
-    readyToClaimRef.current[index] = false;
     setReadyToClaim(prev => {
         const newState = [...prev];
         newState[index] = false;
@@ -362,7 +272,6 @@ export default function CaptchaListPage() {
   
   const getButtonContent = (index: number) => {
       if(completed[index]) return 'Completed';
-      if(interrupted[index]) return 'Retry Task';
       if(readyToClaim[index]) return `Claim ${REWARD_PER_CAPTCHA} OR`;
       if(submitting[index]) return `Wait ${countdown[index]}s`;
       return 'Submit';
@@ -400,15 +309,10 @@ export default function CaptchaListPage() {
         <Button 
             onClick={readyToClaim[index] ? () => handleClaim(index) : () => handleStart(index)}
             disabled={submitting[index] || completed[index] || (!userInputs[index] && !readyToClaim[index])} 
-            className={cn("w-full font-bold uppercase", interrupted[index] && "bg-destructive hover:bg-destructive/90")}
+            className={cn("w-full font-bold uppercase")}
         >
           {getButtonContent(index)}
         </Button>
-        {interrupted[index] && (
-          <p className="text-[10px] text-destructive font-black uppercase text-center flex items-center justify-center gap-1">
-            <AlertTriangle className="h-2 w-2" /> Returned early
-          </p>
-        )}
       </div>
     </div>
   );
@@ -417,8 +321,11 @@ export default function CaptchaListPage() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Solve the Captchas</CardTitle>
-          <CardDescription>Enter text, click submit, and stay on the ad page for {SUBMIT_DELAY}s to claim your reward.</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Timer className="h-5 w-5 text-primary" />
+            Captcha Rewards
+          </CardTitle>
+          <CardDescription>Enter text, click submit, and wait {SUBMIT_DELAY}s to claim. You can stay here or watch the ad.</CardDescription>
         </CardHeader>
         <CardContent>
             {!isClient ? (

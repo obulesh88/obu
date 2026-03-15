@@ -17,7 +17,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_REWARD = 5;
@@ -103,10 +103,7 @@ export function AdDialog({
   const [captchaText, setCaptchaText] = useState('');
   const [userInput, setUserInput] = useState('');
   const [isVerified, setIsVerified] = useState(false);
-  const [wasInterrupted, setWasInterrupted] = useState(false);
 
-  // Use refs for listener-critical data to avoid stale closures and timing issues
-  const startTimeRef = useRef<number | null>(null);
   const endTimeRef = useRef<number | null>(null);
   const hasStartedRef = useRef(false);
   const needsVerificationRef = useRef(false);
@@ -127,45 +124,6 @@ export function AdDialog({
   }, [resetVerification]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'visible') return;
-      
-      const now = Date.now();
-      
-      // Only care if the task is actively running and hasn't already reached verification
-      if (hasStartedRef.current && !needsVerificationRef.current && endTimeRef.current) {
-        
-        // GRACE PERIOD: Ignore visibility changes in the first 2.5 seconds to account for tab switch lag
-        if (startTimeRef.current && (now - startTimeRef.current < 2500)) {
-          return;
-        }
-
-        // Check if returned before timer finished (with 1s safety buffer)
-        if (now < (endTimeRef.current - 1000)) {
-          setWasInterrupted(true);
-          hasStartedRef.current = false;
-          setHasStarted(false);
-          endTimeRef.current = null;
-          startTimeRef.current = null;
-          setCountdown(0);
-          setStatus("Interrupted! You returned too early. Please try again.");
-          toast({
-            variant: 'destructive',
-            title: 'Task Interrupted',
-            description: 'You must stay on the ad/task page for the full duration.',
-          });
-        } else if (now >= (endTimeRef.current - 500)) {
-          // If they waited enough time, proceed to verification
-          triggerVerification();
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [toast, triggerVerification]);
-
-  useEffect(() => {
     if (open) {
       setStatus(gameUrl ? 'Ready to play?' : 'Ready to watch?');
       setShowClaimButton(false);
@@ -175,9 +133,7 @@ export function AdDialog({
       setHasStarted(false);
       setNeedsVerification(false);
       setIsVerified(false);
-      setWasInterrupted(false);
       
-      startTimeRef.current = null;
       endTimeRef.current = null;
       hasStartedRef.current = false;
       needsVerificationRef.current = false;
@@ -194,10 +150,7 @@ export function AdDialog({
         
         if (remaining === 0) {
           clearInterval(timer);
-          // If the user is on the tab when it finishes, trigger verification immediately
-          if (document.visibilityState === 'visible') {
-            triggerVerification();
-          }
+          triggerVerification();
         }
       }, 1000);
     }
@@ -211,7 +164,6 @@ export function AdDialog({
     }
     setStatus('Connecting to session...');
     setIsStartButtonDisabled(true);
-    setWasInterrupted(false);
     
     const data = await startAdSession(user.uid, division);
     
@@ -231,15 +183,13 @@ export function AdDialog({
     const now = Date.now();
     const targetEndTime = now + (playTimeSeconds * 1000);
     
-    // Set refs immediately to ensure they are available to listeners
-    startTimeRef.current = now;
     endTimeRef.current = targetEndTime;
     hasStartedRef.current = true;
     needsVerificationRef.current = false;
     
     setCountdown(playTimeSeconds);
     setHasStarted(true);
-    setStatus(gameUrl ? `Playing...` : `Watching ad...`);
+    setStatus(gameUrl ? `Playing...` : `Task in progress...`);
   };
 
   const handleVerify = () => {
@@ -301,7 +251,7 @@ export function AdDialog({
 
   return (
     <Dialog open={open} onOpenChange={(val) => {
-      if (!hasStarted || showClaimButton || wasInterrupted) {
+      if (!hasStarted || showClaimButton) {
         onOpenChange(val);
       }
     }}>
@@ -344,7 +294,7 @@ export function AdDialog({
                 )}
               </div>
             ) : needsVerification ? (
-              <div className="w-full max-w-md p-8 bg-card rounded-2xl border shadow-2xl space-y-6 animate-in zoom-in-95 text-foreground">
+              <div className="w-full max-w-md p-8 bg-card rounded-2xl border shadow-2xl space-y-6 animate-in zoom-in-95 text-foreground mx-4">
                 <div className="text-center space-y-2">
                   <ShieldCheck className="h-12 w-12 text-primary mx-auto mb-2" />
                   <h3 className="text-xl font-black uppercase">Verify Human</h3>
@@ -366,17 +316,6 @@ export function AdDialog({
                   <Button onClick={handleVerify} disabled={!userInput} className="w-full h-14 font-black uppercase text-lg">Verify & Proceed</Button>
                 </div>
               </div>
-            ) : wasInterrupted ? (
-              <div className="text-center p-8 space-y-6 animate-in fade-in zoom-in">
-                <div className="bg-destructive/10 p-6 rounded-full inline-block border border-destructive/20">
-                  <AlertCircle className="h-16 w-16 text-destructive" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-black uppercase text-white">Reward Denied</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">You returned to the app before the timer finished. You must stay on the ad page to earn rewards.</p>
-                </div>
-                <Button onClick={handleStart} variant="destructive" className="h-12 px-8 font-black uppercase">Try Again</Button>
-              </div>
             ) : (
               <div className="text-center p-12 flex flex-col items-center justify-center gap-8">
                  <div className="rounded-full bg-primary/10 p-10 animate-pulse border-4 border-primary/5">
@@ -384,14 +323,17 @@ export function AdDialog({
                  </div>
                  <div className="space-y-4">
                    <h3 className="text-3xl font-black text-white uppercase tracking-tighter">{status}</h3>
-                   {countdown > 0 && !gameUrl && (
+                   {countdown > 0 && (
                      <p className="text-8xl font-black font-mono text-primary tracking-tighter">{countdown}s</p>
+                   )}
+                   {hasStarted && countdown > 0 && (
+                     <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest animate-pulse">Stay on the task or return here to wait</p>
                    )}
                  </div>
               </div>
             )}
         </div>
-        <DialogFooter className={cn("p-4 flex flex-col sm:flex-row gap-4 bg-background border-t", (isGameActive || needsVerification || wasInterrupted) && "hidden")}>
+        <DialogFooter className={cn("p-4 flex flex-col sm:flex-row gap-4 bg-background border-t", (isGameActive || needsVerification) && "hidden")}>
           {!hasStarted && (
              <Button type="button" size="lg" onClick={handleStart} className="flex-1 h-14 font-black uppercase tracking-tight text-xl rounded-xl shadow-xl active:scale-95 transition-all bg-primary hover:bg-primary/90">
                 {gameUrl ? 'Play Now' : 'Watch Ad'}
