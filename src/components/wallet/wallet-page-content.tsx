@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -40,7 +41,7 @@ export default function WalletPageContent() {
   
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   const [isSavingBank, setIsSavingBank] = useState(false);
-  const [payoutType, setPayoutType] = useState<'bank' | 'upi' | 'giftcard'>('upi');
+  const [payoutType, setPayoutType] = useState<'bank' | 'upi'>('upi');
   
   const [bankData, setBankData] = useState({
     name: '',
@@ -49,7 +50,6 @@ export default function WalletPageContent() {
     accountNumber: '',
     ifsc: '',
     vpa: '',
-    giftCardEmail: '',
   });
 
   useEffect(() => {
@@ -61,9 +61,8 @@ export default function WalletPageContent() {
         accountNumber: userProfile.bankDetails.accountNumber || '',
         ifsc: userProfile.bankDetails.ifsc || '',
         vpa: userProfile.bankDetails.vpa || '',
-        giftCardEmail: userProfile.bankDetails.giftCardEmail || userProfile.email || '',
       });
-      if (userProfile.bankDetails.payoutType) {
+      if (userProfile.bankDetails.payoutType && (userProfile.bankDetails.payoutType === 'bank' || userProfile.bankDetails.payoutType === 'upi')) {
         setPayoutType(userProfile.bankDetails.payoutType as any);
       }
     }
@@ -137,7 +136,13 @@ export default function WalletPageContent() {
       userId: user.uid,
       amount: amount,
       status: 'pending',
-      payoutDetails: { ...bankData, payoutType: payoutType },
+      payoutDetails: { 
+        name: bankData.name,
+        accountNumber: bankData.accountNumber,
+        ifsc: bankData.ifsc,
+        vpa: bankData.vpa,
+        payoutType: payoutType 
+      },
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -332,9 +337,8 @@ export default function WalletPageContent() {
               <DialogTitle className="uppercase font-black">Payout Details</DialogTitle>
             </DialogHeader>
             <Tabs value={payoutType} onValueChange={(v: any) => setPayoutType(v)} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="upi" className="text-[10px] uppercase font-bold">UPI</TabsTrigger>
-                <TabsTrigger value="giftcard" className="text-[10px] uppercase font-bold">Gift</TabsTrigger>
                 <TabsTrigger value="bank" className="text-[10px] uppercase font-bold">Bank</TabsTrigger>
               </TabsList>
               <div className="py-4 space-y-4">
@@ -348,16 +352,16 @@ export default function WalletPageContent() {
                       <Input value={bankData.vpa} onChange={(e) => setBankData({...bankData, vpa: e.target.value})} placeholder="example@upi" />
                     </div>
                   )}
-                  {payoutType === 'giftcard' && (
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold">Email</Label>
-                      <Input type="email" value={bankData.giftCardEmail} onChange={(e) => setBankData({...bankData, giftCardEmail: e.target.value})} placeholder="Email for delivery" />
-                    </div>
-                  )}
                   {payoutType === 'bank' && (
                     <>
-                      <Input value={bankData.accountNumber} onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})} placeholder="Account Number" />
-                      <Input value={bankData.ifsc} onChange={(e) => setBankData({...bankData, ifsc: e.target.value})} placeholder="IFSC" className="uppercase" />
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold">Account Number</Label>
+                        <Input value={bankData.accountNumber} onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})} placeholder="Account Number" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold">IFSC Code</Label>
+                        <Input value={bankData.ifsc} onChange={(e) => setBankData({...bankData, ifsc: e.target.value})} placeholder="IFSC" className="uppercase" />
+                      </div>
                     </>
                   )}
               </div>

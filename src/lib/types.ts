@@ -19,8 +19,7 @@ export type UserProfile = {
     accountNumber: string;
     ifsc: string;
     vpa?: string;
-    payoutType?: 'bank' | 'upi' | 'giftcard';
-    giftCardEmail?: string;
+    payoutType?: 'bank' | 'upi';
   };
   createdAt: any;
   updatedAt: any;
@@ -67,8 +66,7 @@ export type WithdrawalRequest = {
     accountNumber?: string;
     ifsc?: string;
     vpa?: string;
-    payoutType: 'bank' | 'upi' | 'giftcard';
-    giftCardEmail?: string;
+    payoutType: 'bank' | 'upi';
   };
   createdAt: any;
   updatedAt: any;

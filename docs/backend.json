@@ -45,8 +45,7 @@
             "accountNumber": { "type": "string" },
             "ifsc": { "type": "string" },
             "vpa": { "type": "string" },
-            "payoutType": { "type": "string", "enum": ["bank", "upi", "giftcard"] },
-            "giftCardEmail": { "type": "string" }
+            "payoutType": { "type": "string", "enum": ["bank", "upi"] }
           }
         },
         "captcha": {
@@ -88,8 +87,7 @@
         "payoutDetails": { 
           "type": "object",
           "properties": {
-            "payoutType": { "type": "string", "enum": ["bank", "upi", "giftcard"] },
-            "giftCardEmail": { "type": "string" },
+            "payoutType": { "type": "string", "enum": ["bank", "upi"] },
             "vpa": { "type": "string" },
             "accountNumber": { "type": "string" },
             "ifsc": { "type": "string" },
