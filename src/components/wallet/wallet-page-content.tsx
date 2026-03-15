@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -116,6 +115,27 @@ export default function WalletPageContent() {
 
   const handleWithdraw = async () => {
     if (!user || !userProfile || !firestore) return;
+
+    // Validation for Payout Details (Invalid Credentials Check)
+    if (payoutType === 'upi' && (!bankData.vpa || bankData.vpa.trim() === '')) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Credentials',
+        description: 'Please provide your UPI ID in Payout Info before withdrawing.',
+      });
+      setIsBankDialogOpen(true);
+      return;
+    }
+
+    if (payoutType === 'bank' && (!bankData.accountNumber || !bankData.ifsc || bankData.accountNumber.trim() === '')) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Credentials',
+        description: 'Please provide Bank Account details in Payout Info before withdrawing.',
+      });
+      setIsBankDialogOpen(true);
+      return;
+    }
 
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
