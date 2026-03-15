@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,7 +9,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 
 export default function HistoryPage() {
   const { user, loading: userLoading } = useUser();
@@ -23,16 +22,36 @@ export default function HistoryPage() {
     }
   }, [user, userLoading, router]);
 
+  /**
+   * We remove the orderBy server-side to avoid "missing index" errors in a prototype.
+   * We will sort the data client-side in the useMemo hook below.
+   */
   const transactionsQuery = useMemo(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'transactions'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', user.uid)
     );
   }, [firestore, user]);
 
-  const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
+  const { data: rawTransactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
+
+  /**
+   * Sort transactions by date descending (newest first)
+   */
+  const transactions = useMemo(() => {
+    if (!rawTransactions) return [];
+    return [...rawTransactions].sort((a, b) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime();
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime();
+      
+      // If date is null (pending server timestamp), treat as newest
+      if (isNaN(dateA)) return -1;
+      if (isNaN(dateB)) return 1;
+      
+      return dateB - dateA;
+    });
+  }, [rawTransactions]);
 
   const isLoading = userLoading || transactionsLoading;
 
@@ -44,13 +63,13 @@ export default function HistoryPage() {
   };
 
   const formatTxDate = (tx: Transaction) => {
-    if (!tx.createdAt) return 'Pending...';
+    if (!tx.createdAt) return 'Syncing...';
     try {
       // Handles both Firestore Timestamp and Date objects
       const date = tx.createdAt?.toDate ? tx.createdAt.toDate() : new Date(tx.createdAt);
       return format(date, 'PP p');
     } catch (e) {
-      return 'Invalid date';
+      return 'Recent';
     }
   };
 
@@ -114,8 +133,8 @@ export default function HistoryPage() {
             </div>
           ) : (
             <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed flex flex-col items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                 <CardTitle className="opacity-20">?</CardTitle>
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                 ?
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-black uppercase tracking-tighter">No History Yet</p>

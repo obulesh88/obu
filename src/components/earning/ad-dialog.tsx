@@ -17,7 +17,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_REWARD = 5;
@@ -105,8 +105,6 @@ export function AdDialog({
   const [isVerified, setIsVerified] = useState(false);
 
   const endTimeRef = useRef<number | null>(null);
-  const hasStartedRef = useRef(false);
-  const needsVerificationRef = useRef(false);
 
   const resetVerification = useCallback(() => {
     setCaptchaText(generateCaptcha());
@@ -115,10 +113,8 @@ export function AdDialog({
   }, []);
 
   const triggerVerification = useCallback(() => {
-    needsVerificationRef.current = true;
     setNeedsVerification(true);
     resetVerification();
-    hasStartedRef.current = false;
     setHasStarted(false);
     setStatus("Mission accomplished! Complete verification to claim.");
   }, [resetVerification]);
@@ -133,10 +129,7 @@ export function AdDialog({
       setHasStarted(false);
       setNeedsVerification(false);
       setIsVerified(false);
-      
       endTimeRef.current = null;
-      hasStartedRef.current = false;
-      needsVerificationRef.current = false;
     }
   }, [open, gameUrl]);
 
@@ -167,13 +160,12 @@ export function AdDialog({
     
     const data = await startAdSession(user.uid, division);
     
-    // Attempt to open the ad window
     const adWindow = window.open(data.adUrl, '_blank');
     if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
       toast({
         variant: 'destructive',
         title: 'Pop-up Blocked',
-        description: 'Please allow pop-ups to watch ads and earn rewards.',
+        description: 'Please allow pop-ups to continue.',
       });
       setIsStartButtonDisabled(false);
       setStatus('Pop-up blocked. Click to retry.');
@@ -181,11 +173,7 @@ export function AdDialog({
     }
 
     const now = Date.now();
-    const targetEndTime = now + (playTimeSeconds * 1000);
-    
-    endTimeRef.current = targetEndTime;
-    hasStartedRef.current = true;
-    needsVerificationRef.current = false;
+    endTimeRef.current = now + (playTimeSeconds * 1000);
     
     setCountdown(playTimeSeconds);
     setHasStarted(true);
@@ -196,7 +184,6 @@ export function AdDialog({
     if (userInput.toUpperCase() === captchaText) {
       setIsVerified(true);
       setNeedsVerification(false);
-      needsVerificationRef.current = false;
       setShowClaimButton(true);
       toast({ title: 'Verified!', description: 'You can now claim your reward.' });
     } else {
@@ -213,29 +200,40 @@ export function AdDialog({
         'wallet.orBalance': increment(rewardAmount),
         'updatedAt': serverTimestamp()
     };
+
     updateDoc(userDocRef, updateData)
         .then(() => {
-            const transactionsRef = collection(firestore, 'transactions');
-            addDoc(transactionsRef, {
+            const txData = {
                 userId: user.uid,
                 amount: rewardAmount,
                 currency: 'OR',
                 type: gameUrl ? 'game' : 'ad',
                 description: gameUrl ? `Played Game: ${gameId}` : `Watched Ad: ${gameId}`,
                 createdAt: serverTimestamp()
-            });
+            };
+            const transactionsRef = collection(firestore, 'transactions');
+            addDoc(transactionsRef, txData)
+              .catch(async (error: any) => {
+                if (error.code === 'permission-denied') {
+                  errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: transactionsRef.path,
+                    operation: 'create',
+                    requestResourceData: txData,
+                  } satisfies SecurityRuleContext));
+                }
+              });
+
             toast({ title: 'Reward Claimed!', description: `Added ${rewardAmount} OR to your wallet.` });
             onComplete();
             onOpenChange(false);
         })
         .catch(async (error: any) => {
             if (error.code === 'permission-denied') {
-              const permissionError = new FirestorePermissionError({
+              errorEmitter.emit('permission-error', new FirestorePermissionError({
                   path: userDocRef.path,
                   operation: 'update',
                   requestResourceData: updateData,
-              } satisfies SecurityRuleContext);
-              errorEmitter.emit('permission-error', permissionError);
+              } satisfies SecurityRuleContext));
             }
         })
         .finally(() => setIsClaiming(false));
@@ -325,9 +323,6 @@ export function AdDialog({
                    <h3 className="text-3xl font-black text-white uppercase tracking-tighter">{status}</h3>
                    {countdown > 0 && (
                      <p className="text-8xl font-black font-mono text-primary tracking-tighter">{countdown}s</p>
-                   )}
-                   {hasStarted && countdown > 0 && (
-                     <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest animate-pulse">Stay on the task or return here to wait</p>
                    )}
                  </div>
               </div>
