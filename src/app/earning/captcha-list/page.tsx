@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -87,15 +86,21 @@ export default function CaptchaListPage() {
   const [submitting, setSubmitting] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_CAPTCHAS).fill(false));
   const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
+  const [endTimes, setEndTimes] = useState<(number | null)[]>(Array(NUM_CAPTCHAS).fill(null));
   const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [interrupted, setInterrupted] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [allCaptchasCompleted, setAllCaptchasCompleted] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  const countdownsRef = useRef(countdown);
+  const endTimesRef = useRef(endTimes);
   useEffect(() => {
-    countdownsRef.current = countdown;
-  }, [countdown]);
+    endTimesRef.current = endTimes;
+  }, [endTimes]);
+
+  const readyToClaimRef = useRef(readyToClaim);
+  useEffect(() => {
+    readyToClaimRef.current = readyToClaim;
+  }, [readyToClaim]);
 
   useEffect(() => {
     setIsClient(true);
@@ -132,7 +137,11 @@ export default function CaptchaListPage() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        const activeIndices = countdownsRef.current.map((c, i) => c > 0 ? i : -1).filter(idx => idx !== -1);
+        const now = Date.now();
+        const activeIndices = endTimesRef.current.map((endTime, i) => 
+          (endTime && now < endTime && !readyToClaimRef.current[i]) ? i : -1
+        ).filter(idx => idx !== -1);
+
         if (activeIndices.length > 0) {
           activeIndices.forEach(index => {
             setInterrupted(prev => {
@@ -150,6 +159,11 @@ export default function CaptchaListPage() {
               newState[index] = 0;
               return newState;
             });
+            setEndTimes(prev => {
+              const newState = [...prev];
+              newState[index] = null;
+              return newState;
+            });
           });
           toast({
             variant: 'destructive',
@@ -163,6 +177,44 @@ export default function CaptchaListPage() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [toast]);
+
+  useEffect(() => {
+    const timers = endTimes.map((endTime, index) => {
+      if (endTime && submitting[index]) {
+        return setInterval(() => {
+          const now = Date.now();
+          const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
+          
+          setCountdown(prev => {
+            const newState = [...prev];
+            newState[index] = remaining;
+            return newState;
+          });
+
+          if (remaining === 0) {
+            setSubmitting(prev => {
+              const newState = [...prev];
+              newState[index] = false;
+              return newState;
+            });
+            setReadyToClaim(prev => {
+              const newState = [...prev];
+              newState[index] = true;
+              return newState;
+            });
+            setEndTimes(prev => {
+              const newState = [...prev];
+              newState[index] = null;
+              return newState;
+            });
+          }
+        }, 1000);
+      }
+      return null;
+    });
+
+    return () => timers.forEach(t => t && clearInterval(t));
+  }, [endTimes, submitting]);
 
   useEffect(() => {
     if (captchas.length > 0 && completed.every(c => c)) {
@@ -210,6 +262,9 @@ export default function CaptchaListPage() {
     if (data && data.adUrl) {
       window.open(data.adUrl, '_blank');
     }
+
+    const targetEndTime = Date.now() + (SUBMIT_DELAY * 1000);
+    
     setInterrupted(prev => {
       const newState = [...prev];
       newState[index] = false;
@@ -220,35 +275,16 @@ export default function CaptchaListPage() {
       newState[index] = true;
       return newState;
     });
+    setEndTimes(prev => {
+      const newState = [...prev];
+      newState[index] = targetEndTime;
+      return newState;
+    });
     setCountdown(prev => {
       const newState = [...prev];
       newState[index] = SUBMIT_DELAY;
       return newState;
     });
-    let currentCountdown = SUBMIT_DELAY;
-    const timer = setInterval(() => {
-        currentCountdown -= 1;
-        setCountdown(prev => {
-            const newState = [...prev];
-            newState[index] = Math.max(0, currentCountdown);
-            return newState;
-        });
-        if (currentCountdown <= 0) {
-            clearInterval(timer);
-            setSubmitting(prev => {
-                if (prev[index]) {
-                  setReadyToClaim(rPrev => {
-                      const rState = [...rPrev];
-                      rState[index] = true;
-                      return rState;
-                  });
-                }
-                const newState = [...prev];
-                newState[index] = false;
-                return newState;
-            });
-        }
-    }, 1000);
   };
 
   const handleClaim = (index: number) => {
@@ -263,7 +299,6 @@ export default function CaptchaListPage() {
           'updatedAt': serverTimestamp()
       };
 
-      // 1. Update Profile
       updateDoc(userDocRef, updateData)
         .catch(async (error: any) => {
             if (error.code === 'permission-denied') {
@@ -276,7 +311,6 @@ export default function CaptchaListPage() {
             }
         });
 
-      // 2. Log Transaction
       const transactionsRef = collection(firestore, 'transactions');
       addDoc(transactionsRef, {
         userId: user.uid,

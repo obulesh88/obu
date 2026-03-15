@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -99,6 +98,7 @@ export function AdDialog({
   const [showClaimButton, setShowClaimButton] = useState(false);
   const [isStartButtonDisabled, setIsStartButtonDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [endTime, setEndTime] = useState<number | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [captchaText, setCaptchaText] = useState('');
@@ -106,10 +106,10 @@ export function AdDialog({
   const [isVerified, setIsVerified] = useState(false);
   const [wasInterrupted, setWasInterrupted] = useState(false);
 
-  const countdownRef = useRef(countdown);
+  const endTimeRef = useRef<number | null>(null);
   useEffect(() => {
-    countdownRef.current = countdown;
-  }, [countdown]);
+    endTimeRef.current = endTime;
+  }, [endTime]);
 
   const resetVerification = useCallback(() => {
     setCaptchaText(generateCaptcha());
@@ -119,9 +119,11 @@ export function AdDialog({
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && hasStarted && countdownRef.current > 0) {
+      const now = Date.now();
+      if (document.visibilityState === 'visible' && hasStarted && !needsVerification && endTimeRef.current && now < endTimeRef.current) {
         setWasInterrupted(true);
         setHasStarted(false);
+        setEndTime(null);
         setCountdown(0);
         setStatus("Interrupted! You returned too early. Please try again.");
         toast({
@@ -133,7 +135,7 @@ export function AdDialog({
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [hasStarted, toast]);
+  }, [hasStarted, needsVerification, toast]);
 
   useEffect(() => {
     if (open) {
@@ -142,6 +144,7 @@ export function AdDialog({
       setIsClaiming(false);
       setIsStartButtonDisabled(false);
       setCountdown(0);
+      setEndTime(null);
       setHasStarted(false);
       setNeedsVerification(false);
       setIsVerified(false);
@@ -151,17 +154,22 @@ export function AdDialog({
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (hasStarted && countdown > 0) {
+    if (hasStarted && endTime) {
       timer = setInterval(() => {
-        setCountdown((prev) => Math.max(0, prev - 1));
+        const now = Date.now();
+        const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
+        setCountdown(remaining);
+        
+        if (remaining === 0) {
+          clearInterval(timer);
+          setNeedsVerification(true);
+          resetVerification();
+          setStatus("Mission accomplished! Complete verification to claim.");
+        }
       }, 1000);
-    } else if (hasStarted && countdown === 0) {
-      setNeedsVerification(true);
-      resetVerification();
-      setStatus("Mission accomplished! Complete verification to claim.");
     }
     return () => clearInterval(timer);
-  }, [countdown, hasStarted, resetVerification]);
+  }, [endTime, hasStarted, resetVerification]);
 
   const handleStart = async () => {
     if (!user) {
@@ -175,8 +183,11 @@ export function AdDialog({
     if (data && data.adUrl) {
         window.open(data.adUrl, '_blank');
     }
-    setHasStarted(true);
+    
+    const targetEndTime = Date.now() + (playTimeSeconds * 1000);
+    setEndTime(targetEndTime);
     setCountdown(playTimeSeconds);
+    setHasStarted(true);
     setStatus(gameUrl ? `Playing...` : `Watching ad...`);
   };
 
