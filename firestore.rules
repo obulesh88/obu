@@ -22,5 +22,12 @@ service cloud.firestore {
       allow read: if true;
       allow update: if true;
     }
+
+    match /transactions/{transactionId} {
+      allow create: if true;
+      allow read: if true;
+      allow update: if false;
+      allow delete: if false;
+    }
   }
 }
