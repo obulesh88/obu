@@ -133,10 +133,11 @@ export function useUser() {
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
               
               // Update referrer directly and instantly with increment
+              // Updated referral earnings to 1500 OR coins as requested
               await updateDoc(referrerRef, {
                 'referral.count': increment(1),
-                'referral.earnings': increment(100),
-                'wallet.orBalance': increment(100),
+                'referral.earnings': increment(1500),
+                'wallet.orBalance': increment(1500),
                 'updatedAt': serverTimestamp()
               });
               console.log(`Referral credited to ${referrerDoc.id} via code ${pendingReferralCode}`);
