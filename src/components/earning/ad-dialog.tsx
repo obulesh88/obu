@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -14,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck, AlertCircle } from 'lucide-react';
@@ -49,23 +50,17 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
   }
 
   try {
-    const response = await fetch(
-      endpoint,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      }
-    );
-
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
     const data = await response.json();
-    console.log("Ad session response:", data);
     return { success: true, adUrl: redirectUrl };
   } catch (err) {
-    console.error("Error calling ad function:", err);
     return { success: false, adUrl: redirectUrl };
   }
 }
@@ -90,6 +85,7 @@ export function AdDialog({
   onOpenChange, 
   onComplete, 
   division, 
+  gameId,
   rewardAmount = DEFAULT_REWARD, 
   gameUrl,
   playTimeSeconds = DEFAULT_WATCH_DELAY 
@@ -104,7 +100,6 @@ export function AdDialog({
   const [isStartButtonDisabled, setIsStartButtonDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
-  
   const [needsVerification, setNeedsVerification] = useState(false);
   const [captchaText, setCaptchaText] = useState('');
   const [userInput, setUserInput] = useState('');
@@ -132,11 +127,10 @@ export function AdDialog({
         toast({
           variant: 'destructive',
           title: 'Task Interrupted',
-          description: 'You returned to the app too early. You must stay on the ad/task page for the full duration.',
+          description: 'You must stay on the ad/task page for the full duration.',
         });
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [hasStarted, toast]);
@@ -157,7 +151,6 @@ export function AdDialog({
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    
     if (hasStarted && countdown > 0) {
       timer = setInterval(() => {
         setCountdown((prev) => Math.max(0, prev - 1));
@@ -167,7 +160,6 @@ export function AdDialog({
       resetVerification();
       setStatus("Mission accomplished! Complete verification to claim.");
     }
-    
     return () => clearInterval(timer);
   }, [countdown, hasStarted, resetVerification]);
 
@@ -176,17 +168,13 @@ export function AdDialog({
         toast({ variant: 'destructive', title: 'Not Authenticated' });
         return;
     }
-
     setStatus('Connecting to session...');
     setIsStartButtonDisabled(true);
     setWasInterrupted(false);
-
     const data = await startAdSession(user.uid, division);
-    
     if (data && data.adUrl) {
         window.open(data.adUrl, '_blank');
     }
-    
     setHasStarted(true);
     setCountdown(playTimeSeconds);
     setStatus(gameUrl ? `Playing...` : `Watching ad...`);
@@ -199,34 +187,35 @@ export function AdDialog({
       setShowClaimButton(true);
       toast({ title: 'Verified!', description: 'You can now claim your reward.' });
     } else {
-      toast({ variant: 'destructive', title: 'Incorrect Captcha', description: 'Please try again.' });
+      toast({ variant: 'destructive', title: 'Incorrect Captcha' });
       resetVerification();
     }
   };
 
   const handleClaimReward = () => {
     if (!user || !firestore || !isVerified) return;
-    
     setIsClaiming(true);
     const userDocRef = doc(firestore, 'users', user.uid);
-    
     const updateData = {
         'wallet.orBalance': increment(rewardAmount),
         'updatedAt': serverTimestamp()
     };
-
     updateDoc(userDocRef, updateData)
         .then(() => {
-            toast({
-                title: 'Reward Claimed!',
-                description: `Successfully added ${rewardAmount} OR to your wallet.`,
+            const transactionsRef = collection(firestore, 'transactions');
+            addDoc(transactionsRef, {
+                userId: user.uid,
+                amount: rewardAmount,
+                currency: 'OR',
+                type: gameUrl ? 'game' : 'ad',
+                description: gameUrl ? `Played Game: ${gameId}` : `Watched Ad: ${gameId}`,
+                createdAt: serverTimestamp()
             });
+            toast({ title: 'Reward Claimed!', description: `Added ${rewardAmount} OR to your wallet.` });
             onComplete();
             onOpenChange(false);
-            setIsClaiming(false);
         })
         .catch(async (error: any) => {
-            setIsClaiming(false);
             if (error.code === 'permission-denied') {
               const permissionError = new FirestorePermissionError({
                   path: userDocRef.path,
@@ -235,7 +224,8 @@ export function AdDialog({
               } satisfies SecurityRuleContext);
               errorEmitter.emit('permission-error', permissionError);
             }
-        });
+        })
+        .finally(() => setIsClaiming(false));
   };
 
   const formatTime = (seconds: number) => {
@@ -261,7 +251,6 @@ export function AdDialog({
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        
         {!isGameActive && (
           <DialogHeader className="p-4 pb-2 bg-background border-b">
             <DialogTitle className="flex items-center gap-2 text-lg font-black uppercase">
@@ -275,23 +264,13 @@ export function AdDialog({
             </DialogDescription>
           </DialogHeader>
         )}
-        
         <div className="flex-1 flex flex-col items-center justify-center bg-zinc-950 relative overflow-hidden">
             {isGameActive ? (
               <div className="w-full h-full relative">
-                <iframe 
-                  src={gameUrl} 
-                  className="absolute inset-0 w-full h-full border-0" 
-                  allow="autoplay; fullscreen; keyboard"
-                />
-                
+                <iframe src={gameUrl} className="absolute inset-0 w-full h-full border-0" allow="autoplay; fullscreen; keyboard" />
                 <div className="absolute top-0 left-0 w-full h-2 bg-white/5 z-[60]">
-                   <div 
-                    className="h-full bg-primary transition-all duration-1000 shadow-[0_0_15px_rgba(255,0,0,0.5)]" 
-                    style={{ width: `${( (playTimeSeconds - countdown) / playTimeSeconds ) * 100}%` }}
-                   />
+                   <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${((playTimeSeconds - countdown) / playTimeSeconds) * 100}%` }} />
                 </div>
-
                 {countdown > 0 && (
                   <div className="absolute top-6 right-6 pointer-events-none z-[60]">
                     <div className="bg-black/90 text-white px-6 py-3 rounded-2xl font-black text-3xl border border-white/10 shadow-2xl backdrop-blur-2xl flex items-center gap-4 animate-in fade-in zoom-in">
@@ -302,13 +281,12 @@ export function AdDialog({
                 )}
               </div>
             ) : needsVerification ? (
-              <div className="w-full max-w-md p-8 bg-card rounded-2xl border shadow-2xl space-y-6 animate-in zoom-in-95">
+              <div className="w-full max-w-md p-8 bg-card rounded-2xl border shadow-2xl space-y-6 animate-in zoom-in-95 text-foreground">
                 <div className="text-center space-y-2">
                   <ShieldCheck className="h-12 w-12 text-primary mx-auto mb-2" />
                   <h3 className="text-xl font-black uppercase">Verify Human</h3>
                   <p className="text-xs text-muted-foreground font-bold uppercase">Solve this captcha to claim your {rewardAmount} OR</p>
                 </div>
-                
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-muted rounded-lg p-4 text-center font-mono text-3xl font-black tracking-widest select-none">
@@ -318,21 +296,11 @@ export function AdDialog({
                       <RefreshCw className="h-6 w-6" />
                     </Button>
                   </div>
-                  
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase">Enter Characters</Label>
-                    <Input 
-                      value={userInput} 
-                      onChange={(e) => setUserInput(e.target.value.toUpperCase())}
-                      placeholder="TYPE HERE..."
-                      className="h-14 text-center font-mono text-xl tracking-widest uppercase font-bold"
-                      autoComplete="off"
-                    />
+                    <Input value={userInput} onChange={(e) => setUserInput(e.target.value.toUpperCase())} placeholder="TYPE HERE..." className="h-14 text-center font-mono text-xl tracking-widest uppercase font-bold" autoComplete="off" />
                   </div>
-                  
-                  <Button onClick={handleVerify} disabled={!userInput} className="w-full h-14 font-black uppercase text-lg">
-                    Verify & Proceed
-                  </Button>
+                  <Button onClick={handleVerify} disabled={!userInput} className="w-full h-14 font-black uppercase text-lg">Verify & Proceed</Button>
                 </div>
               </div>
             ) : wasInterrupted ? (
@@ -342,11 +310,9 @@ export function AdDialog({
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-2xl font-black uppercase text-white">Reward Denied</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">You returned to the app before the 15-second timer finished. You must stay on the ad page to earn rewards.</p>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">You returned to the app before the timer finished. You must stay on the ad page to earn rewards.</p>
                 </div>
-                <Button onClick={handleStart} variant="destructive" className="h-12 px-8 font-black uppercase">
-                  Try Again
-                </Button>
+                <Button onClick={handleStart} variant="destructive" className="h-12 px-8 font-black uppercase">Try Again</Button>
               </div>
             ) : (
               <div className="text-center p-12 flex flex-col items-center justify-center gap-8">
@@ -362,31 +328,14 @@ export function AdDialog({
               </div>
             )}
         </div>
-
-        <DialogFooter className={cn(
-          "p-4 flex flex-col sm:flex-row gap-4 bg-background border-t",
-          (isGameActive || needsVerification || wasInterrupted) && "hidden"
-        )}>
+        <DialogFooter className={cn("p-4 flex flex-col sm:flex-row gap-4 bg-background border-t", (isGameActive || needsVerification || wasInterrupted) && "hidden")}>
           {!hasStarted && (
-             <Button 
-                type="button" 
-                size="lg" 
-                onClick={handleStart} 
-                className="flex-1 h-14 font-black uppercase tracking-tight text-xl rounded-xl shadow-xl active:scale-95 transition-all bg-primary hover:bg-primary/90"
-              >
+             <Button type="button" size="lg" onClick={handleStart} className="flex-1 h-14 font-black uppercase tracking-tight text-xl rounded-xl shadow-xl active:scale-95 transition-all bg-primary hover:bg-primary/90">
                 {gameUrl ? 'Play Now' : 'Watch Ad'}
              </Button>
           )}
-          
           {showClaimButton && isVerified && (
-            <Button 
-              type="button" 
-              size="lg" 
-              variant="default" 
-              onClick={handleClaimReward} 
-              disabled={isClaiming} 
-              className="flex-1 h-14 bg-green-600 hover:bg-green-700 text-white border-none shadow-2xl font-black uppercase text-xl animate-in zoom-in-95 slide-in-from-bottom-4 rounded-xl"
-            >
+            <Button type="button" size="lg" variant="default" onClick={handleClaimReward} disabled={isClaiming} className="flex-1 h-14 bg-green-600 hover:bg-green-700 text-white border-none shadow-2xl font-black uppercase text-xl animate-in zoom-in-95 rounded-xl">
                 {isClaiming ? 'Claiming...' : 'Claim Reward'}
             </Button>
           )}

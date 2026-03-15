@@ -46,14 +46,16 @@ export type UserProfile = {
   };
 };
 
-export type EarningTransaction = {
-  id: string;
+export type TransactionType = 'ad' | 'captcha' | 'game' | 'referral' | 'conversion' | 'withdrawal';
+
+export type Transaction = {
+  id?: string;
   userId: string;
   amount: number;
-  type: 'ad' | 'captcha' | 'game' | 'referral';
+  currency: 'OR' | 'INR';
+  type: TransactionType;
   description: string;
-  createdAt: Date;
-  playTimeInSeconds?: number;
+  createdAt: any;
 };
 
 export type WithdrawalRequest = {

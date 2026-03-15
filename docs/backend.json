@@ -98,6 +98,20 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "amount", "status", "payoutDetails", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A record of any balance change (OR or INR).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string", "enum": ["OR", "INR"] },
+        "type": { "type": "string", "enum": ["ad", "captcha", "game", "referral", "conversion", "withdrawal"] },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "currency", "type", "createdAt"]
     }
   },
   "auth": {
@@ -111,6 +125,10 @@
     "/payout_requests/{requestId}": {
       "schema": { "$ref": "#/entities/WithdrawalRequest" },
       "description": "Manual payout requests for admin processing."
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Log of all user transactions."
     }
   }
 }

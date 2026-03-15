@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -11,7 +12,7 @@ import { useUser } from '@/hooks/use-user';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, increment, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Separator } from '@/components/ui/separator';
@@ -61,10 +62,8 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
     );
 
     const data = await response.json();
-    console.log("Response:", data);
     return { success: true, adUrl: redirectUrl };
   } catch (err) {
-    console.error("Error calling ad function:", err);
     return { success: false, adUrl: redirectUrl };
   }
 }
@@ -115,9 +114,7 @@ export default function CaptchaListPage() {
             if(Array.isArray(parsed) && parsed.length === NUM_CAPTCHAS) {
                 initialCompleted = parsed;
             }
-          } catch(e) {
-              console.error("Failed to parse completed captchas from storage", e);
-          }
+          } catch(e) {}
       }
     }
     setCompleted(initialCompleted);
@@ -132,7 +129,6 @@ export default function CaptchaListPage() {
     setCaptchas(newCaptchas);
   }, []);
 
-  // Anti-cheat visibility listener
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -158,7 +154,7 @@ export default function CaptchaListPage() {
           toast({
             variant: 'destructive',
             title: 'Early Return Detected',
-            description: 'You returned to the app before the 15-second task finished. No reward will be given. Please try again.',
+            description: 'You returned to the app before the 15-second task finished. No reward given.',
           });
         }
       }
@@ -176,13 +172,11 @@ export default function CaptchaListPage() {
 
   const refreshCaptcha = (index: number) => {
     if (submitting[index] || completed[index] || readyToClaim[index]) return;
-    
     setCaptchas(prev => {
         const newCaptchas = [...prev];
         newCaptchas[index] = { ...newCaptchas[index], text: generateCaptcha() };
         return newCaptchas;
     });
-
     setUserInputs(prev => {
         const newUserInputs = [...prev];
         newUserInputs[index] = '';
@@ -206,20 +200,16 @@ export default function CaptchaListPage() {
       toast({ variant: 'destructive', title: 'Not Authenticated' });
       return;
     }
-
     if (userInputs[index].toUpperCase() !== captchas[index].text) {
       toast({ variant: 'destructive', title: 'Incorrect Captcha' });
       refreshCaptcha(index);
       return;
     }
-
     const division = index < 3 ? 'A' : index < 6 ? 'B' : 'C';
-
     const data = await callGetAd(user.uid, division);
     if (data && data.adUrl) {
       window.open(data.adUrl, '_blank');
     }
-
     setInterrupted(prev => {
       const newState = [...prev];
       newState[index] = false;
@@ -235,7 +225,6 @@ export default function CaptchaListPage() {
       newState[index] = SUBMIT_DELAY;
       return newState;
     });
-    
     let currentCountdown = SUBMIT_DELAY;
     const timer = setInterval(() => {
         currentCountdown -= 1;
@@ -244,7 +233,6 @@ export default function CaptchaListPage() {
             newState[index] = Math.max(0, currentCountdown);
             return newState;
         });
-
         if (currentCountdown <= 0) {
             clearInterval(timer);
             setSubmitting(prev => {
@@ -275,6 +263,7 @@ export default function CaptchaListPage() {
           'updatedAt': serverTimestamp()
       };
 
+      // 1. Update Profile
       updateDoc(userDocRef, updateData)
         .catch(async (error: any) => {
             if (error.code === 'permission-denied') {
@@ -287,10 +276,18 @@ export default function CaptchaListPage() {
             }
         });
 
-    toast({
-        title: 'Success!',
-        description: `You earned ${REWARD_PER_CAPTCHA} OR coins.`,
-    });
+      // 2. Log Transaction
+      const transactionsRef = collection(firestore, 'transactions');
+      addDoc(transactionsRef, {
+        userId: user.uid,
+        amount: REWARD_PER_CAPTCHA,
+        currency: 'OR',
+        type: 'captcha',
+        description: `Solved Captcha #${index + 1}`,
+        createdAt: serverTimestamp()
+      });
+
+    toast({ title: 'Success!', description: `You earned ${REWARD_PER_CAPTCHA} OR coins.` });
 
     setCompleted(prev => {
         const newState = [...prev];
@@ -326,7 +323,6 @@ export default function CaptchaListPage() {
               </div>
               <Button variant="ghost" size="icon" onClick={() => refreshCaptcha(index)} disabled={submitting[index] || completed[index] || readyToClaim[index]}>
                   <RefreshCw className="h-5 w-5" />
-                  <span className="sr-only">Refresh</span>
               </Button>
           </div>
       </div>
@@ -390,7 +386,6 @@ export default function CaptchaListPage() {
                     {[0, 1, 2].map(index => renderCaptchaItem(index))}
                   </div>
                 </div>
-
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <h3 className="text-lg font-bold text-primary">Division B</h3>
@@ -400,7 +395,6 @@ export default function CaptchaListPage() {
                     {[3, 4, 5].map(index => renderCaptchaItem(index))}
                   </div>
                 </div>
-
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <h3 className="text-lg font-bold text-primary">Division C</h3>
