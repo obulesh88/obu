@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, FileText, Shield, Ticket, Info, Undo2, LifeBuoy, Edit2, Check, RefreshCw } from 'lucide-react';
+import { Moon, Sun, FileText, Shield, Ticket, Info, Undo2, LifeBuoy, Edit2, Check, RefreshCw, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth, useFirestore } from '@/firebase';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, signOut } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -91,6 +91,17 @@ export default function ProfilePage() {
       }
     } finally {
       setIsSavingName(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      toast({ title: 'Logged out', description: 'See you again soon!' });
+      router.push('/login');
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to sign out.' });
     }
   };
 
@@ -257,6 +268,17 @@ Our mission is to democratize digital earning opportunities while maintaining th
           </Button>
         </CardContent>
       </Card>
+
+      <div className="pt-4">
+        <Button 
+          variant="destructive" 
+          className="w-full h-12 font-black uppercase flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-5 w-5" />
+          Log Out Account
+        </Button>
+      </div>
     </div>
   );
 }
