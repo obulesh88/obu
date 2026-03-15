@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, RefreshCw, ArrowRightLeft, Building2, Send, Landmark, Sparkles, ReceiptText, ShieldCheck, Clock } from 'lucide-react';
+import { DollarSign, RefreshCw, ArrowRightLeft, Building2, Send, Landmark, Sparkles, ReceiptText, ShieldCheck, Clock, Construction } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
@@ -85,7 +85,7 @@ export default function WalletPageContent() {
             path: userDocRef.path,
             operation: 'update',
             requestResourceData: updateData,
-          }));
+          } satisfies SecurityRuleContext));
         }
       })
       .finally(() => setIsSavingBank(false));
@@ -122,11 +122,20 @@ export default function WalletPageContent() {
     const requestsRef = collection(firestore, 'payout_requests');
     const transactionsRef = collection(firestore, 'transactions');
     
+    // Clean data for payoutDetails to match schema
+    const payoutDetails = {
+      payoutType,
+      name: bankData.name,
+      vpa: payoutType === 'upi' ? bankData.vpa : '',
+      accountNumber: payoutType === 'bank' ? bankData.accountNumber : '',
+      ifsc: payoutType === 'bank' ? bankData.ifsc : ''
+    };
+
     const requestData = {
       userId: user.uid,
       amount: amount,
       status: 'pending',
-      payoutDetails: { ...bankData, payoutType },
+      payoutDetails: payoutDetails,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -149,7 +158,7 @@ export default function WalletPageContent() {
                 path: transactionsRef.path,
                 operation: 'create',
                 requestResourceData: txData,
-              }));
+              } satisfies SecurityRuleContext));
             }
           });
 
@@ -169,7 +178,7 @@ export default function WalletPageContent() {
                 path: userDocRef.path,
                 operation: 'update',
                 requestResourceData: updateData,
-              }));
+              } satisfies SecurityRuleContext));
             }
           });
     })
@@ -179,7 +188,7 @@ export default function WalletPageContent() {
           path: requestsRef.path,
           operation: 'create',
           requestResourceData: requestData,
-        }));
+        } satisfies SecurityRuleContext));
       }
     })
     .finally(() => setIsWithdrawing(false));
@@ -219,7 +228,7 @@ export default function WalletPageContent() {
                 path: transactionsRef.path,
                 operation: 'create',
                 requestResourceData: txData,
-              }));
+              } satisfies SecurityRuleContext));
             }
           });
           
@@ -232,7 +241,7 @@ export default function WalletPageContent() {
           path: userDocRef.path,
           operation: 'update',
           requestResourceData: updateData,
-        }));
+        } satisfies SecurityRuleContext));
       }
     })
     .finally(() => setIsConverting(false));
@@ -314,50 +323,19 @@ export default function WalletPageContent() {
       )}
 
       {activeTab === 'deposit' && (
-        <Card className="border-primary/10 overflow-hidden">
-          <CardHeader>
-            <CardTitle className="text-lg font-black uppercase">Manual Deposit</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase">Add funds to your wallet</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-primary text-primary-foreground p-3 rounded-lg text-center font-black uppercase tracking-tighter text-sm flex items-center justify-center gap-2 shadow-lg animate-pulse">
-              <Sparkles className="h-4 w-4" /> Save small amount for small needs <Sparkles className="h-4 w-4" />
+        <Card className="border-primary/10 overflow-hidden min-h-[300px] flex flex-col items-center justify-center">
+          <CardContent className="p-12 text-center space-y-6 flex flex-col items-center">
+            <div className="rounded-full bg-primary/10 p-6 animate-pulse border border-primary/20">
+              <Construction className="h-12 w-12 text-primary" />
             </div>
-            <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-2">
-              <p className="text-xs font-bold leading-relaxed">Submit payment proof. Verification takes ~30 mins.</p>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black uppercase tracking-tighter">Shortly Available</h3>
+              <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest max-w-[250px] mx-auto">
+                We are currently integrating automatic payment gateways.
+              </p>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                  <ReceiptText className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 1</p>
-                  <p className="text-xs font-bold uppercase">Submit Payment Proof</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                  <ShieldCheck className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 2</p>
-                  <p className="text-xs font-bold uppercase">Admin Verification</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
-                  <Clock className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 3</p>
-                  <p className="text-xs font-bold uppercase">Balance Credit (30 mins)</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-xl border border-dashed border-muted-foreground/30 text-center">
-              <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Your Wallet ID</p>
-              <p className="font-mono text-xs font-bold break-all">{userProfile?.wallet.walletAddress}</p>
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary bg-primary/5 px-4 py-2 rounded-full border border-primary/10">
+              <Clock className="h-3 w-3" /> System Update in Progress
             </div>
           </CardContent>
         </Card>

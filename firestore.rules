@@ -3,30 +3,25 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public access as authentication is currently handled via mock guest IDs
+    // Standard permissive rules for prototype environment
     
     match /users/{userId} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if true;
-    }
-
-    match /referrals/{referralId} {
-      allow create: if true;
-      allow read: if true;
-      allow update: if true;
+      allow read, create, update: if true;
+      allow delete: if false;
     }
 
     match /payout_requests/{requestId} {
-      allow create: if true;
-      allow read: if true;
-      allow update: if true;
+      allow read, create, update: if true;
+      allow delete: if false;
     }
 
     match /transactions/{transactionId} {
-      allow create: if true;
-      allow read: if true;
-      allow update: if false;
+      allow read, create: if true;
+      allow update, delete: if false;
+    }
+
+    match /referrals/{referralId} {
+      allow read, create, update: if true;
       allow delete: if false;
     }
   }

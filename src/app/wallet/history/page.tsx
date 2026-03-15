@@ -1,9 +1,10 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { Transaction, WithdrawalRequest } from '@/lib/types';
+import type { Transaction, WithdrawalRequest } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +53,8 @@ export default function HistoryPage() {
     if (!date) return 0;
     if (date.toDate) return date.toDate().getTime();
     if (date.seconds) return date.seconds * 1000;
-    return new Date(date).getTime();
+    if (typeof date === 'string' || date instanceof Date) return new Date(date).getTime();
+    return 0;
   };
 
   // Sort transactions by date descending
