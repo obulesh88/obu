@@ -2,10 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, RefreshCw, ArrowRightLeft, Building2, Save, Send, ShieldCheck, Ticket, CreditCard, Smartphone, Landmark, MessageCircle } from 'lucide-react';
+import { DollarSign, RefreshCw, ArrowRightLeft, Building2, Send, Landmark, MessageCircle, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Skeleton } from '../ui/skeleton';
 import { useUser } from '@/hooks/use-user';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -19,7 +18,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,7 +28,7 @@ const MIN_WITHDRAWAL = 1;
 
 export default function WalletPageContent() {
   const [activeTab, setActiveTab] = useState<'withdraw' | 'convert' | 'deposit'>('withdraw');
-  const { user, userProfile, loading } = useUser();
+  const { user, userProfile } = useUser();
   const { toast } = useToast();
   const firestore = useFirestore();
 
@@ -275,12 +273,18 @@ export default function WalletPageContent() {
       )}
 
       {activeTab === 'deposit' && (
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="text-lg font-black uppercase">Manual Deposit</CardTitle>
             <CardDescription className="text-[10px] font-bold uppercase">Add funds to your wallet</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="bg-primary text-primary-foreground p-3 rounded-lg text-center font-black uppercase tracking-tighter text-sm flex items-center justify-center gap-2 shadow-lg animate-pulse">
+              <Sparkles className="h-4 w-4" />
+              Save small amount for small needs
+              <Sparkles className="h-4 w-4" />
+            </div>
+
             <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-2">
               <p className="text-xs font-bold leading-relaxed">Deposit funds manually via WhatsApp Support. Our team will verify and add the balance to your account within 30 minutes.</p>
             </div>
@@ -311,7 +315,6 @@ export default function WalletPageContent() {
 
       <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="uppercase font-black">Payout Details</DialogTitle>
             </DialogHeader>
@@ -349,7 +352,6 @@ export default function WalletPageContent() {
             <DialogFooter>
               <Button onClick={handleSaveBankDetails} className="w-full font-bold" disabled={isSavingBank}>Save Details</Button>
             </DialogFooter>
-          </DialogContent>
         </DialogContent>
       </Dialog>
     </div>
