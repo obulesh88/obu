@@ -11,7 +11,7 @@ const GAMES = [
   { 
     id: 'g_block_blast', 
     name: 'Block Blast Puzzle', 
-    reward: 20, 
+    reward: 12, 
     time: 300, // 5 minutes
     difficulty: 'Easy', 
     division: 'A',
@@ -20,7 +20,7 @@ const GAMES = [
   { 
     id: 'g_neon', 
     name: 'Neon Velocity', 
-    reward: 20, 
+    reward: 12, 
     time: 300, // 5 minutes
     difficulty: 'Extreme', 
     division: 'A',
@@ -29,7 +29,7 @@ const GAMES = [
   { 
     id: 'g_pool', 
     name: 'Mini Pool 3D', 
-    reward: 20, 
+    reward: 12, 
     time: 300, // 5 minutes
     difficulty: 'Medium', 
     division: 'C',
@@ -38,7 +38,7 @@ const GAMES = [
   { 
     id: 'g_escape', 
     name: 'The Escape Block', 
-    reward: 20, 
+    reward: 12, 
     time: 300, // 5 minutes
     difficulty: 'Hard', 
     division: 'B',
