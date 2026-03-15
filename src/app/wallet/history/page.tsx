@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { collection, query, where } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { History, Landmark, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function HistoryPage() {
   const { user, loading: userLoading } = useUser();
