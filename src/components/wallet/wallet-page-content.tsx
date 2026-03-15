@@ -73,31 +73,45 @@ export default function WalletPageContent() {
     setIsSavingBank(true);
     const userDocRef = doc(firestore, 'users', user.uid);
     const updateData = { bankDetails: { ...bankData, payoutType }, updatedAt: serverTimestamp() };
+    
     updateDoc(userDocRef, updateData)
       .then(() => {
         toast({ title: 'Details Saved', description: 'Payout details updated.' });
         setIsBankDialogOpen(false);
+      })
+      .catch(async (error: any) => {
+        if (error.code === 'permission-denied') {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: updateData,
+          }));
+        }
       })
       .finally(() => setIsSavingBank(false));
   };
 
   const handleWithdraw = async () => {
     if (!user || !userProfile || !firestore) return;
+    
     if (payoutType === 'upi' && !bankData.vpa) {
       toast({ variant: 'destructive', title: 'Invalid Credentials', description: 'Provide UPI ID in Payout Info.' });
       setIsBankDialogOpen(true);
       return;
     }
+    
     if (payoutType === 'bank' && (!bankData.accountNumber || !bankData.ifsc)) {
       toast({ variant: 'destructive', title: 'Invalid Credentials', description: 'Provide Bank details in Payout Info.' });
       setIsBankDialogOpen(true);
       return;
     }
+
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
       toast({ variant: 'destructive', title: 'Invalid Amount' });
       return;
     }
+
     if (amount > (userProfile.wallet?.inrBalance || 0)) {
       toast({ variant: 'destructive', title: 'Insufficient Balance' });
       return;
@@ -108,58 +122,120 @@ export default function WalletPageContent() {
     const requestsRef = collection(firestore, 'payout_requests');
     const transactionsRef = collection(firestore, 'transactions');
     
-    addDoc(requestsRef, {
+    const requestData = {
       userId: user.uid,
       amount: amount,
       status: 'pending',
       payoutDetails: { ...bankData, payoutType },
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    }).then(() => {
-        // Log Transaction
-        addDoc(transactionsRef, {
+    };
+
+    addDoc(requestsRef, requestData)
+      .then(() => {
+        const txData = {
             userId: user.uid,
             amount: amount,
             currency: 'INR',
             type: 'withdrawal',
             description: `Withdrawal Request (Pending)`,
             createdAt: serverTimestamp()
-        });
-        updateDoc(userDocRef, {
+        };
+        
+        addDoc(transactionsRef, txData)
+          .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+              errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: transactionsRef.path,
+                operation: 'create',
+                requestResourceData: txData,
+              }));
+            }
+          });
+
+        const updateData = {
           'wallet.inrBalance': increment(-amount),
           'updatedAt': serverTimestamp()
-        }).then(() => {
-          toast({ title: 'Success', description: `Request for ₹${amount} submitted.` });
-          setWithdrawAmount('');
-        });
-    }).finally(() => setIsWithdrawing(false));
+        };
+
+        updateDoc(userDocRef, updateData)
+          .then(() => {
+            toast({ title: 'Success', description: `Request for ₹${amount} submitted.` });
+            setWithdrawAmount('');
+          })
+          .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+              errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'update',
+                requestResourceData: updateData,
+              }));
+            }
+          });
+    })
+    .catch(async (error: any) => {
+      if (error.code === 'permission-denied') {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: requestsRef.path,
+          operation: 'create',
+          requestResourceData: requestData,
+        }));
+      }
+    })
+    .finally(() => setIsWithdrawing(false));
   };
 
   const handleConvert = async () => {
     if (!user || !userProfile || !firestore) return;
     const orToConvert = parseFloat(orAmount);
     if (isNaN(orToConvert) || orToConvert < 100) return;
+    
     setIsConverting(true);
     const inrToAdd = orToConvert / CONVERSION_RATE;
     const userDocRef = doc(firestore, 'users', user.uid);
     const transactionsRef = collection(firestore, 'transactions');
     
-    updateDoc(userDocRef, {
+    const updateData = {
         'wallet.orBalance': increment(-orToConvert),
         'wallet.inrBalance': increment(inrToAdd),
         'updatedAt': serverTimestamp()
-    }).then(() => {
-        addDoc(transactionsRef, {
+    };
+
+    updateDoc(userDocRef, updateData)
+      .then(() => {
+        const txData = {
             userId: user.uid,
             amount: orToConvert,
             currency: 'OR',
             type: 'conversion',
             description: `Converted to ₹${inrToAdd.toFixed(2)} INR`,
             createdAt: serverTimestamp()
-        });
+        };
+        
+        addDoc(transactionsRef, txData)
+          .catch(async (error: any) => {
+            if (error.code === 'permission-denied') {
+              errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: transactionsRef.path,
+                operation: 'create',
+                requestResourceData: txData,
+              }));
+            }
+          });
+          
         toast({ title: 'Success', description: `Converted to ₹${inrToAdd.toFixed(2)}` });
         setOrAmount('');
-    }).finally(() => setIsConverting(false));
+    })
+    .catch(async (error: any) => {
+      if (error.code === 'permission-denied') {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        }));
+      }
+    })
+    .finally(() => setIsConverting(false));
   };
 
   return (
@@ -216,7 +292,7 @@ export default function WalletPageContent() {
               <Separator orientation="vertical" className="h-6" />
               <div className="text-center flex-1">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground">INR Balance</p>
-                <p className="text-md font-black text-green-600">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</p>
+                <p className="text-md font-black text-primary">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</p>
               </div>
             </div>
             <div className="grid gap-4">
@@ -227,7 +303,7 @@ export default function WalletPageContent() {
               <div className="flex justify-center text-muted-foreground"><ArrowRightLeft className="h-4 w-4" /></div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase">Receiving (INR)</Label>
-                <Input type="number" value={convertInrAmount} readOnly className="h-11 bg-muted font-black text-green-600" />
+                <Input type="number" value={convertInrAmount} readOnly className="h-11 bg-muted font-black text-primary" />
               </div>
             </div>
             <Button className="w-full h-12 font-black uppercase" onClick={handleConvert} disabled={isConverting || !orAmount}>
@@ -251,9 +327,33 @@ export default function WalletPageContent() {
               <p className="text-xs font-bold leading-relaxed">Submit payment proof. Verification takes ~30 mins.</p>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center gap-4"><div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-600 border border-red-200 shrink-0"><ReceiptText className="h-5 w-5" /></div><div><p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 1</p><p className="text-xs font-bold uppercase">Submit Payment Proof</p></div></div>
-              <div className="flex items-center gap-4"><div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-600 border border-red-200 shrink-0"><ShieldCheck className="h-5 w-5" /></div><div><p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 2</p><p className="text-xs font-bold uppercase">Admin Verification</p></div></div>
-              <div className="flex items-center gap-4"><div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-600 border border-red-200 shrink-0"><Clock className="h-5 w-5" /></div><div><p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 3</p><p className="text-xs font-bold uppercase">Balance Credit (30 mins)</p></div></div>
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
+                  <ReceiptText className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 1</p>
+                  <p className="text-xs font-bold uppercase">Submit Payment Proof</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 2</p>
+                  <p className="text-xs font-bold uppercase">Admin Verification</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 3</p>
+                  <p className="text-xs font-bold uppercase">Balance Credit (30 mins)</p>
+                </div>
+              </div>
             </div>
             <div className="p-4 bg-muted/50 rounded-xl border border-dashed border-muted-foreground/30 text-center">
               <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Your Wallet ID</p>
@@ -267,14 +367,32 @@ export default function WalletPageContent() {
         <DialogContent className="sm:max-w-[425px]">
             <DialogHeader><DialogTitle className="uppercase font-black">Payout Details</DialogTitle></DialogHeader>
             <Tabs value={payoutType} onValueChange={(v: any) => setPayoutType(v)} className="w-full">
-              <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="upi" className="text-[10px] uppercase font-bold">UPI</TabsTrigger><TabsTrigger value="bank" className="text-[10px] uppercase font-bold">Bank</TabsTrigger></TabsList>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="upi" className="text-[10px] uppercase font-bold">UPI</TabsTrigger>
+                <TabsTrigger value="bank" className="text-[10px] uppercase font-bold">Bank</TabsTrigger>
+              </TabsList>
               <div className="py-4 space-y-4">
-                  <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">Name</Label><Input value={bankData.name} onChange={(e) => setBankData({...bankData, name: e.target.value})} placeholder="A/C Holder Name" /></div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold">Name</Label>
+                    <Input value={bankData.name} onChange={(e) => setBankData({...bankData, name: e.target.value})} placeholder="A/C Holder Name" />
+                  </div>
                   {payoutType === 'upi' && (
-                    <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">UPI ID</Label><Input value={bankData.vpa} onChange={(e) => setBankData({...bankData, vpa: e.target.value})} placeholder="example@upi" /></div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold">UPI ID</Label>
+                      <Input value={bankData.vpa} onChange={(e) => setBankData({...bankData, vpa: e.target.value})} placeholder="example@upi" />
+                    </div>
                   )}
                   {payoutType === 'bank' && (
-                    <><div className="space-y-2"><Label className="text-[10px] uppercase font-bold">Account Number</Label><Input value={bankData.accountNumber} onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})} placeholder="A/C Number" /></div><div className="space-y-2"><Label className="text-[10px] uppercase font-bold">IFSC Code</Label><Input value={bankData.ifsc} onChange={(e) => setBankData({...bankData, ifsc: e.target.value})} placeholder="IFSC" className="uppercase" /></div></>
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold">Account Number</Label>
+                        <Input value={bankData.accountNumber} onChange={(e) => setBankData({...bankData, accountNumber: e.target.value})} placeholder="A/C Number" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold">IFSC Code</Label>
+                        <Input value={bankData.ifsc} onChange={(e) => setBankData({...bankData, ifsc: e.target.value})} placeholder="IFSC" className="uppercase" />
+                      </div>
+                    </>
                   )}
               </div>
             </Tabs>

@@ -19,6 +19,8 @@ import {
   addDoc
 } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 /**
  * Hook to manage user authentication state and Firestore profile synchronization.
@@ -73,7 +75,17 @@ export function useUser() {
             status: { status: 'Active' },
           };
 
-          await setDoc(currentUserRef, newProfile);
+          setDoc(currentUserRef, newProfile)
+            .catch(async (error) => {
+              if (error.code === 'permission-denied') {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                  path: currentUserRef.path,
+                  operation: 'create',
+                  requestResourceData: newProfile
+                } satisfies SecurityRuleContext));
+              }
+            });
+
           localStorage.removeItem('pending_phone_number');
 
           const pendingReferralCode = localStorage.getItem('or_wallet_referral_code');
@@ -88,28 +100,49 @@ export function useUser() {
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
               const referralReward = 1500;
               
-              await updateDoc(referrerRef, {
+              const updateData = {
                 'referral.count': increment(1),
                 'referral.earnings': increment(referralReward),
                 'wallet.orBalance': increment(referralReward),
                 'updatedAt': serverTimestamp()
-              });
+              };
 
-              // Log Referral Transaction for the referrer
+              updateDoc(referrerRef, updateData)
+                .catch(async (error) => {
+                  if (error.code === 'permission-denied') {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                      path: referrerRef.path,
+                      operation: 'update',
+                      requestResourceData: updateData
+                    } satisfies SecurityRuleContext));
+                  }
+                });
+
               const transactionsRef = collection(firestore, 'transactions');
-              await addDoc(transactionsRef, {
+              const txData = {
                 userId: referrerDoc.id,
                 amount: referralReward,
                 currency: 'OR',
                 type: 'referral',
                 description: `Referral Reward: ${newProfile.profile.displayName} joined`,
                 createdAt: serverTimestamp()
-              });
+              };
+
+              addDoc(transactionsRef, txData)
+                .catch(async (error) => {
+                  if (error.code === 'permission-denied') {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                      path: transactionsRef.path,
+                      operation: 'create',
+                      requestResourceData: txData
+                    } satisfies SecurityRuleContext));
+                  }
+                });
             }
             localStorage.removeItem('or_wallet_referral_code');
           }
         } catch (error) {
-          console.error("Initialization error:", error);
+          // General initialization failures
         } finally {
           setIsInitializing(false);
         }

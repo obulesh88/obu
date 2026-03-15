@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,34 +64,34 @@ export default function ProfilePage() {
     };
 
     try {
-      // 1. Update Firebase Auth Profile
       await updateProfile(auth.currentUser, { displayName: newName.trim() });
-
-      // 2. Update Firestore Document
-      await updateDoc(userDocRef, updateData);
-
-      toast({
-        title: 'Profile Updated',
-        description: 'Your display name has been changed successfully.',
-      });
-      setIsEditingName(false);
+      
+      updateDoc(userDocRef, updateData)
+        .then(() => {
+          toast({
+            title: 'Profile Updated',
+            description: 'Your display name has been changed successfully.',
+          });
+          setIsEditingName(false);
+        })
+        .catch(async (error: any) => {
+          if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+              path: userDocRef.path,
+              operation: 'update',
+              requestResourceData: updateData,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+          }
+        })
+        .finally(() => setIsSavingName(false));
     } catch (error: any) {
-      if (error.code === 'permission-denied') {
-        const permissionError = new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'update',
-          requestResourceData: updateData,
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to update name. Please try again.',
-        });
-      }
-    } finally {
       setIsSavingName(false);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update auth profile.',
+      });
     }
   };
 
@@ -122,38 +123,32 @@ export default function ProfilePage() {
     { 
       title: "About Us", 
       icon: <Info className="h-4 w-4" />, 
-      content: `OR wallet is a professional digital rewards and micro-tasking platform. We connect users with advertisers and market researchers, providing a platform where users can earn micro-incentives (OR coins) by completing verified digital tasks such as captcha solving and content engagement.
-
-Our mission is to democratize digital earning opportunities while maintaining the highest standards of transparency and user data protection. We are a registered business entity committed to building a trusted ecosystem for earners in India.`
+      content: `OR wallet is a professional digital rewards and micro-tasking platform. We connect users with advertisers and market researchers, providing a platform where users can earn micro-incentives (OR coins) by completing verified digital tasks such as captcha solving and content engagement.`
     },
     { 
       title: "Customer Support", 
       icon: <LifeBuoy className="h-4 w-4" />, 
-      content: `OR wallet provides customer support to help users resolve issues related to accounts, rewards, or withdrawals. Users can contact the support team by sending an email to obuleswaror@gmail.com with a detailed explanation of the issue they are facing. Our support team aims to respond to all queries within 24 to 48 hours during business days. OR wallet is committed to providing timely assistance and maintaining a smooth and reliable user experience for all users of the platform.`
+      content: `OR wallet provides customer support at obuleswaror@gmail.com. We aim to respond to all queries within 24 to 48 hours.`
     },
     { 
       title: "Terms and Conditions", 
       icon: <FileText className="h-4 w-4" />, 
-      content: `By accessing and using the OR wallet application, users agree to comply with the terms and conditions of the platform. OR wallet is a digital rewards platform that allows users to earn reward points by completing promotional activities such as watching advertisements, solving simple tasks, or participating in other in-app activities. These reward points can be converted into wallet balance according to the conversion rules defined within the application. Users are responsible for maintaining accurate account information and ensuring that their activities follow the platform rules. Any attempt to misuse the system, including creating multiple accounts, using automated tools, or engaging in fraudulent activities, may result in suspension or termination of the account. OR wallet reserves the right to modify, update, or discontinue its services or reward system at any time without prior notice. Continued use of the application indicates acceptance of these terms.`
+      content: `By accessing OR wallet, users agree to follow platform rules. Points can be converted to balance according to conversion rules. Misuse may result in account termination.`
     },
     { 
       title: "Privacy Policy", 
       icon: <Shield className="h-4 w-4" />, 
-      content: `OR wallet respects the privacy of its users and is committed to protecting personal information. When users access or use the OR wallet application, we may collect certain information such as name, email address, device information, and usage data to provide and improve our services. This information is used to manage user accounts, track reward activities, process reward conversions, and handle withdrawal requests. OR wallet may also display advertisements from third-party ad networks which may collect anonymous data to provide relevant advertisements. We take reasonable steps to protect user information, but no internet service is completely secure. OR wallet does not knowingly collect personal information from children under the age of 13. By using the application, users agree to the collection and use of information according to this privacy policy. If users have any questions regarding this policy, they can contact us at obuleswaror@gmail.com.`
+      content: `We collect name, email, and device info to manage rewards and payouts. We take reasonable steps to protect your data.`
     },
     { 
       title: "Withdrawal Policy", 
       icon: <Ticket className="h-4 w-4" />, 
-      content: `OR wallet allows users to request withdrawals from their wallet balance once the minimum withdrawal limit specified in the application is reached. Reward points earned from completing tasks and promotional activities can be converted into wallet balance based on the conversion rate defined in the app. Users must provide valid payment details such as UPI ID or bank account information when submitting a withdrawal request. Withdrawal requests are usually processed within 1 to 7 business days depending on verification and system processing times. OR wallet reserves the right to verify user accounts before approving withdrawals to prevent fraud or misuse of the platform. Withdrawal requests may be rejected if incorrect payment details are provided, suspicious activity is detected, or if the user violates the platform’s terms and conditions.`
+      content: `Withdrawals are processed after reaching minimum limits. Users must provide valid UPI or Bank details. Requests take 1-7 business days.`
     },
     { 
       title: "Refund & Cancellation Policy", 
       icon: <Undo2 className="h-4 w-4" />, 
-      content: `OR wallet is an earning platform; we do not accept payments or deposits from users.
-
-1. No Deposits: As a zero-deposit platform, there are no refunds for user payments.
-2. Reward Adjustments: If a task is found to be completed incorrectly or through automated means, we reserve the right to cancel the associated OR coins.
-3. Withdrawal Cancellation: Users may request to cancel a 'Pending' withdrawal through our contact email before it has been processed. Once 'Completed', transactions are final and non-refundable.`
+      content: `No deposits are accepted. Once processed, transactions are final.`
     }
   ];
 
