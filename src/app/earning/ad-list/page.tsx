@@ -8,7 +8,7 @@ import { Tv, CheckCircle2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 const NUM_ADS = 10;
-const REWARD_PER_AD = 5;
+const REWARD_PER_AD = 4;
 const ADS_STORAGE_KEY = 'or_wallet_completed_ads';
 const ADS_DAY_KEY = 'or_wallet_ads_last_day';
 

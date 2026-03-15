@@ -20,7 +20,7 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const DEFAULT_REWARD = 5;
+const DEFAULT_REWARD = 4;
 const DEFAULT_WATCH_DELAY = 15;
 
 const OLD_AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
