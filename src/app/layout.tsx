@@ -1,3 +1,4 @@
+
 'use client';
 
 import './globals.css';
@@ -8,23 +9,24 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { ThemeProvider } from '@/components/theme-provider';
 import { LayoutProvider, useLayout } from '@/context/layout-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AppSidebar } from '@/components/layout/app-sidebar';
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { isPaddingDisabled } = useLayout();
 
   return (
-    <SidebarProvider>
-        <div className="flex h-full w-full flex-col overflow-hidden">
-          {/* Sticky header removed as requested in visual feedback */}
-          <SidebarInset className="flex-1 overflow-y-auto scrollbar-hide">
+    <SidebarProvider defaultOpen={false}>
+        <div className="flex h-full w-full bg-background overflow-hidden">
+          <AppSidebar />
+          <SidebarInset className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <main className={cn(
-              "flex flex-1 flex-col",
-              !isPaddingDisabled && "gap-4 p-4 pb-20"
+              "flex-1 overflow-y-auto scrollbar-hide flex flex-col",
+              !isPaddingDisabled && "p-4 pb-20"
             )}>
-            {children}
+              {children}
             </main>
+            <BottomNav />
           </SidebarInset>
-          <BottomNav />
         </div>
     </SidebarProvider>
   );
