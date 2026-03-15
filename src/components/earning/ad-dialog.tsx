@@ -57,7 +57,7 @@ async function startAdSession(userId: string, division: 'A' | 'B' | 'C') {
       },
       body: JSON.stringify(body)
     });
-    const data = await response.json();
+    await response.json();
     return { success: true, adUrl: redirectUrl };
   } catch (err) {
     return { success: false, adUrl: redirectUrl };
@@ -105,6 +105,7 @@ export function AdDialog({
   const [userInput, setUserInput] = useState('');
   const [isVerified, setIsVerified] = useState(false);
   const [wasInterrupted, setWasInterrupted] = useState(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
 
   const endTimeRef = useRef<number | null>(null);
   useEffect(() => {
@@ -128,8 +129,11 @@ export function AdDialog({
     const handleVisibilityChange = () => {
       const now = Date.now();
       if (document.visibilityState === 'visible' && hasStarted && !needsVerification && endTimeRef.current) {
-        // Add a small 500ms buffer to prevent race conditions at exactly the transition time
-        if (now < (endTimeRef.current - 500)) {
+        // Delay protection: Ignore visibility changes in the first 2 seconds to account for tab switch lag
+        if (startTime && (now - startTime < 2000)) return;
+
+        // Check if returned before timer finished (with 1s buffer)
+        if (now < (endTimeRef.current - 1000)) {
           setWasInterrupted(true);
           setHasStarted(false);
           setEndTime(null);
@@ -141,14 +145,13 @@ export function AdDialog({
             description: 'You must stay on the ad/task page for the full duration.',
           });
         } else if (now >= endTimeRef.current) {
-          // Task completed while away, trigger verification immediately
           triggerVerification();
         }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [hasStarted, needsVerification, toast, triggerVerification]);
+  }, [hasStarted, needsVerification, toast, triggerVerification, startTime]);
 
   useEffect(() => {
     if (open) {
@@ -158,6 +161,7 @@ export function AdDialog({
       setIsStartButtonDisabled(false);
       setCountdown(0);
       setEndTime(null);
+      setStartTime(null);
       setHasStarted(false);
       setNeedsVerification(false);
       setIsVerified(false);
@@ -190,12 +194,25 @@ export function AdDialog({
     setStatus('Connecting to session...');
     setIsStartButtonDisabled(true);
     setWasInterrupted(false);
-    const data = await startAdSession(user.uid, division);
-    if (data && data.adUrl) {
-        window.open(data.adUrl, '_blank');
-    }
     
-    const targetEndTime = Date.now() + (playTimeSeconds * 1000);
+    const data = await startAdSession(user.uid, division);
+    
+    // Attempt to open the ad window
+    const adWindow = window.open(data.adUrl, '_blank');
+    if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
+      toast({
+        variant: 'destructive',
+        title: 'Pop-up Blocked',
+        description: 'Please allow pop-ups for this site to watch ads and earn rewards.',
+      });
+      setIsStartButtonDisabled(false);
+      setStatus('Pop-up blocked. Click to retry.');
+      return;
+    }
+
+    const now = Date.now();
+    const targetEndTime = now + (playTimeSeconds * 1000);
+    setStartTime(now);
     setEndTime(targetEndTime);
     setCountdown(playTimeSeconds);
     setHasStarted(true);

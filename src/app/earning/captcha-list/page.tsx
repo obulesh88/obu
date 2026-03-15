@@ -60,7 +60,7 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
       }
     );
 
-    const data = await response.json();
+    await response.json();
     return { success: true, adUrl: redirectUrl };
   } catch (err) {
     return { success: false, adUrl: redirectUrl };
@@ -87,6 +87,7 @@ export default function CaptchaListPage() {
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_CAPTCHAS).fill(false));
   const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
   const [endTimes, setEndTimes] = useState<(number | null)[]>(Array(NUM_CAPTCHAS).fill(null));
+  const [startTimes, setStartTimes] = useState<(number | null)[]>(Array(NUM_CAPTCHAS).fill(null));
   const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [interrupted, setInterrupted] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [allCaptchasCompleted, setAllCaptchasCompleted] = useState(false);
@@ -101,6 +102,11 @@ export default function CaptchaListPage() {
   useEffect(() => {
     readyToClaimRef.current = readyToClaim;
   }, [readyToClaim]);
+
+  const startTimesRef = useRef(startTimes);
+  useEffect(() => {
+    startTimesRef.current = startTimes;
+  }, [startTimes]);
 
   useEffect(() => {
     setIsClient(true);
@@ -141,8 +147,12 @@ export default function CaptchaListPage() {
         
         endTimesRef.current.forEach((endTime, index) => {
           if (endTime && !readyToClaimRef.current[index]) {
-            // Use a 500ms safety buffer
-            if (now < (endTime - 500)) {
+            // Delay protection: Ignore visibility changes in the first 2 seconds
+            const startTime = startTimesRef.current[index];
+            if (startTime && (now - startTime < 2000)) return;
+
+            // Use a 1s safety buffer
+            if (now < (endTime - 1000)) {
               setInterrupted(prev => {
                 const newState = [...prev];
                 newState[index] = true;
@@ -169,7 +179,6 @@ export default function CaptchaListPage() {
                 description: 'You returned before the task finished. No reward given.',
               });
             } else if (now >= endTime) {
-              // Task completed while away
               setSubmitting(prev => {
                 const newState = [...prev];
                 newState[index] = false;
@@ -281,11 +290,20 @@ export default function CaptchaListPage() {
     }
     const division = index < 3 ? 'A' : index < 6 ? 'B' : 'C';
     const data = await callGetAd(user.uid, division);
-    if (data && data.adUrl) {
-      window.open(data.adUrl, '_blank');
+    
+    // Attempt to open the ad window
+    const adWindow = window.open(data.adUrl, '_blank');
+    if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
+      toast({
+        variant: 'destructive',
+        title: 'Pop-up Blocked',
+        description: 'Please allow pop-ups to continue.',
+      });
+      return;
     }
 
-    const targetEndTime = Date.now() + (SUBMIT_DELAY * 1000);
+    const now = Date.now();
+    const targetEndTime = now + (SUBMIT_DELAY * 1000);
     
     setInterrupted(prev => {
       const newState = [...prev];
@@ -295,6 +313,11 @@ export default function CaptchaListPage() {
     setSubmitting(prev => {
       const newState = [...prev];
       newState[index] = true;
+      return newState;
+    });
+    setStartTimes(prev => {
+      const newState = [...prev];
+      newState[index] = now;
       return newState;
     });
     setEndTimes(prev => {
@@ -315,9 +338,6 @@ export default function CaptchaListPage() {
       const userDocRef = doc(firestore, 'users', user.uid);
       const updateData = {
           'wallet.orBalance': increment(REWARD_PER_CAPTCHA),
-          'captcha.verifiedAt': serverTimestamp(),
-          'captcha.claimed': true,
-          'captcha.reward_comm': REWARD_PER_CAPTCHA,
           'updatedAt': serverTimestamp()
       };
 
