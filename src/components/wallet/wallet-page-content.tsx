@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, RefreshCw, ArrowRightLeft, Building2, Send, Landmark, MessageCircle, Sparkles } from 'lucide-react';
+import { DollarSign, RefreshCw, ArrowRightLeft, Building2, Send, Landmark, Sparkles, ReceiptText, ShieldCheck, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
@@ -286,30 +286,43 @@ export default function WalletPageContent() {
             </div>
 
             <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-2">
-              <p className="text-xs font-bold leading-relaxed">Deposit funds manually via WhatsApp Support. Our team will verify and add the balance to your account within 30 minutes.</p>
+              <p className="text-xs font-bold leading-relaxed">Deposit funds manually. Our admin team will verify and add the balance to your account within 30 minutes of payment confirmation.</p>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-600 font-bold">1</div>
-                <p className="text-[10px] font-bold uppercase">Message us on WhatsApp</p>
+              <div className="flex items-center gap-4 group">
+                <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-600 border border-red-200 shrink-0">
+                  <ReceiptText className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 1</p>
+                  <p className="text-xs font-bold uppercase">Submit Payment Proof</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-600 font-bold">2</div>
-                <p className="text-[10px] font-bold uppercase">Send Screenshot of Payment</p>
+              <div className="flex items-center gap-4 group">
+                <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-600 border border-red-200 shrink-0">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 2</p>
+                  <p className="text-xs font-bold uppercase">Admin Verification</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-600 font-bold">3</div>
-                <p className="text-[10px] font-bold uppercase">Provide your Wallet ID</p>
+              <div className="flex items-center gap-4 group">
+                <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-600 border border-red-200 shrink-0">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Step 3</p>
+                  <p className="text-xs font-bold uppercase">Balance Credit (30 mins)</p>
+                </div>
               </div>
             </div>
+
+            <div className="p-4 bg-muted/50 rounded-xl border border-dashed border-muted-foreground/30 text-center">
+              <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Your Wallet ID</p>
+              <p className="font-mono text-xs font-bold break-all">{userProfile?.wallet.walletAddress}</p>
+            </div>
           </CardContent>
-          <CardFooter>
-            <Button className="w-full h-12 bg-green-600 hover:bg-green-700 font-bold" asChild>
-              <a href="https://wa.me/910000000000" target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="mr-2 h-5 w-5" /> CHAT WITH SUPPORT
-              </a>
-            </Button>
-          </CardFooter>
         </Card>
       )}
 
