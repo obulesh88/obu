@@ -98,19 +98,18 @@ export function AdDialog({
   const [showClaimButton, setShowClaimButton] = useState(false);
   const [isStartButtonDisabled, setIsStartButtonDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [endTime, setEndTime] = useState<number | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [captchaText, setCaptchaText] = useState('');
   const [userInput, setUserInput] = useState('');
   const [isVerified, setIsVerified] = useState(false);
   const [wasInterrupted, setWasInterrupted] = useState(false);
-  const [startTime, setStartTime] = useState<number | null>(null);
 
+  // Use refs for listener-critical data to avoid stale closures and timing issues
+  const startTimeRef = useRef<number | null>(null);
   const endTimeRef = useRef<number | null>(null);
-  useEffect(() => {
-    endTimeRef.current = endTime;
-  }, [endTime]);
+  const hasStartedRef = useRef(false);
+  const needsVerificationRef = useRef(false);
 
   const resetVerification = useCallback(() => {
     setCaptchaText(generateCaptcha());
@@ -119,24 +118,35 @@ export function AdDialog({
   }, []);
 
   const triggerVerification = useCallback(() => {
+    needsVerificationRef.current = true;
     setNeedsVerification(true);
     resetVerification();
+    hasStartedRef.current = false;
     setHasStarted(false);
     setStatus("Mission accomplished! Complete verification to claim.");
   }, [resetVerification]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return;
+      
       const now = Date.now();
-      if (document.visibilityState === 'visible' && hasStarted && !needsVerification && endTimeRef.current) {
-        // Delay protection: Ignore visibility changes in the first 2 seconds to account for tab switch lag
-        if (startTime && (now - startTime < 2000)) return;
+      
+      // Only care if the task is actively running and hasn't already reached verification
+      if (hasStartedRef.current && !needsVerificationRef.current && endTimeRef.current) {
+        
+        // GRACE PERIOD: Ignore visibility changes in the first 2.5 seconds to account for tab switch lag
+        if (startTimeRef.current && (now - startTimeRef.current < 2500)) {
+          return;
+        }
 
-        // Check if returned before timer finished (with 1s buffer)
+        // Check if returned before timer finished (with 1s safety buffer)
         if (now < (endTimeRef.current - 1000)) {
           setWasInterrupted(true);
+          hasStartedRef.current = false;
           setHasStarted(false);
-          setEndTime(null);
+          endTimeRef.current = null;
+          startTimeRef.current = null;
           setCountdown(0);
           setStatus("Interrupted! You returned too early. Please try again.");
           toast({
@@ -144,14 +154,16 @@ export function AdDialog({
             title: 'Task Interrupted',
             description: 'You must stay on the ad/task page for the full duration.',
           });
-        } else if (now >= endTimeRef.current) {
+        } else if (now >= (endTimeRef.current - 500)) {
+          // If they waited enough time, proceed to verification
           triggerVerification();
         }
       }
     };
+    
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [hasStarted, needsVerification, toast, triggerVerification, startTime]);
+  }, [toast, triggerVerification]);
 
   useEffect(() => {
     if (open) {
@@ -160,31 +172,37 @@ export function AdDialog({
       setIsClaiming(false);
       setIsStartButtonDisabled(false);
       setCountdown(0);
-      setEndTime(null);
-      setStartTime(null);
       setHasStarted(false);
       setNeedsVerification(false);
       setIsVerified(false);
       setWasInterrupted(false);
+      
+      startTimeRef.current = null;
+      endTimeRef.current = null;
+      hasStartedRef.current = false;
+      needsVerificationRef.current = false;
     }
   }, [open, gameUrl]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (hasStarted && endTime) {
+    if (hasStarted && endTimeRef.current) {
       timer = setInterval(() => {
         const now = Date.now();
-        const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
+        const remaining = Math.max(0, Math.ceil((endTimeRef.current! - now) / 1000));
         setCountdown(remaining);
         
         if (remaining === 0) {
           clearInterval(timer);
-          triggerVerification();
+          // If the user is on the tab when it finishes, trigger verification immediately
+          if (document.visibilityState === 'visible') {
+            triggerVerification();
+          }
         }
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [endTime, hasStarted, triggerVerification]);
+  }, [hasStarted, triggerVerification]);
 
   const handleStart = async () => {
     if (!user) {
@@ -203,7 +221,7 @@ export function AdDialog({
       toast({
         variant: 'destructive',
         title: 'Pop-up Blocked',
-        description: 'Please allow pop-ups for this site to watch ads and earn rewards.',
+        description: 'Please allow pop-ups to watch ads and earn rewards.',
       });
       setIsStartButtonDisabled(false);
       setStatus('Pop-up blocked. Click to retry.');
@@ -212,8 +230,13 @@ export function AdDialog({
 
     const now = Date.now();
     const targetEndTime = now + (playTimeSeconds * 1000);
-    setStartTime(now);
-    setEndTime(targetEndTime);
+    
+    // Set refs immediately to ensure they are available to listeners
+    startTimeRef.current = now;
+    endTimeRef.current = targetEndTime;
+    hasStartedRef.current = true;
+    needsVerificationRef.current = false;
+    
     setCountdown(playTimeSeconds);
     setHasStarted(true);
     setStatus(gameUrl ? `Playing...` : `Watching ad...`);
@@ -223,6 +246,7 @@ export function AdDialog({
     if (userInput.toUpperCase() === captchaText) {
       setIsVerified(true);
       setNeedsVerification(false);
+      needsVerificationRef.current = false;
       setShowClaimButton(true);
       toast({ title: 'Verified!', description: 'You can now claim your reward.' });
     } else {

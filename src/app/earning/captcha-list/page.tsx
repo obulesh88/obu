@@ -86,27 +86,16 @@ export default function CaptchaListPage() {
   const [submitting, setSubmitting] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_CAPTCHAS).fill(false));
   const [countdown, setCountdown] = useState<number[]>(Array(NUM_CAPTCHAS).fill(0));
-  const [endTimes, setEndTimes] = useState<(number | null)[]>(Array(NUM_CAPTCHAS).fill(null));
-  const [startTimes, setStartTimes] = useState<(number | null)[]>(Array(NUM_CAPTCHAS).fill(null));
   const [readyToClaim, setReadyToClaim] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [interrupted, setInterrupted] = useState<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
   const [allCaptchasCompleted, setAllCaptchasCompleted] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  const endTimesRef = useRef(endTimes);
-  useEffect(() => {
-    endTimesRef.current = endTimes;
-  }, [endTimes]);
-
-  const readyToClaimRef = useRef(readyToClaim);
-  useEffect(() => {
-    readyToClaimRef.current = readyToClaim;
-  }, [readyToClaim]);
-
-  const startTimesRef = useRef(startTimes);
-  useEffect(() => {
-    startTimesRef.current = startTimes;
-  }, [startTimes]);
+  // Use refs for tracking timing precisely in listeners
+  const startTimesRef = useRef<(number | null)[]>(Array(NUM_CAPTCHAS).fill(null));
+  const endTimesRef = useRef<(number | null)[]>(Array(NUM_CAPTCHAS).fill(null));
+  const submittingRef = useRef<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
+  const readyToClaimRef = useRef<boolean[]>(Array(NUM_CAPTCHAS).fill(false));
 
   useEffect(() => {
     setIsClient(true);
@@ -142,67 +131,66 @@ export default function CaptchaListPage() {
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        const now = Date.now();
-        
-        endTimesRef.current.forEach((endTime, index) => {
-          if (endTime && !readyToClaimRef.current[index]) {
-            // Delay protection: Ignore visibility changes in the first 2 seconds
-            const startTime = startTimesRef.current[index];
-            if (startTime && (now - startTime < 2000)) return;
+      if (document.visibilityState !== 'visible') return;
+      
+      const now = Date.now();
+      
+      endTimesRef.current.forEach((endTime, index) => {
+        if (endTime && submittingRef.current[index] && !readyToClaimRef.current[index]) {
+          
+          // GRACE PERIOD: Ignore initial tab-switching events (2.5s)
+          const startTime = startTimesRef.current[index];
+          if (startTime && (now - startTime < 2500)) return;
 
-            // Use a 1s safety buffer
-            if (now < (endTime - 1000)) {
-              setInterrupted(prev => {
-                const newState = [...prev];
-                newState[index] = true;
-                return newState;
-              });
-              setSubmitting(prev => {
-                const newState = [...prev];
-                newState[index] = false;
-                return newState;
-              });
-              setCountdown(prev => {
-                const newState = [...prev];
-                newState[index] = 0;
-                return newState;
-              });
-              setEndTimes(prev => {
-                const newState = [...prev];
-                newState[index] = null;
-                return newState;
-              });
-              toast({
-                variant: 'destructive',
-                title: 'Early Return Detected',
-                description: 'You returned before the task finished. No reward given.',
-              });
-            } else if (now >= endTime) {
-              setSubmitting(prev => {
-                const newState = [...prev];
-                newState[index] = false;
-                return newState;
-              });
-              setReadyToClaim(prev => {
-                const newState = [...prev];
-                newState[index] = true;
-                return newState;
-              });
-              setEndTimes(prev => {
-                const newState = [...prev];
-                newState[index] = null;
-                return newState;
-              });
-              setCountdown(prev => {
-                const newState = [...prev];
-                newState[index] = 0;
-                return newState;
-              });
-            }
+          // Check if returned before timer finished (with 1s safety buffer)
+          if (now < (endTime - 1000)) {
+            setInterrupted(prev => {
+              const newState = [...prev];
+              newState[index] = true;
+              return newState;
+            });
+            submittingRef.current[index] = false;
+            setSubmitting(prev => {
+              const newState = [...prev];
+              newState[index] = false;
+              return newState;
+            });
+            setCountdown(prev => {
+              const newState = [...prev];
+              newState[index] = 0;
+              return newState;
+            });
+            endTimesRef.current[index] = null;
+            startTimesRef.current[index] = null;
+            
+            toast({
+              variant: 'destructive',
+              title: 'Early Return Detected',
+              description: 'You returned before the task finished. No reward given.',
+            });
+          } else if (now >= (endTime - 500)) {
+            // Success! 
+            submittingRef.current[index] = false;
+            setSubmitting(prev => {
+              const newState = [...prev];
+              newState[index] = false;
+              return newState;
+            });
+            readyToClaimRef.current[index] = true;
+            setReadyToClaim(prev => {
+              const newState = [...prev];
+              newState[index] = true;
+              return newState;
+            });
+            endTimesRef.current[index] = null;
+            setCountdown(prev => {
+              const newState = [...prev];
+              newState[index] = 0;
+              return newState;
+            });
           }
-        });
-      }
+        }
+      });
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -210,10 +198,10 @@ export default function CaptchaListPage() {
   }, [toast]);
 
   useEffect(() => {
-    const timers = endTimes.map((endTime, index) => {
-      if (endTime && submitting[index]) {
-        return setInterval(() => {
-          const now = Date.now();
+    const interval = setInterval(() => {
+      const now = Date.now();
+      endTimesRef.current.forEach((endTime, index) => {
+        if (endTime && submittingRef.current[index]) {
           const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
           
           setCountdown(prev => {
@@ -222,30 +210,27 @@ export default function CaptchaListPage() {
             return newState;
           });
 
-          if (remaining === 0) {
+          if (remaining === 0 && document.visibilityState === 'visible') {
+            submittingRef.current[index] = false;
             setSubmitting(prev => {
               const newState = [...prev];
               newState[index] = false;
               return newState;
             });
+            readyToClaimRef.current[index] = true;
             setReadyToClaim(prev => {
               const newState = [...prev];
               newState[index] = true;
               return newState;
             });
-            setEndTimes(prev => {
-              const newState = [...prev];
-              newState[index] = null;
-              return newState;
-            });
+            endTimesRef.current[index] = null;
           }
-        }, 1000);
-      }
-      return null;
-    });
+        }
+      });
+    }, 1000);
 
-    return () => timers.forEach(t => t && clearInterval(t));
-  }, [endTimes, submitting]);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (captchas.length > 0 && completed.every(c => c)) {
@@ -305,6 +290,12 @@ export default function CaptchaListPage() {
     const now = Date.now();
     const targetEndTime = now + (SUBMIT_DELAY * 1000);
     
+    // Set refs immediately
+    startTimesRef.current[index] = now;
+    endTimesRef.current[index] = targetEndTime;
+    submittingRef.current[index] = true;
+    readyToClaimRef.current[index] = false;
+
     setInterrupted(prev => {
       const newState = [...prev];
       newState[index] = false;
@@ -313,16 +304,6 @@ export default function CaptchaListPage() {
     setSubmitting(prev => {
       const newState = [...prev];
       newState[index] = true;
-      return newState;
-    });
-    setStartTimes(prev => {
-      const newState = [...prev];
-      newState[index] = now;
-      return newState;
-    });
-    setEndTimes(prev => {
-      const newState = [...prev];
-      newState[index] = targetEndTime;
       return newState;
     });
     setCountdown(prev => {
@@ -371,6 +352,7 @@ export default function CaptchaListPage() {
         localStorage.setItem(CAPTCHA_STORAGE_KEY, JSON.stringify(newState));
         return newState;
     });
+    readyToClaimRef.current[index] = false;
     setReadyToClaim(prev => {
         const newState = [...prev];
         newState[index] = false;
