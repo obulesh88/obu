@@ -47,24 +47,24 @@ export default function HistoryPage() {
   const { data: rawTransactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
   const { data: rawPayouts, loading: payoutsLoading } = useCollection<WithdrawalRequest>(payoutsQuery);
 
+  // Helper to parse dates safely from Firestore Timestamps or strings
+  const getTimestamp = (date: any) => {
+    if (!date) return 0;
+    if (date.toDate) return date.toDate().getTime();
+    if (date.seconds) return date.seconds * 1000;
+    return new Date(date).getTime();
+  };
+
   // Sort transactions by date descending
   const transactions = useMemo(() => {
     if (!rawTransactions) return [];
-    return [...rawTransactions].sort((a, b) => {
-      const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime();
-      const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime();
-      return (dateB || Infinity) - (dateA || Infinity);
-    });
+    return [...rawTransactions].sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
   }, [rawTransactions]);
 
   // Sort payouts by date descending
   const payouts = useMemo(() => {
     if (!rawPayouts) return [];
-    return [...rawPayouts].sort((a, b) => {
-      const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime();
-      const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime();
-      return (dateB || Infinity) - (dateA || Infinity);
-    });
+    return [...rawPayouts].sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
   }, [rawPayouts]);
 
   const isLoading = userLoading || transactionsLoading || payoutsLoading;
@@ -87,10 +87,15 @@ export default function HistoryPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    const s = status?.toLowerCase();
+    switch (s) {
       case 'completed':
+      case 'success':
+      case 'approved':
         return <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/10 gap-1"><CheckCircle2 className="h-3 w-3" /> SUCCESS</Badge>;
       case 'rejected':
+      case 'failed':
+      case 'cancelled':
         return <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10 gap-1"><XCircle className="h-3 w-3" /> FAILED</Badge>;
       default:
         return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 hover:bg-yellow-500/10 gap-1"><Clock className="h-3 w-3" /> PENDING</Badge>;
@@ -132,8 +137,8 @@ export default function HistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.map((tx) => (
-                      <TableRow key={tx.id} className="hover:bg-muted/10 transition-colors border-b last:border-0">
+                    {transactions.map((tx, idx) => (
+                      <TableRow key={tx.id || idx} className="hover:bg-muted/10 transition-colors border-b last:border-0">
                         <TableCell className="py-4">
                           <div className="flex items-center gap-3">
                             <div className={cn(
@@ -197,8 +202,8 @@ export default function HistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payouts.map((payout) => (
-                      <TableRow key={payout.id} className="hover:bg-muted/10 transition-colors border-b last:border-0">
+                    {payouts.map((payout, idx) => (
+                      <TableRow key={payout.id || idx} className="hover:bg-muted/10 transition-colors border-b last:border-0">
                         <TableCell className="py-4">
                           <div className="flex flex-col gap-1">
                             <span className="text-sm font-black text-primary">₹{payout.amount.toFixed(2)}</span>
