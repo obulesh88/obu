@@ -117,25 +117,38 @@ export function AdDialog({
     setIsVerified(false);
   }, []);
 
+  const triggerVerification = useCallback(() => {
+    setNeedsVerification(true);
+    resetVerification();
+    setHasStarted(false);
+    setStatus("Mission accomplished! Complete verification to claim.");
+  }, [resetVerification]);
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       const now = Date.now();
-      if (document.visibilityState === 'visible' && hasStarted && !needsVerification && endTimeRef.current && now < endTimeRef.current) {
-        setWasInterrupted(true);
-        setHasStarted(false);
-        setEndTime(null);
-        setCountdown(0);
-        setStatus("Interrupted! You returned too early. Please try again.");
-        toast({
-          variant: 'destructive',
-          title: 'Task Interrupted',
-          description: 'You must stay on the ad/task page for the full duration.',
-        });
+      if (document.visibilityState === 'visible' && hasStarted && !needsVerification && endTimeRef.current) {
+        // Add a small 500ms buffer to prevent race conditions at exactly the transition time
+        if (now < (endTimeRef.current - 500)) {
+          setWasInterrupted(true);
+          setHasStarted(false);
+          setEndTime(null);
+          setCountdown(0);
+          setStatus("Interrupted! You returned too early. Please try again.");
+          toast({
+            variant: 'destructive',
+            title: 'Task Interrupted',
+            description: 'You must stay on the ad/task page for the full duration.',
+          });
+        } else if (now >= endTimeRef.current) {
+          // Task completed while away, trigger verification immediately
+          triggerVerification();
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [hasStarted, needsVerification, toast]);
+  }, [hasStarted, needsVerification, toast, triggerVerification]);
 
   useEffect(() => {
     if (open) {
@@ -162,14 +175,12 @@ export function AdDialog({
         
         if (remaining === 0) {
           clearInterval(timer);
-          setNeedsVerification(true);
-          resetVerification();
-          setStatus("Mission accomplished! Complete verification to claim.");
+          triggerVerification();
         }
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [endTime, hasStarted, resetVerification]);
+  }, [endTime, hasStarted, triggerVerification]);
 
   const handleStart = async () => {
     if (!user) {

@@ -138,39 +138,61 @@ export default function CaptchaListPage() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        const activeIndices = endTimesRef.current.map((endTime, i) => 
-          (endTime && now < endTime && !readyToClaimRef.current[i]) ? i : -1
-        ).filter(idx => idx !== -1);
-
-        if (activeIndices.length > 0) {
-          activeIndices.forEach(index => {
-            setInterrupted(prev => {
-              const newState = [...prev];
-              newState[index] = true;
-              return newState;
-            });
-            setSubmitting(prev => {
-              const newState = [...prev];
-              newState[index] = false;
-              return newState;
-            });
-            setCountdown(prev => {
-              const newState = [...prev];
-              newState[index] = 0;
-              return newState;
-            });
-            setEndTimes(prev => {
-              const newState = [...prev];
-              newState[index] = null;
-              return newState;
-            });
-          });
-          toast({
-            variant: 'destructive',
-            title: 'Early Return Detected',
-            description: 'You returned to the app before the 15-second task finished. No reward given.',
-          });
-        }
+        
+        endTimesRef.current.forEach((endTime, index) => {
+          if (endTime && !readyToClaimRef.current[index]) {
+            // Use a 500ms safety buffer
+            if (now < (endTime - 500)) {
+              setInterrupted(prev => {
+                const newState = [...prev];
+                newState[index] = true;
+                return newState;
+              });
+              setSubmitting(prev => {
+                const newState = [...prev];
+                newState[index] = false;
+                return newState;
+              });
+              setCountdown(prev => {
+                const newState = [...prev];
+                newState[index] = 0;
+                return newState;
+              });
+              setEndTimes(prev => {
+                const newState = [...prev];
+                newState[index] = null;
+                return newState;
+              });
+              toast({
+                variant: 'destructive',
+                title: 'Early Return Detected',
+                description: 'You returned before the task finished. No reward given.',
+              });
+            } else if (now >= endTime) {
+              // Task completed while away
+              setSubmitting(prev => {
+                const newState = [...prev];
+                newState[index] = false;
+                return newState;
+              });
+              setReadyToClaim(prev => {
+                const newState = [...prev];
+                newState[index] = true;
+                return newState;
+              });
+              setEndTimes(prev => {
+                const newState = [...prev];
+                newState[index] = null;
+                return newState;
+              });
+              setCountdown(prev => {
+                const newState = [...prev];
+                newState[index] = 0;
+                return newState;
+              });
+            }
+          }
+        });
       }
     };
 
