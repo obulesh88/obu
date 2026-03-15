@@ -1,4 +1,3 @@
-
 'use client';
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -98,7 +97,7 @@ export function useUser() {
             if (!querySnapshot.empty) {
               const referrerDoc = querySnapshot.docs[0];
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
-              const referralReward = 1500;
+              const referralReward = 750;
               
               const updateData = {
                 'referral.count': increment(1),
