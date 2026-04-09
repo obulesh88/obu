@@ -12,9 +12,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, FileText } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,6 +32,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const auth = useAuth();
@@ -32,18 +43,24 @@ export default function LoginPage() {
     e.preventDefault();
     if (!auth) return;
 
+    if (!isLogin && !termsAccepted) {
+      toast({
+        variant: 'destructive',
+        title: 'Terms not accepted',
+        description: 'You must agree to the Terms and Conditions to create an account.',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: 'Welcome back!', description: 'Redirecting to your wallet...' });
       } else {
-        // Validation for phone number
         if (phoneNumber.length < 10) {
           throw new Error('Please enter a valid mobile number.');
         }
-
-        // Store phone number in localStorage for the useUser hook to pick up during profile init
         localStorage.setItem('pending_phone_number', phoneNumber);
         
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -62,6 +79,16 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const termsContent = `
+    1. Acceptance of Terms: By creating an account on OR wallet, you agree to abide by these terms.
+    2. Eligibility: You must provide accurate information, including a valid email and mobile number.
+    3. Rewards: OR coins are micro-incentives earned by completing tasks. 1000 OR = ₹1.
+    4. Prohibited Conduct: Any attempt to manipulate tasks, use bots, or create multiple accounts will result in immediate termination.
+    5. Withdrawals: Payouts are processed to verified UPI or Bank accounts. Processing takes 1-7 business days.
+    6. Privacy: We value your data. Your information is used solely for task verification and payout processing.
+    7. Termination: We reserve the right to suspend accounts that violate our security protocols.
+  `;
 
   return (
     <div className="flex flex-col items-center justify-center p-6 gap-8">
@@ -122,9 +149,52 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+
+            {!isLogin && (
+              <div className="flex items-start space-x-2 pt-2">
+                <Checkbox 
+                  id="terms" 
+                  checked={termsAccepted} 
+                  onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <label
+                    htmlFor="terms"
+                    className="text-[10px] font-bold uppercase leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    I agree to the
+                  </label>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button type="button" className="text-[10px] font-black text-primary uppercase underline text-left">
+                        Terms and Conditions
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="font-black uppercase flex items-center gap-2">
+                          <FileText className="h-5 w-5" /> Terms and Conditions
+                        </DialogTitle>
+                        <DialogDescription className="text-xs font-bold uppercase">
+                          Please review our platform rules.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ScrollArea className="max-h-[60vh] mt-4 pr-4">
+                        <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                          {termsContent}
+                        </div>
+                      </ScrollArea>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button className="w-full h-12 font-black uppercase" disabled={isLoading}>
+            <Button 
+              className="w-full h-12 font-black uppercase" 
+              disabled={isLoading || (!isLogin && !termsAccepted)}
+            >
               {isLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isLogin ? 'Sign In' : 'Join Now'}
             </Button>
@@ -132,7 +202,10 @@ export default function LoginPage() {
               type="button" 
               variant="ghost" 
               className="text-[10px] uppercase font-bold"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setTermsAccepted(false);
+              }}
             >
               {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login"}
             </Button>
