@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -83,9 +84,9 @@ export default function LoginPage() {
   const termsContent = `
     1. Acceptance of Terms: By creating an account on OR wallet, you agree to abide by these terms.
     2. Eligibility: You must provide accurate information, including a valid email and mobile number.
-    3. Rewards: OR coins are micro-incentives earned by completing tasks. 1000 OR = ₹1.
+    3. Rewards: Digital rewards are micro-incentives earned by completing tasks and engaging with content.
     4. Prohibited Conduct: Any attempt to manipulate tasks, use bots, or create multiple accounts will result in immediate termination.
-    5. Withdrawals: Payouts are processed to verified UPI or Bank accounts. Processing takes 1-7 business days.
+    5. Withdrawals: Payouts are processed to verified UPI or Bank accounts. Processing takes 1-7 business days. Minimum withdrawal is ₹100.
     6. Privacy: We value your data. Your information is used solely for task verification and payout processing.
     7. Termination: We reserve the right to suspend accounts that violate our security protocols.
   `;
@@ -101,7 +102,7 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle className="uppercase font-black">{isLogin ? 'Login' : 'Create Account'}</CardTitle>
           <CardDescription className="text-xs font-bold uppercase">
-            {isLogin ? 'Access your digital rewards' : 'Start earning OR coins today'}
+            {isLogin ? 'Access your digital rewards' : 'Start earning rewards today'}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleAuth}>

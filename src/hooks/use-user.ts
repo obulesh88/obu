@@ -94,7 +94,7 @@ export function useUser() {
             if (!querySnapshot.empty) {
               const referrerDoc = querySnapshot.docs[0];
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
-              const referralReward = 0.75; // ₹0.75 reward
+              const referralReward = 45; // ₹45 reward per referral
               
               const updateData = {
                 'referral.count': increment(1),
