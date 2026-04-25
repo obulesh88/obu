@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, FileText, Shield, Ticket, Info, Undo2, LifeBuoy, Edit2, Check, RefreshCw, LogOut, Fingerprint } from 'lucide-react';
+import { Moon, Sun, Edit2, Check, RefreshCw, LogOut, Fingerprint } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -21,7 +20,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth, useFirestore } from '@/firebase';
 import { updateProfile, signOut } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -119,39 +117,6 @@ export default function ProfilePage() {
     return <div>Please log in to view your profile.</div>;
   }
 
-  const policies = [
-    { 
-      title: "About Us", 
-      icon: <Info className="h-4 w-4" />, 
-      content: `OR wallet is a professional digital rewards and micro-tasking platform. We connect users with advertisers and market researchers, providing a platform where users can earn micro-incentives (OR coins) by completing verified digital tasks such as captcha solving and content engagement.`
-    },
-    { 
-      title: "Customer Support", 
-      icon: <LifeBuoy className="h-4 w-4" />, 
-      content: `OR wallet provides customer support at obuleswaror@gmail.com. We aim to respond to all queries within 24 to 48 hours.`
-    },
-    { 
-      title: "Terms and Conditions", 
-      icon: <FileText className="h-4 w-4" />, 
-      content: `By accessing OR wallet, users agree to follow platform rules. Points can be converted to balance according to conversion rules. Misuse may result in account termination.`
-    },
-    { 
-      title: "Privacy Policy", 
-      icon: <Shield className="h-4 w-4" />, 
-      content: `We collect name, email, and device info to manage rewards and payouts. We take reasonable steps to protect your data.`
-    },
-    { 
-      title: "Withdrawal Policy", 
-      icon: <Ticket className="h-4 w-4" />, 
-      content: `Withdrawals are processed after reaching minimum limits. Users must provide valid UPI or Bank details. Requests take 1-7 business days.`
-    },
-    { 
-      title: "Refund & Cancellation Policy", 
-      icon: <Undo2 className="h-4 w-4" />, 
-      content: `No deposits are accepted. Once processed, transactions are final.`
-    }
-  ];
-
   return (
     <div className="space-y-6 pb-20">
       <Card className="border-primary/10 bg-primary/5">
@@ -222,35 +187,6 @@ export default function ProfilePage() {
                 <Label htmlFor="email" className="text-[10px] font-bold uppercase">Email Address</Label>
                 <Input id="email" type="email" value={userProfile.email ?? ''} readOnly className="h-11 font-bold bg-muted" />
             </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-black uppercase">Legal & Compliance</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-2">
-          {policies.map((policy) => (
-            <Dialog key={policy.title}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="w-full justify-start gap-3 h-12 font-bold uppercase text-[10px]">
-                  {policy.icon}
-                  {policy.title}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="font-black uppercase">{policy.title}</DialogTitle>
-                  <DialogDescription className="text-xs font-bold uppercase">Review our professional {policy.title.toLowerCase()}.</DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="max-h-[60vh] mt-4 pr-4">
-                  <div className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
-                    {policy.content}
-                  </div>
-                </ScrollArea>
-              </DialogContent>
-            </Dialog>
-          ))}
         </CardContent>
       </Card>
 
