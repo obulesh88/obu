@@ -9,7 +9,10 @@ import {
   Info, 
   ChevronLeft, 
   Zap,
-  Dice1, Dice2, Dice3, Dice4, Dice5, Dice6
+  Dice1, Dice2, Dice3, Dice4, Dice5, Dice6,
+  History,
+  LayoutGrid,
+  Gamepad2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +22,13 @@ const TIME_OPTIONS = [
   { id: '5m', label: 'K3 5 Min', icon: <Timer className="h-4 w-4" /> },
   { id: '10m', label: 'K3 10 Min', icon: <Timer className="h-4 w-4" /> },
 ];
+
+const SUM_MULTIPLIERS: Record<number, string> = {
+  3: '207.36', 4: '69.12', 5: '34.56', 6: '20.74', 
+  7: '13.83', 8: '9.88', 9: '8.3', 10: '7.68', 
+  11: '7.68', 12: '8.3', 13: '9.88', 14: '13.83', 
+  15: '20.74', 16: '34.56', 17: '69.12', 18: '207.36'
+};
 
 type K3Result = {
   period: string;
@@ -45,6 +55,8 @@ export default function K3Page() {
   const [timeLeft, setTimeLeft] = useState(59);
   const [history, setHistory] = useState<K3Result[]>([]);
   const [currentPeriod, setCurrentPeriod] = useState('');
+  const [activeTab, setActiveTab] = useState('Total');
+  const [historyTab, setHistoryTab] = useState('Game history');
 
   const generatePeriodId = useCallback(() => {
     const now = new Date();
@@ -99,16 +111,20 @@ export default function K3Page() {
   }, [generateResult]);
 
   return (
-    <div className="flex flex-col gap-4 pb-24 bg-zinc-950 min-h-screen -m-4 p-4 overflow-x-hidden">
+    <div className="flex flex-col gap-4 pb-24 bg-[#0a052e] min-h-screen -m-4 p-4 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center justify-between text-white mb-2">
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        <h1 className="text-lg font-black uppercase tracking-widest italic">K3 Lotre</h1>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-          <Info className="h-5 w-5" />
-        </Button>
+        <div className="flex flex-col items-center">
+          <h1 className="text-xl font-black italic tracking-tighter">OR wallet.Game</h1>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="icon" className="text-white">
+            <Gamepad2 className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {/* Time Tabs */}
@@ -120,104 +136,169 @@ export default function K3Page() {
             className={cn(
               "flex flex-col items-center justify-center p-2 rounded-xl transition-all border border-white/5",
               selectedTime === opt.id 
-                ? "bg-gradient-to-b from-purple-500 to-indigo-700 text-white shadow-[0_0_15px_rgba(139,92,246,0.4)]" 
-                : "bg-zinc-900 text-zinc-500"
+                ? "bg-gradient-to-b from-[#1b106b] to-[#0a052e] text-white shadow-[0_0_15px_rgba(59,130,246,0.3)] border-b-2 border-b-blue-500" 
+                : "bg-[#161145] text-zinc-400"
             )}
           >
             <div className="mb-1">{opt.icon}</div>
             <span className="text-[9px] font-black uppercase text-center leading-tight">
-              {opt.label.split(' ')[1]}<br/>{opt.label.split(' ').slice(2).join(' ')}
+              {opt.label}
             </span>
           </button>
         ))}
       </div>
 
-      {/* Main Game Card */}
-      <Card className="bg-gradient-to-r from-purple-600 to-indigo-500 border-none relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-        <CardContent className="p-4 flex justify-between items-center relative z-10">
-          <div className="flex flex-col gap-2">
-            <div className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase inline-block">
-              {selectedTime} Game
-            </div>
-            <div className="flex gap-2 mt-2">
-              {history[0]?.dice.map((d, i) => (
-                <div key={i} className="h-10 w-10 bg-white rounded-lg flex items-center justify-center shadow-lg transform rotate-3">
-                  <DiceIcon num={d} className="h-7 w-7 text-indigo-600" />
-                </div>
-              ))}
-            </div>
-            <p className="text-[9px] font-mono text-white/70 mt-2 font-black">Period: {currentPeriod}</p>
-          </div>
-          <div className="text-right flex flex-col items-end">
-             <p className="text-xs font-black text-white uppercase tracking-wider mb-1">Ends In</p>
-             <div className="flex gap-1">
-               {timeLeft.toString().padStart(2, '0').split('').map((char, i) => (
-                 <span key={i} className="bg-zinc-900 text-white font-mono text-2xl font-black p-2 rounded min-w-[30px] text-center shadow-inner border border-white/10">
-                   {char}
-                 </span>
-               ))}
-             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Betting Options */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-zinc-900 border-white/5 p-4 flex flex-col gap-2 items-center justify-center hover:bg-zinc-800 transition-colors cursor-pointer group">
-          <div className="h-12 w-12 rounded-full bg-indigo-500/10 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-             <Zap className="h-6 w-6 text-indigo-400" />
-          </div>
-          <p className="text-xs font-black uppercase text-white">Total Sum</p>
-          <p className="text-[9px] text-zinc-500 font-bold uppercase">Predict 3-18</p>
-        </Card>
-        <Card className="bg-zinc-900 border-white/5 p-4 flex flex-col gap-2 items-center justify-center hover:bg-zinc-800 transition-colors cursor-pointer group">
-          <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-             <Trophy className="h-6 w-6 text-purple-400" />
-          </div>
-          <p className="text-xs font-black uppercase text-white">Specific Triple</p>
-          <p className="text-[9px] text-zinc-500 font-bold uppercase">Big Payouts</p>
-        </Card>
-      </div>
-
-      {/* Big/Small & Odd/Even Grid */}
-      <div className="bg-zinc-900/50 p-6 rounded-3xl border border-white/5 shadow-xl">
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <Button className="h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xl rounded-2xl shadow-[0_4px_0_rgb(49,46,129)] active:translate-y-1 active:shadow-none transition-all uppercase italic">Big</Button>
-          <Button className="h-14 bg-zinc-700 hover:bg-zinc-600 text-white font-black text-xl rounded-2xl shadow-[0_4px_0_rgb(39,39,42)] active:translate-y-1 active:shadow-none transition-all uppercase italic">Small</Button>
+      {/* Main Game Info */}
+      <div className="flex justify-between items-center text-white mb-2 px-2">
+        <div className="flex flex-col">
+           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Period</span>
+           <span className="text-sm font-black font-mono tracking-tighter">{currentPeriod}</span>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <Button className="h-14 bg-purple-600 hover:bg-purple-700 text-white font-black text-xl rounded-2xl shadow-[0_4px_0_rgb(88,28,135)] active:translate-y-1 active:shadow-none transition-all uppercase italic">Odd</Button>
-          <Button className="h-14 bg-zinc-700 hover:bg-zinc-600 text-white font-black text-xl rounded-2xl shadow-[0_4px_0_rgb(39,39,42)] active:translate-y-1 active:shadow-none transition-all uppercase italic">Even</Button>
-        </div>
-      </div>
-
-      {/* Quick History List */}
-      <div className="bg-zinc-900/40 rounded-3xl overflow-hidden border border-white/5">
-        <div className="p-4 bg-indigo-600/10 border-b border-white/5">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Recent Results</h3>
-        </div>
-        <div className="divide-y divide-white/5">
-          {history.map((row, i) => (
-            <div key={i} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
-              <div className="flex flex-col">
-                <span className="text-[9px] font-mono text-zinc-500">#{row.period.slice(-4)}</span>
-                <span className={cn("text-lg font-black", row.bs === 'Big' ? 'text-indigo-400' : 'text-zinc-400')}>
-                  {row.sum}
+        <div className="text-right flex flex-col items-end">
+           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Time Remaining</span>
+           <div className="flex gap-1 mt-1">
+              <span className="bg-[#161145] text-blue-400 font-mono text-xl font-black p-1 rounded min-w-[28px] text-center">0</span>
+              <span className="bg-[#161145] text-blue-400 font-mono text-xl font-black p-1 rounded min-w-[28px] text-center">0</span>
+              <span className="text-blue-400 font-black self-center">:</span>
+              {timeLeft.toString().padStart(2, '0').split('').map((char, i) => (
+                <span key={i} className="bg-[#161145] text-blue-400 font-mono text-xl font-black p-1 rounded min-w-[28px] text-center">
+                  {char}
                 </span>
-              </div>
-              <div className="flex gap-1.5">
-                {row.dice.map((d, di) => (
-                  <DiceIcon key={di} num={d} className="h-5 w-5 text-zinc-300" />
-                ))}
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-black uppercase text-white leading-none">{row.bs}</p>
-                <p className="text-[9px] font-bold uppercase text-zinc-500 mt-1">{row.oe}</p>
-              </div>
+              ))}
+           </div>
+        </div>
+      </div>
+
+      {/* Animated Dice Frame */}
+      <div className="bg-[#05a065] p-3 rounded-3xl relative overflow-hidden shadow-[0_0_30px_rgba(5,160,101,0.3)] border-2 border-[#05a065]/50">
+        <div className="bg-[#1b106b] rounded-2xl p-6 flex justify-around items-center relative z-10">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-8 bg-[#05a065] rounded-r-full"></div>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-8 bg-[#05a065] rounded-l-full"></div>
+          {history[0]?.dice.map((d, i) => (
+            <div key={i} className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-2xl transform transition-transform animate-in zoom-in-75 duration-500">
+              <DiceIcon num={d} className="h-12 w-12 text-[#1b106b]" />
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Tab Selection */}
+      <div className="grid grid-cols-4 gap-1 bg-[#161145] p-1 rounded-xl border border-white/5">
+        {['Total', '2 same', '3 same', 'Different'].map((tab) => (
+          <Button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              "h-9 text-[10px] font-black uppercase rounded-lg transition-all",
+              activeTab === tab ? "bg-[#05a065] text-white shadow-lg" : "bg-transparent text-zinc-500"
+            )}
+          >
+            {tab}
+          </Button>
+        ))}
+      </div>
+
+      {/* Number Prediction Grid */}
+      <div className="bg-[#161145]/50 p-4 rounded-3xl border border-white/5">
+        <div className="grid grid-cols-4 gap-x-3 gap-y-6">
+          {Object.entries(SUM_MULTIPLIERS).map(([num, multi]) => {
+            const n = parseInt(num);
+            const isRed = n === 3 || n === 5 || n === 7 || n === 9 || n === 11 || n === 13 || n === 15 || n === 17;
+            return (
+              <div key={num} className="flex flex-col items-center gap-1 group cursor-pointer active:scale-90 transition-transform">
+                <div className={cn(
+                  "h-12 w-12 rounded-full border-2 flex items-center justify-center text-lg font-black text-white shadow-xl relative",
+                  isRed ? "border-red-500/50 bg-gradient-to-br from-red-500 to-red-700" : "border-emerald-500/50 bg-gradient-to-br from-emerald-500 to-emerald-700"
+                )}>
+                  {num}
+                  <div className="absolute -bottom-1 h-1 w-6 bg-white/20 rounded-full blur-[1px]"></div>
+                </div>
+                <span className="text-[8px] font-bold text-zinc-500 uppercase">{multi}X</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Big/Small/Odd/Even Grid */}
+        <div className="grid grid-cols-4 gap-3 mt-8">
+          {[
+            { label: 'Small', color: 'bg-blue-600 shadow-[0_4px_0_#1e3a8a]' },
+            { label: 'Big', color: 'bg-amber-500 shadow-[0_4px_0_#92400e]' },
+            { label: 'Even', color: 'bg-emerald-600 shadow-[0_4px_0_#065f46]' },
+            { label: 'Odd', color: 'bg-red-600 shadow-[0_4px_0_#991b1b]' }
+          ].map((opt) => (
+            <Button 
+              key={opt.label} 
+              className={cn(
+                "h-14 text-white font-black text-xs rounded-xl transition-all active:translate-y-1 active:shadow-none uppercase",
+                opt.color
+              )}
+            >
+              <div className="flex flex-col items-center">
+                <span>{opt.label}</span>
+                <span className="text-[8px] opacity-70">2X</span>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* History/Chart/Mine Tabs */}
+      <div className="grid grid-cols-3 gap-2 bg-[#161145] p-1 rounded-xl mt-4">
+        {['Game history', 'Chart', 'My history'].map((tab) => (
+          <Button
+            key={tab}
+            onClick={() => setHistoryTab(tab)}
+            className={cn(
+              "h-9 text-[10px] font-black uppercase rounded-lg transition-all",
+              historyTab === tab ? "bg-[#05a065] text-white shadow-lg" : "bg-transparent text-zinc-500"
+            )}
+          >
+            {tab}
+          </Button>
+        ))}
+      </div>
+
+      {/* Results Table */}
+      <div className="bg-[#161145]/40 rounded-3xl overflow-hidden border border-white/5 mt-2">
+        <table className="w-full text-center">
+          <thead className="bg-[#1e1465] text-zinc-400 uppercase text-[9px] font-black">
+            <tr>
+              <th className="py-3 px-4">Period</th>
+              <th className="py-3 px-4">Sum</th>
+              <th className="py-3 px-4">Results</th>
+            </tr>
+          </thead>
+          <tbody className="text-white text-xs font-bold divide-y divide-white/5">
+            {history.map((row, i) => (
+              <tr key={i} className="hover:bg-white/5 transition-colors">
+                <td className="py-3 px-4 font-mono text-[9px] text-zinc-500">{row.period}</td>
+                <td className="py-3 px-4 text-sm font-black text-blue-400">{row.sum}</td>
+                <td className="py-3 px-4">
+                  <div className="flex justify-center gap-1">
+                    {row.dice.map((d, di) => (
+                      <div key={di} className="bg-white rounded-[2px] p-0.5 shadow-sm">
+                        <DiceIcon num={d} className="h-4 w-4 text-[#161145]" />
+                      </div>
+                    ))}
+                    <span className={cn(
+                      "ml-2 text-[8px] font-black uppercase self-center px-1.5 py-0.5 rounded",
+                      row.bs === 'Big' ? 'bg-amber-500/20 text-amber-500' : 'bg-blue-500/20 text-blue-500'
+                    )}>
+                      {row.bs.charAt(0)}
+                    </span>
+                    <span className={cn(
+                      "text-[8px] font-black uppercase self-center px-1.5 py-0.5 rounded ml-0.5",
+                      row.oe === 'Odd' ? 'bg-red-500/20 text-red-500' : 'bg-emerald-500/20 text-emerald-500'
+                    )}>
+                      {row.oe.charAt(0)}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
