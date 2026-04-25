@@ -111,6 +111,29 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "amount", "currency", "type", "createdAt"]
+    },
+    "WingoResult": {
+      "title": "Wingo Result",
+      "type": "object",
+      "properties": {
+        "period": { "type": "string" },
+        "num": { "type": "number" },
+        "bs": { "type": "string" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "K3Result": {
+      "title": "K3 Result",
+      "type": "object",
+      "properties": {
+        "period": { "type": "string" },
+        "dice": { "type": "array", "items": { "type": "number" } },
+        "sum": { "type": "number" },
+        "bs": { "type": "string" },
+        "oe": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -128,6 +151,14 @@
     "/transactions/{transactionId}": {
       "schema": { "$ref": "#/entities/Transaction" },
       "description": "Log of all user transactions."
+    },
+    "/wingo_results/{resultId}": {
+      "schema": { "$ref": "#/entities/WingoResult" },
+      "description": "History of WinGo game results."
+    },
+    "/k3_results/{resultId}": {
+      "schema": { "$ref": "#/entities/K3Result" },
+      "description": "History of K3 Lotre dice results."
     }
   }
 }

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -9,21 +9,23 @@ import {
   Timer, 
   Info, 
   ChevronLeft, 
-  History, 
   Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const TIME_OPTIONS = [
-  { id: '30s', label: 'WinGo 30sec', icon: <Timer className="h-4 w-4" /> },
   { id: '1m', label: 'WinGo 1 Min', icon: <Zap className="h-4 w-4" /> },
   { id: '3m', label: 'WinGo 3 Min', icon: <Timer className="h-4 w-4" /> },
   { id: '5m', label: 'WinGo 5 Min', icon: <Timer className="h-4 w-4" /> },
+  { id: '10m', label: 'WinGo 10 Min', icon: <Timer className="h-4 w-4" /> },
 ];
 
 const NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 type GameResult = {
+  id?: string;
   period: string;
   num: number;
   bs: 'Big' | 'Small';
@@ -32,10 +34,26 @@ type GameResult = {
 
 export default function WingoPage() {
   const [selectedTime, setSelectedTime] = useState('1m');
-  const [timeLeft, setTimeLeft] = useState(59);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [activeTab, setActiveTab] = useState('history');
-  const [history, setHistory] = useState<GameResult[]>([]);
-  const [currentPeriod, setCurrentPeriod] = useState('');
+  const firestore = useFirestore();
+
+  const resultsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'wingo_results'),
+      orderBy('period', 'desc'),
+      limit(10)
+    );
+  }, [firestore]);
+
+  const { data: history } = useCollection<GameResult>(resultsQuery);
+
+  const getNumberColor = (num: number) => {
+    if (num === 0 || num === 5) return 'bg-gradient-to-br from-violet-500 to-red-500';
+    if ([2, 4, 6, 8].includes(num)) return 'bg-red-500';
+    return 'bg-green-500';
+  };
 
   const generatePeriodId = useCallback(() => {
     const now = new Date();
@@ -44,73 +62,55 @@ export default function WingoPage() {
     return `${datePart}1000${totalMinutes.toString().padStart(4, '0')}`;
   }, []);
 
-  const getNumberColor = (num: number) => {
-    if (num === 0 || num === 5) return 'bg-gradient-to-br from-violet-500 to-red-500';
-    if ([2, 4, 6, 8].includes(num)) return 'bg-red-500';
-    return 'bg-green-500';
-  };
+  const currentPeriod = useMemo(() => generatePeriodId(), [generatePeriodId, timeLeft]);
 
-  const generateResult = useCallback(() => {
+  const generateAndSaveResult = useCallback(async () => {
+    if (!firestore) return;
+    
+    const periodId = generatePeriodId();
+    // Check if this period already has a result in history to avoid duplicate logic
+    if (history?.some(h => h.period === periodId)) return;
+
     // Weighted Probability Algorithm (Algorithm #2)
-    // Green -> 45%, Red -> 45%, Violet -> 10%
     const r = Math.random() * 100;
-    let color: 'Green' | 'Red' | 'Violet';
     let num: number;
 
     if (r < 45) {
-      color = 'Green';
       const greenNums = [1, 3, 7, 9];
       num = greenNums[Math.floor(Math.random() * greenNums.length)];
     } else if (r < 90) {
-      color = 'Red';
       const redNums = [2, 4, 6, 8];
       num = redNums[Math.floor(Math.random() * redNums.length)];
     } else {
-      color = 'Violet';
       const violetNums = [0, 5];
       num = violetNums[Math.floor(Math.random() * violetNums.length)];
     }
 
-    const newResult: GameResult = {
-      period: generatePeriodId(),
+    const resultDocRef = doc(firestore, 'wingo_results', periodId);
+    setDoc(resultDocRef, {
+      period: periodId,
       num: num,
       bs: num >= 5 ? 'Big' : 'Small',
-      color: getNumberColor(num)
-    };
-
-    setHistory(prev => [newResult, ...prev].slice(0, 10));
-    setCurrentPeriod(generatePeriodId());
-  }, [generatePeriodId]);
-
-  useEffect(() => {
-    // Initial data
-    setCurrentPeriod(generatePeriodId());
-    const initialHistory: GameResult[] = Array.from({ length: 5 }).map((_, i) => {
-      const num = Math.floor(Math.random() * 10);
-      return {
-        period: (parseInt(generatePeriodId()) - (i + 1)).toString(),
-        num: num,
-        bs: num >= 5 ? 'Big' : 'Small',
-        color: getNumberColor(num)
-      };
+      color: getNumberColor(num),
+      createdAt: serverTimestamp()
     });
-    setHistory(initialHistory);
-  }, [generatePeriodId]);
+  }, [firestore, generatePeriodId, history]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev > 0) return prev - 1;
-        // When timer hits 0, generate result
-        generateResult();
-        return 59;
-      });
+      const now = new Date();
+      const seconds = 60 - now.getSeconds();
+      setTimeLeft(seconds);
+
+      if (seconds === 60 || seconds === 1) {
+        generateAndSaveResult();
+      }
     }, 1000);
     return () => clearInterval(timer);
-  }, [generateResult]);
+  }, [generateAndSaveResult]);
 
   const formatTime = (seconds: number) => {
-    const s = seconds.toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
     return `00 : ${s}`;
   };
 
@@ -159,9 +159,9 @@ export default function WingoPage() {
               <Info className="h-3 w-3 mr-1" /> How to play
             </Button>
             <div className="mt-2">
-               <p className="text-[10px] font-black text-white/80 uppercase">WinGo 1 Min</p>
+               <p className="text-[10px] font-black text-white/80 uppercase">Recent Results</p>
                <div className="flex gap-1 mt-1">
-                  {history.slice(0, 5).map((res, i) => (
+                  {history?.slice(0, 5).map((res, i) => (
                     <div key={i} className={cn("h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white/20 shadow-lg", res.color)}>
                       {res.num}
                     </div>
@@ -210,22 +210,6 @@ export default function WingoPage() {
         </div>
       </div>
 
-      {/* Multipliers & Quick Select */}
-      <div className="flex flex-wrap gap-2 justify-between items-center">
-        <Button variant="outline" size="sm" className="bg-slate-900 border-white/10 text-slate-400 font-black text-[10px] rounded-lg h-8 uppercase px-4">Random</Button>
-        <div className="flex gap-1">
-          {['X1', 'X5', 'X10', 'X20', 'X50', 'X100'].map(m => (
-            <Button key={m} variant="secondary" size="sm" className="bg-slate-800 text-slate-300 font-black text-[9px] h-7 w-9 p-0 rounded-md border border-white/5">{m}</Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Big / Small */}
-      <div className="grid grid-cols-2 gap-4">
-        <Button className="h-14 bg-gradient-to-r from-orange-400 to-orange-600 text-white font-black text-xl rounded-2xl shadow-xl uppercase tracking-tighter border-b-4 border-orange-800">Big</Button>
-        <Button className="h-14 bg-gradient-to-r from-blue-400 to-blue-600 text-white font-black text-xl rounded-2xl shadow-xl uppercase tracking-tighter border-b-4 border-blue-800">Small</Button>
-      </div>
-
       {/* Tabs */}
       <div className="flex gap-2 bg-slate-900/80 p-1 rounded-2xl border border-white/5">
         <Button 
@@ -246,15 +230,6 @@ export default function WingoPage() {
         >
           Chart
         </Button>
-        <Button 
-          onClick={() => setActiveTab('mine')}
-          className={cn(
-            "flex-1 h-10 font-black uppercase text-[10px] rounded-xl transition-all",
-            activeTab === 'mine' ? "bg-cyan-500 text-white" : "bg-transparent text-slate-500"
-          )}
-        >
-          My History
-        </Button>
       </div>
 
       {/* Results Table */}
@@ -269,7 +244,7 @@ export default function WingoPage() {
             </tr>
           </thead>
           <tbody className="text-white text-xs font-bold divide-y divide-white/5">
-            {history.map((row, i) => (
+            {history?.map((row, i) => (
               <tr key={i} className="hover:bg-white/5">
                 <td className="py-3 px-4 font-mono text-[9px] text-slate-400">{row.period}</td>
                 <td className={cn("py-3 px-4 text-lg font-black", [1,3,7,9].includes(row.num) ? "text-green-500" : [2,4,6,8].includes(row.num) ? "text-red-500" : "text-violet-500")}>

@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -15,6 +16,8 @@ import {
   Gamepad2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'K3 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -31,6 +34,7 @@ const SUM_MULTIPLIERS: Record<number, string> = {
 };
 
 type K3Result = {
+  id?: string;
   period: string;
   dice: number[];
   sum: number;
@@ -52,11 +56,21 @@ const DiceIcon = ({ num, className }: { num: number, className?: string }) => {
 
 export default function K3Page() {
   const [selectedTime, setSelectedTime] = useState('1m');
-  const [timeLeft, setTimeLeft] = useState(59);
-  const [history, setHistory] = useState<K3Result[]>([]);
-  const [currentPeriod, setCurrentPeriod] = useState('');
+  const [timeLeft, setTimeLeft] = useState(60);
   const [activeTab, setActiveTab] = useState('Total');
   const [historyTab, setHistoryTab] = useState('Game history');
+  const firestore = useFirestore();
+
+  const resultsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'k3_results'),
+      orderBy('period', 'desc'),
+      limit(10)
+    );
+  }, [firestore]);
+
+  const { data: history } = useCollection<K3Result>(resultsQuery);
 
   const generatePeriodId = useCallback(() => {
     const now = new Date();
@@ -65,50 +79,42 @@ export default function K3Page() {
     return `${datePart}3000${totalMinutes.toString().padStart(4, '0')}`;
   }, []);
 
-  const generateResult = useCallback(() => {
+  const currentPeriod = useMemo(() => generatePeriodId(), [generatePeriodId, timeLeft]);
+
+  const generateAndSaveResult = useCallback(async () => {
+    if (!firestore) return;
+
+    const periodId = generatePeriodId();
+    if (history?.some(h => h.period === periodId)) return;
+
     const d1 = Math.floor(Math.random() * 6) + 1;
     const d2 = Math.floor(Math.random() * 6) + 1;
     const d3 = Math.floor(Math.random() * 6) + 1;
     const sum = d1 + d2 + d3;
 
-    const newResult: K3Result = {
-      period: generatePeriodId(),
+    const resultDocRef = doc(firestore, 'k3_results', periodId);
+    setDoc(resultDocRef, {
+      period: periodId,
       dice: [d1, d2, d3],
       sum: sum,
       bs: sum >= 11 ? 'Big' : 'Small',
-      oe: sum % 2 === 0 ? 'Even' : 'Odd'
-    };
-
-    setHistory(prev => [newResult, ...prev].slice(0, 10));
-    setCurrentPeriod(generatePeriodId());
-  }, [generatePeriodId]);
-
-  useEffect(() => {
-    setCurrentPeriod(generatePeriodId());
-    const initialHistory: K3Result[] = Array.from({ length: 5 }).map((_, i) => {
-      const d = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
-      const s = d[0] + d[1] + d[2];
-      return {
-        period: (parseInt(generatePeriodId()) - (i + 1)).toString(),
-        dice: d,
-        sum: s,
-        bs: s >= 11 ? 'Big' : 'Small',
-        oe: s % 2 === 0 ? 'Even' : 'Odd'
-      };
+      oe: sum % 2 === 0 ? 'Even' : 'Odd',
+      createdAt: serverTimestamp()
     });
-    setHistory(initialHistory);
-  }, [generatePeriodId]);
+  }, [firestore, generatePeriodId, history]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev > 0) return prev - 1;
-        generateResult();
-        return 59;
-      });
+      const now = new Date();
+      const seconds = 60 - now.getSeconds();
+      setTimeLeft(seconds);
+
+      if (seconds === 60 || seconds === 1) {
+        generateAndSaveResult();
+      }
     }, 1000);
     return () => clearInterval(timer);
-  }, [generateResult]);
+  }, [generateAndSaveResult]);
 
   return (
     <div className="flex flex-col gap-4 pb-24 bg-[#0a052e] min-h-screen -m-4 p-4 overflow-x-hidden">
@@ -174,89 +180,12 @@ export default function K3Page() {
         <div className="bg-[#1b106b] rounded-2xl p-6 flex justify-around items-center relative z-10">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-8 bg-[#05a065] rounded-r-full"></div>
           <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-8 bg-[#05a065] rounded-l-full"></div>
-          {history[0]?.dice.map((d, i) => (
+          {history?.[0]?.dice.map((d, i) => (
             <div key={i} className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-2xl transform transition-transform animate-in zoom-in-75 duration-500">
               <DiceIcon num={d} className="h-12 w-12 text-[#1b106b]" />
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Tab Selection */}
-      <div className="grid grid-cols-4 gap-1 bg-[#161145] p-1 rounded-xl border border-white/5">
-        {['Total', '2 same', '3 same', 'Different'].map((tab) => (
-          <Button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              "h-9 text-[10px] font-black uppercase rounded-lg transition-all",
-              activeTab === tab ? "bg-[#05a065] text-white shadow-lg" : "bg-transparent text-zinc-500"
-            )}
-          >
-            {tab}
-          </Button>
-        ))}
-      </div>
-
-      {/* Number Prediction Grid */}
-      <div className="bg-[#161145]/50 p-4 rounded-3xl border border-white/5">
-        <div className="grid grid-cols-4 gap-x-3 gap-y-6">
-          {Object.entries(SUM_MULTIPLIERS).map(([num, multi]) => {
-            const n = parseInt(num);
-            const isRed = n === 3 || n === 5 || n === 7 || n === 9 || n === 11 || n === 13 || n === 15 || n === 17;
-            return (
-              <div key={num} className="flex flex-col items-center gap-1 group cursor-pointer active:scale-90 transition-transform">
-                <div className={cn(
-                  "h-12 w-12 rounded-full border-2 flex items-center justify-center text-lg font-black text-white shadow-xl relative",
-                  isRed ? "border-red-500/50 bg-gradient-to-br from-red-500 to-red-700" : "border-emerald-500/50 bg-gradient-to-br from-emerald-500 to-emerald-700"
-                )}>
-                  {num}
-                  <div className="absolute -bottom-1 h-1 w-6 bg-white/20 rounded-full blur-[1px]"></div>
-                </div>
-                <span className="text-[8px] font-bold text-zinc-500 uppercase">{multi}X</span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Big/Small/Odd/Even Grid */}
-        <div className="grid grid-cols-4 gap-3 mt-8">
-          {[
-            { label: 'Small', color: 'bg-blue-600 shadow-[0_4px_0_#1e3a8a]' },
-            { label: 'Big', color: 'bg-amber-500 shadow-[0_4px_0_#92400e]' },
-            { label: 'Even', color: 'bg-emerald-600 shadow-[0_4px_0_#065f46]' },
-            { label: 'Odd', color: 'bg-red-600 shadow-[0_4px_0_#991b1b]' }
-          ].map((opt) => (
-            <Button 
-              key={opt.label} 
-              className={cn(
-                "h-14 text-white font-black text-xs rounded-xl transition-all active:translate-y-1 active:shadow-none uppercase",
-                opt.color
-              )}
-            >
-              <div className="flex flex-col items-center">
-                <span>{opt.label}</span>
-                <span className="text-[8px] opacity-70">2X</span>
-              </div>
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* History/Chart/Mine Tabs */}
-      <div className="grid grid-cols-3 gap-2 bg-[#161145] p-1 rounded-xl mt-4">
-        {['Game history', 'Chart', 'My history'].map((tab) => (
-          <Button
-            key={tab}
-            onClick={() => setHistoryTab(tab)}
-            className={cn(
-              "h-9 text-[10px] font-black uppercase rounded-lg transition-all",
-              historyTab === tab ? "bg-[#05a065] text-white shadow-lg" : "bg-transparent text-zinc-500"
-            )}
-          >
-            {tab}
-          </Button>
-        ))}
       </div>
 
       {/* Results Table */}
@@ -270,7 +199,7 @@ export default function K3Page() {
             </tr>
           </thead>
           <tbody className="text-white text-xs font-bold divide-y divide-white/5">
-            {history.map((row, i) => (
+            {history?.map((row, i) => (
               <tr key={i} className="hover:bg-white/5 transition-colors">
                 <td className="py-3 px-4 font-mono text-[9px] text-zinc-500">{row.period}</td>
                 <td className="py-3 px-4 text-sm font-black text-blue-400">{row.sum}</td>

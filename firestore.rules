@@ -24,5 +24,13 @@ service cloud.firestore {
       allow read, create, update: if true;
       allow delete: if false;
     }
+
+    match /wingo_results/{resultId} {
+      allow read, write: if true;
+    }
+
+    match /k3_results/{resultId} {
+      allow read, write: if true;
+    }
   }
 }
