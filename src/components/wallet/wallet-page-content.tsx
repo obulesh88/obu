@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const MIN_WITHDRAWAL = 1;
+const MIN_WITHDRAWAL = 100;
 
 export default function WalletPageContent() {
   const [activeTab, setActiveTab] = useState<'withdraw' | 'deposit'>('withdraw');
@@ -94,7 +94,11 @@ export default function WalletPageContent() {
 
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
-      toast({ variant: 'destructive', title: 'Invalid Amount' });
+      toast({ 
+        variant: 'destructive', 
+        title: 'Invalid Amount', 
+        description: `Minimum withdrawal amount is ₹${MIN_WITHDRAWAL}.` 
+      });
       return;
     }
 
@@ -204,7 +208,7 @@ export default function WalletPageContent() {
              <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase">Amount (₹)</Label>
                 <div className="relative">
-                  <Input type="number" placeholder="Min ₹1" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} className="h-12 font-black text-lg" />
+                  <Input type="number" placeholder={`Min ₹${MIN_WITHDRAWAL}`} value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} className="h-12 font-black text-lg" />
                   <div className="absolute inset-y-0 right-3 flex items-center font-bold">₹</div>
                 </div>
              </div>
