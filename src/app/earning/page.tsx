@@ -1,8 +1,9 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Key, Tv, Gamepad2, Users } from 'lucide-react';
+import { Key, Tv, Gamepad2, Users, Dices } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EarningPage() {
@@ -10,6 +11,7 @@ export default function EarningPage() {
     { name: 'Solve Captcha', icon: <Key className="h-8 w-8 text-primary" />, href: '/earning/captcha-list', description: 'Quick & Easy' },
     { name: 'Watch Ads', icon: <Tv className="h-8 w-8 text-blue-500" />, href: '/earning/ad-list', description: 'High Rewards' },
     { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8 text-green-500" />, href: '/earning/games', description: 'Fun Tasks' },
+    { name: 'Wingo', icon: <Dices className="h-8 w-8 text-orange-500" />, href: '/earning/wingo', description: 'Color Luck' },
     { name: 'Refer & Earn', icon: <Users className="h-8 w-8 text-purple-500" />, href: '/referral', description: 'Invite Friends' },
   ];
 
@@ -17,7 +19,7 @@ export default function EarningPage() {
       <div className="grid gap-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-black uppercase tracking-tight">Earning Zone</h1>
-          <p className="text-sm text-muted-foreground">Pick a task and start accumulating OR coins.</p>
+          <p className="text-sm text-muted-foreground">Pick a task and start accumulating rewards.</p>
         </div>
         
         <div className="grid gap-4 grid-cols-2">
