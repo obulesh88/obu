@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -10,12 +10,9 @@ import {
   Info, 
   ChevronLeft, 
   History, 
-  BarChart3, 
-  User as UserIcon,
   Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 
 const TIME_OPTIONS = [
   { id: '30s', label: 'WinGo 30sec', icon: <Timer className="h-4 w-4" /> },
@@ -26,27 +23,95 @@ const TIME_OPTIONS = [
 
 const NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+type GameResult = {
+  period: string;
+  num: number;
+  bs: 'Big' | 'Small';
+  color: string;
+};
+
 export default function WingoPage() {
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(59);
   const [activeTab, setActiveTab] = useState('history');
+  const [history, setHistory] = useState<GameResult[]>([]);
+  const [currentPeriod, setCurrentPeriod] = useState('');
+
+  const generatePeriodId = useCallback(() => {
+    const now = new Date();
+    const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const totalMinutes = now.getHours() * 60 + now.getMinutes();
+    return `${datePart}1000${totalMinutes.toString().padStart(4, '0')}`;
+  }, []);
+
+  const getNumberColor = (num: number) => {
+    if (num === 0 || num === 5) return 'bg-gradient-to-br from-violet-500 to-red-500';
+    if ([2, 4, 6, 8].includes(num)) return 'bg-red-500';
+    return 'bg-green-500';
+  };
+
+  const generateResult = useCallback(() => {
+    // Weighted Probability Algorithm (Algorithm #2)
+    // Green -> 45%, Red -> 45%, Violet -> 10%
+    const r = Math.random() * 100;
+    let color: 'Green' | 'Red' | 'Violet';
+    let num: number;
+
+    if (r < 45) {
+      color = 'Green';
+      const greenNums = [1, 3, 7, 9];
+      num = greenNums[Math.floor(Math.random() * greenNums.length)];
+    } else if (r < 90) {
+      color = 'Red';
+      const redNums = [2, 4, 6, 8];
+      num = redNums[Math.floor(Math.random() * redNums.length)];
+    } else {
+      color = 'Violet';
+      const violetNums = [0, 5];
+      num = violetNums[Math.floor(Math.random() * violetNums.length)];
+    }
+
+    const newResult: GameResult = {
+      period: generatePeriodId(),
+      num: num,
+      bs: num >= 5 ? 'Big' : 'Small',
+      color: getNumberColor(num)
+    };
+
+    setHistory(prev => [newResult, ...prev].slice(0, 10));
+    setCurrentPeriod(generatePeriodId());
+  }, [generatePeriodId]);
+
+  useEffect(() => {
+    // Initial data
+    setCurrentPeriod(generatePeriodId());
+    const initialHistory: GameResult[] = Array.from({ length: 5 }).map((_, i) => {
+      const num = Math.floor(Math.random() * 10);
+      return {
+        period: (parseInt(generatePeriodId()) - (i + 1)).toString(),
+        num: num,
+        bs: num >= 5 ? 'Big' : 'Small',
+        color: getNumberColor(num)
+      };
+    });
+    setHistory(initialHistory);
+  }, [generatePeriodId]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 59));
+      setTimeLeft((prev) => {
+        if (prev > 0) return prev - 1;
+        // When timer hits 0, generate result
+        generateResult();
+        return 59;
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [generateResult]);
 
   const formatTime = (seconds: number) => {
     const s = seconds.toString().padStart(2, '0');
     return `00 : ${s}`;
-  };
-
-  const getNumberColor = (num: number) => {
-    if (num === 0 || num === 5) return 'bg-gradient-to-br from-violet-500 to-red-500';
-    if (num % 2 === 0) return 'bg-red-500';
-    return 'bg-green-500';
   };
 
   return (
@@ -94,11 +159,11 @@ export default function WingoPage() {
               <Info className="h-3 w-3 mr-1" /> How to play
             </Button>
             <div className="mt-2">
-               <p className="text-[10px] font-black text-white/80 uppercase">WinGo {selectedTime === '30s' ? '30sec' : '1 Min'}</p>
+               <p className="text-[10px] font-black text-white/80 uppercase">WinGo 1 Min</p>
                <div className="flex gap-1 mt-1">
-                  {[8, 2, 3, 4, 1].map((n, i) => (
-                    <div key={i} className={cn("h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white/20 shadow-lg", getNumberColor(n))}>
-                      {n}
+                  {history.slice(0, 5).map((res, i) => (
+                    <div key={i} className={cn("h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white/20 shadow-lg", res.color)}>
+                      {res.num}
                     </div>
                   ))}
                </div>
@@ -116,11 +181,9 @@ export default function WingoPage() {
                  </span>
                ))}
              </div>
-             <p className="text-[9px] font-mono text-slate-900 mt-2 font-black">20260425100051750</p>
+             <p className="text-[9px] font-mono text-slate-900 mt-2 font-black">{currentPeriod}</p>
           </div>
         </CardContent>
-        {/* Divider SVG line */}
-        <div className="absolute inset-y-0 left-1/2 w-[1px] bg-white/20 border-dashed border-l border-white/40 hidden md:block"></div>
       </Card>
 
       {/* Prediction Buttons */}
@@ -206,14 +269,12 @@ export default function WingoPage() {
             </tr>
           </thead>
           <tbody className="text-white text-xs font-bold divide-y divide-white/5">
-            {[
-              { period: '20260425100051749', num: 8, bs: 'Big', color: 'bg-red-500' },
-              { period: '20260425100051748', num: 2, bs: 'Small', color: 'bg-red-500' },
-              { period: '20260425100051747', num: 5, bs: 'Big', color: 'bg-gradient-to-br from-violet-500 to-red-500' },
-            ].map((row, i) => (
+            {history.map((row, i) => (
               <tr key={i} className="hover:bg-white/5">
                 <td className="py-3 px-4 font-mono text-[9px] text-slate-400">{row.period}</td>
-                <td className={cn("py-3 px-4 text-lg font-black", row.num % 2 === 0 ? "text-red-500" : "text-green-500")}>{row.num}</td>
+                <td className={cn("py-3 px-4 text-lg font-black", [1,3,7,9].includes(row.num) ? "text-green-500" : [2,4,6,8].includes(row.num) ? "text-red-500" : "text-violet-500")}>
+                  {row.num}
+                </td>
                 <td className="py-3 px-4 uppercase italic tracking-tighter">{row.bs}</td>
                 <td className="py-3 px-4">
                   <div className={cn("h-3 w-3 rounded-full mx-auto shadow-sm", row.color)}></div>
