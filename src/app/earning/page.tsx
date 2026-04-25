@@ -1,7 +1,8 @@
+
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Key, Tv, Gamepad2, Users, Dices, Layers } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Key, Tv, Gamepad2, Users, Dices, Layers, Sword } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EarningPage() {
@@ -11,6 +12,7 @@ export default function EarningPage() {
     { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8 text-green-500" />, href: '/earning/games', description: 'Fun Tasks' },
     { name: 'Wingo', icon: <Dices className="h-8 w-8 text-orange-500" />, href: '/earning/wingo', description: 'Color Luck' },
     { name: 'K3 Lotre', icon: <Layers className="h-8 w-8 text-cyan-500" />, href: '/earning/k3', description: 'Dice Prediction' },
+    { name: 'Dragon vs Tiger', icon: <Sword className="h-8 w-8 text-rose-500" />, href: '/earning/dragon-tiger', description: 'Legendary Battle' },
     { name: 'Refer & Earn', icon: <Users className="h-8 w-8 text-purple-500" />, href: '/referral', description: 'Invite Friends' },
   ];
 

@@ -134,6 +134,17 @@
         "oe": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
+    },
+    "DragonTigerResult": {
+      "title": "Dragon Tiger Result",
+      "type": "object",
+      "properties": {
+        "period": { "type": "string" },
+        "dragonCard": { "type": "number" },
+        "tigerCard": { "type": "number" },
+        "winner": { "type": "string", "enum": ["Dragon", "Tiger", "Tie"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -159,6 +170,10 @@
     "/k3_results/{resultId}": {
       "schema": { "$ref": "#/entities/K3Result" },
       "description": "History of K3 Lotre dice results."
+    },
+    "/dragon_tiger_results/{resultId}": {
+      "schema": { "$ref": "#/entities/DragonTigerResult" },
+      "description": "History of Dragon vs Tiger game results."
     }
   }
 }

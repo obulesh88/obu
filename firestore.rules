@@ -32,5 +32,9 @@ service cloud.firestore {
     match /k3_results/{resultId} {
       allow read, write: if true;
     }
+
+    match /dragon_tiger_results/{resultId} {
+      allow read, write: if true;
+    }
   }
 }
