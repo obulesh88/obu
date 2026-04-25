@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { History, ArrowRight, Wallet, Landmark, Fingerprint } from 'lucide-react';
+import { ArrowRight, Wallet, Landmark } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
@@ -16,7 +16,6 @@ import { Logo } from '@/components/icons';
 import { Separator } from '../ui/separator';
 
 export default function WalletHomePage() {
-  const { toast } = useToast();
   const { user, userProfile, loading } = useUser();
   const router = useRouter();
 
@@ -34,10 +33,6 @@ export default function WalletHomePage() {
               <Skeleton className="h-8 w-32" />
             </div>
             <Skeleton className="h-40 w-full rounded-2xl" />
-            <div className="grid grid-cols-2 gap-4">
-              <Skeleton className="h-32 w-full rounded-2xl" />
-              <Skeleton className="h-32 w-full rounded-2xl" />
-            </div>
             <Skeleton className="h-48 w-full rounded-2xl" />
         </div>
     )
@@ -71,8 +66,8 @@ export default function WalletHomePage() {
         <CardContent className="p-8 space-y-4">
            <div className="flex justify-between items-start">
              <div>
-               <p className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">Total INR Balance</p>
-               <h2 className="text-5xl font-black tracking-tighter">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</h2>
+               <p className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">Available Balance</p>
+               <h2 className="text-5xl font-black tracking-tighter">₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}</h2>
              </div>
              <div className="bg-white/10 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/20 flex flex-col items-end">
                 <span className="text-[10px] font-black tracking-widest uppercase opacity-70">ID</span>
@@ -89,43 +84,28 @@ export default function WalletHomePage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 grid-cols-2">
-        <Card className="border-primary/10 bg-card/50 backdrop-blur-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">OR Coins</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-black text-primary">{userProfile?.wallet?.orBalance?.toLocaleString() || '0'}</div>
-            <p className="text-[10px] font-bold uppercase mt-1 opacity-50">Task earnings</p>
-          </CardContent>
-        </Card>
-
+      <div className="grid gap-4">
         <Card className="border-primary/10 bg-card/50 backdrop-blur-sm" asChild>
-          <Link href="/wallet/history" className="cursor-pointer hover:bg-muted/5 transition-colors">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-2xl font-black">History</div>
-                <ArrowRight className="h-5 w-5 text-primary" />
-              </div>
-              <p className="text-[10px] font-bold uppercase mt-1 opacity-50">View records</p>
-            </CardContent>
+          <Link href="/wallet/history" className="cursor-pointer hover:bg-muted/5 transition-colors p-6 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Activity Log</p>
+              <p className="text-xl font-black">History Center</p>
+            </div>
+            <ArrowRight className="h-6 w-6 text-primary" />
           </Link>
         </Card>
       </div>
 
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground shrink-0">Main Tasks</h3>
+          <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground shrink-0">Earning Zone</h3>
           <Separator className="flex-1 opacity-20" />
         </div>
         
         <div className="grid gap-4">
           <Button asChild size="lg" className="h-16 rounded-2xl shadow-lg font-black uppercase text-lg group">
             <Link href="/earning">
-              Start Earning Zone <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+              Start Tasks <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Button>
         </div>

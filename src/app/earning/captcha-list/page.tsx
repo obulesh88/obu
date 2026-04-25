@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -16,9 +17,9 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { Separator } from '@/components/ui/separator';
 
-const REWARD_PER_CAPTCHA = 3;
+const REWARD_PER_CAPTCHA = 0.003; // ₹0.003 per captcha
 const NUM_CAPTCHAS = 10;
-const SUBMIT_DELAY = 15; // 15 seconds wait
+const SUBMIT_DELAY = 15;
 const CAPTCHA_STORAGE_KEY = 'or_wallet_completed_captchas';
 const CAPTCHA_DAY_KEY = 'or_wallet_captchas_last_day';
 
@@ -48,18 +49,14 @@ async function callGetAd(userId: string, division: 'A' | 'B' | 'C') {
   }
 
   try {
-    const response = await fetch(
-      endpoint,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      }
-    );
-
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
     await response.json();
     return { success: true, adUrl: redirectUrl };
   } catch (err) {
@@ -196,7 +193,6 @@ export default function CaptchaListPage() {
     const division = index < 3 ? 'A' : index < 6 ? 'B' : 'C';
     const data = await callGetAd(user.uid, division);
     
-    // Attempt to open the ad window
     const adWindow = window.open(data.adUrl, '_blank');
     if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
       toast({
@@ -229,19 +225,18 @@ export default function CaptchaListPage() {
 
       const userDocRef = doc(firestore, 'users', user.uid);
       const updateData = {
-          'wallet.orBalance': increment(REWARD_PER_CAPTCHA),
+          'wallet.balance': increment(REWARD_PER_CAPTCHA),
           'updatedAt': serverTimestamp()
       };
 
       updateDoc(userDocRef, updateData)
         .catch(async (error: any) => {
             if (error.code === 'permission-denied') {
-                const permissionError = new FirestorePermissionError({
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: userDocRef.path,
                     operation: 'update',
                     requestResourceData: updateData,
-                } satisfies SecurityRuleContext);
-                errorEmitter.emit('permission-error', permissionError);
+                } satisfies SecurityRuleContext));
             }
         });
 
@@ -249,13 +244,13 @@ export default function CaptchaListPage() {
       addDoc(transactionsRef, {
         userId: user.uid,
         amount: REWARD_PER_CAPTCHA,
-        currency: 'OR',
+        currency: 'INR',
         type: 'captcha',
         description: `Solved Captcha #${index + 1}`,
         createdAt: serverTimestamp()
       });
 
-    toast({ title: 'Success!', description: `You earned ${REWARD_PER_CAPTCHA} OR coins.` });
+    toast({ title: 'Success!', description: `You earned ₹${REWARD_PER_CAPTCHA.toFixed(3)}.` });
 
     setCompleted(prev => {
         const newState = [...prev];
@@ -272,7 +267,7 @@ export default function CaptchaListPage() {
   
   const getButtonContent = (index: number) => {
       if(completed[index]) return 'Completed';
-      if(readyToClaim[index]) return `Claim ${REWARD_PER_CAPTCHA} OR`;
+      if(readyToClaim[index]) return `Claim ₹${REWARD_PER_CAPTCHA.toFixed(3)}`;
       if(submitting[index]) return `Wait ${countdown[index]}s`;
       return 'Submit';
   };
@@ -325,7 +320,7 @@ export default function CaptchaListPage() {
             <Timer className="h-5 w-5 text-primary" />
             Captcha Rewards
           </CardTitle>
-          <CardDescription>Enter text, click submit, and wait {SUBMIT_DELAY}s to claim. You can stay here or watch the ad.</CardDescription>
+          <CardDescription>Enter text, click submit, and wait {SUBMIT_DELAY}s to claim.</CardDescription>
         </CardHeader>
         <CardContent>
             {!isClient ? (

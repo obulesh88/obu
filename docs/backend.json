@@ -23,11 +23,9 @@
         "wallet": {
           "type": "object",
           "properties": {
-            "orBalance": { "type": "number" },
-            "inrBalance": { "type": "number" },
-            "walletAddress": { "type": "string" }
+            "balance": { "type": "number" }
           },
-          "required": ["orBalance", "inrBalance", "walletAddress"]
+          "required": ["balance"]
         },
         "referral": {
           "type": "object",
@@ -102,13 +100,13 @@
     },
     "Transaction": {
       "title": "Transaction",
-      "description": "A record of any balance change (OR or INR).",
+      "description": "A record of any balance change.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "amount": { "type": "number" },
-        "currency": { "type": "string", "enum": ["OR", "INR"] },
-        "type": { "type": "string", "enum": ["ad", "captcha", "game", "referral", "conversion", "withdrawal"] },
+        "currency": { "type": "string", "enum": ["INR"] },
+        "type": { "type": "string", "enum": ["ad", "captcha", "game", "referral", "withdrawal"] },
         "description": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },

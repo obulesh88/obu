@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -58,7 +59,7 @@ export default function ReferralPage() {
           <Users className="h-64 w-64" />
         </div>
         <CardHeader>
-          <CardTitle className="text-3xl font-black">GET 750 OR</CardTitle>
+          <CardTitle className="text-3xl font-black">GET ₹0.75</CardTitle>
           <CardDescription className="text-primary-foreground/80 font-bold uppercase">For every friend who joins</CardDescription>
         </CardHeader>
         <CardContent className="relative z-10">
@@ -85,7 +86,7 @@ export default function ReferralPage() {
           <p className="text-[10px] font-bold uppercase text-muted-foreground">Total Referrals</p>
         </Card>
         <Card className="text-center p-4">
-          <p className="text-2xl font-black">{userProfile?.referral?.earnings || 0}</p>
+          <p className="text-2xl font-black">₹{userProfile?.referral?.earnings?.toFixed(2) || '0.00'}</p>
           <p className="text-[10px] font-bold uppercase text-muted-foreground">Referral Earnings</p>
         </Card>
       </div>
@@ -98,7 +99,7 @@ export default function ReferralPage() {
           {[
             { icon: <Share2 className="h-4 w-4" />, text: 'Share your unique referral link with friends.' },
             { icon: <Users className="h-4 w-4" />, text: 'Friends join OR wallet using your link.' },
-            { icon: <Gift className="h-4 w-4" />, text: 'Receive 750 OR coins instantly upon their registration.' },
+            { icon: <Gift className="h-4 w-4" />, text: 'Receive ₹0.75 instantly upon their registration.' },
           ].map((item, i) => (
             <div key={i} className="flex gap-4 items-start">
               <div className="bg-primary/10 p-2 rounded-lg shrink-0">

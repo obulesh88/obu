@@ -52,12 +52,6 @@ export function useUser() {
           }
 
           const pendingPhone = localStorage.getItem('pending_phone_number') || 'Not provided';
-          const generateWalletAddress = () => {
-            const chars = '0123456789abcdef';
-            let addr = '0x';
-            for (let i = 0; i < 40; i++) addr += chars[Math.floor(Math.random() * chars.length)];
-            return addr;
-          };
           const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           const memberId = 'OR-' + Math.floor(100000 + Math.random() * 900000);
 
@@ -69,7 +63,7 @@ export function useUser() {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             profile: { displayName: authUser.displayName || 'New Earner', Uid: guestUid },
-            wallet: { orBalance: 0, inrBalance: 0, walletAddress: generateWalletAddress() },
+            wallet: { balance: 0 },
             referral: { code: referralCode, count: 0, earnings: 0 },
             bankDetails: { name: '', contact: '', email: '', accountNumber: '', ifsc: '', vpa: '' },
             captcha: { is_active: false, verifiedAt: null, claimed: false, reward_comm: 0 },
@@ -100,12 +94,12 @@ export function useUser() {
             if (!querySnapshot.empty) {
               const referrerDoc = querySnapshot.docs[0];
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
-              const referralReward = 750;
+              const referralReward = 0.75; // ₹0.75 reward
               
               const updateData = {
                 'referral.count': increment(1),
                 'referral.earnings': increment(referralReward),
-                'wallet.orBalance': increment(referralReward),
+                'wallet.balance': increment(referralReward),
                 'updatedAt': serverTimestamp()
               };
 
@@ -124,7 +118,7 @@ export function useUser() {
               const txData = {
                 userId: referrerDoc.id,
                 amount: referralReward,
-                currency: 'OR',
+                currency: 'INR',
                 type: 'referral',
                 description: `Referral Reward: ${newProfile.profile.displayName} joined`,
                 createdAt: serverTimestamp()

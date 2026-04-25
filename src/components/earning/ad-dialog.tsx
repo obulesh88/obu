@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -20,7 +21,7 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { Gamepad2, Tv, Timer, RefreshCw, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const DEFAULT_REWARD = 4;
+const DEFAULT_REWARD = 0.004; // ₹0.004 per ad
 const DEFAULT_WATCH_DELAY = 15;
 
 const OLD_AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1cHdieW56bGdkbGd3YmRxbHV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNTg3MjMsImV4cCI6MjA3OTkzNDcyM30.r1zlbO84-0fQmyir9rTBBtTJSQyZK-Mg8BhP4EDnQAA";
@@ -197,7 +198,7 @@ export function AdDialog({
     setIsClaiming(true);
     const userDocRef = doc(firestore, 'users', user.uid);
     const updateData = {
-        'wallet.orBalance': increment(rewardAmount),
+        'wallet.balance': increment(rewardAmount),
         'updatedAt': serverTimestamp()
     };
 
@@ -206,7 +207,7 @@ export function AdDialog({
             const txData = {
                 userId: user.uid,
                 amount: rewardAmount,
-                currency: 'OR',
+                currency: 'INR',
                 type: gameUrl ? 'game' : 'ad',
                 description: gameUrl ? `Played Game: ${gameId}` : `Watched Ad: ${gameId}`,
                 createdAt: serverTimestamp()
@@ -223,7 +224,7 @@ export function AdDialog({
                 }
               });
 
-            toast({ title: 'Reward Claimed!', description: `Added ${rewardAmount} OR to your wallet.` });
+            toast({ title: 'Reward Claimed!', description: `Added ₹${rewardAmount.toFixed(3)} to your wallet.` });
             onComplete();
             onOpenChange(false);
         })
@@ -270,8 +271,8 @@ export function AdDialog({
             </DialogTitle>
             <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-70">
               {gameUrl 
-                ? `Play for ${formatTime(playTimeSeconds)} to earn ${rewardAmount} OR coins.` 
-                : `Duration: ${playTimeSeconds}s. Reward: ${rewardAmount} OR.`}
+                ? `Play for ${formatTime(playTimeSeconds)} to earn ₹${rewardAmount.toFixed(3)}.` 
+                : `Duration: ${playTimeSeconds}s. Reward: ₹${rewardAmount.toFixed(3)}.`}
             </DialogDescription>
           </DialogHeader>
         )}
@@ -296,7 +297,7 @@ export function AdDialog({
                 <div className="text-center space-y-2">
                   <ShieldCheck className="h-12 w-12 text-primary mx-auto mb-2" />
                   <h3 className="text-xl font-black uppercase">Verify Human</h3>
-                  <p className="text-xs text-muted-foreground font-bold uppercase">Solve this captcha to claim your {rewardAmount} OR</p>
+                  <p className="text-xs text-muted-foreground font-bold uppercase">Solve this captcha to claim your ₹{rewardAmount.toFixed(3)}</p>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">

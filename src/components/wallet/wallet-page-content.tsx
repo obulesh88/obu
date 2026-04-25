@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,7 +98,7 @@ export default function WalletPageContent() {
       return;
     }
 
-    if (amount > (userProfile.wallet?.inrBalance || 0)) {
+    if (amount > (userProfile.wallet?.balance || 0)) {
       toast({ variant: 'destructive', title: 'Insufficient Balance' });
       return;
     }
@@ -147,7 +148,7 @@ export default function WalletPageContent() {
           });
 
         const updateData = {
-          'wallet.inrBalance': increment(-amount),
+          'wallet.balance': increment(-amount),
           'updatedAt': serverTimestamp()
         };
 
@@ -194,14 +195,14 @@ export default function WalletPageContent() {
       {activeTab === 'withdraw' && (
          <Card className="border-primary/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-black">Balance: ₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</CardTitle>
+             <CardTitle className="text-sm font-black">Balance: ₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}</CardTitle>
              <Button variant="ghost" size="sm" className="h-8 gap-1 text-[10px] uppercase font-black text-primary" onClick={() => setIsBankDialogOpen(true)}>
                <Building2 className="h-3 w-3" /> Payout Info
              </Button>
           </CardHeader>
           <CardContent className="space-y-4">
              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase">Amount (INR)</Label>
+                <Label className="text-[10px] font-bold uppercase">Amount (₹)</Label>
                 <div className="relative">
                   <Input type="number" placeholder="Min ₹1" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} className="h-12 font-black text-lg" />
                   <div className="absolute inset-y-0 right-3 flex items-center font-bold">₹</div>
@@ -223,11 +224,8 @@ export default function WalletPageContent() {
             <div className="space-y-2">
               <h3 className="text-2xl font-black uppercase tracking-tighter">Shortly Available</h3>
               <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest max-w-[250px] mx-auto">
-                We are currently integrating automatic payment gateways.
+                We are integrating automated payment gateways.
               </p>
-            </div>
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary bg-primary/5 px-4 py-2 rounded-full border border-primary/10">
-              <Clock className="h-3 w-3" /> System Update in Progress
             </div>
           </CardContent>
         </Card>

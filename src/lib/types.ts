@@ -9,9 +9,7 @@ export type UserProfile = {
     Uid: string;
   };
   wallet: {
-    orBalance: number;
-    inrBalance: number;
-    walletAddress: string;
+    balance: number;
   };
   bankDetails?: {
     name: string;
@@ -47,13 +45,13 @@ export type UserProfile = {
   };
 };
 
-export type TransactionType = 'ad' | 'captcha' | 'game' | 'referral' | 'conversion' | 'withdrawal';
+export type TransactionType = 'ad' | 'captcha' | 'game' | 'referral' | 'withdrawal';
 
 export type Transaction = {
   id?: string;
   userId: string;
   amount: number;
-  currency: 'OR' | 'INR';
+  currency: 'INR';
   type: TransactionType;
   description: string;
   createdAt: any;

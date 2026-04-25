@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -11,8 +12,8 @@ const GAMES = [
   { 
     id: 'g_block_blast', 
     name: 'Block Blast Puzzle', 
-    reward: 12, 
-    time: 300, // 5 minutes
+    reward: 0.012, // ₹0.012
+    time: 300, 
     difficulty: 'Easy', 
     division: 'A',
     gameUrl: 'https://html5.gamemonetize.co/fx0o3r69oqzzat8ha5lvjmkdxjlmztxy/' 
@@ -20,8 +21,8 @@ const GAMES = [
   { 
     id: 'g_neon', 
     name: 'Neon Velocity', 
-    reward: 12, 
-    time: 300, // 5 minutes
+    reward: 0.012, 
+    time: 300, 
     difficulty: 'Extreme', 
     division: 'A',
     gameUrl: 'https://html5.gamemonetize.co/2n7d2035nvye9198r3ua7gzs00gfcgqf/' 
@@ -29,8 +30,8 @@ const GAMES = [
   { 
     id: 'g_pool', 
     name: 'Mini Pool 3D', 
-    reward: 12, 
-    time: 300, // 5 minutes
+    reward: 0.012, 
+    time: 300, 
     difficulty: 'Medium', 
     division: 'C',
     gameUrl: 'https://html5.gamemonetize.co/ehi2vjrem0ya35imcjiofupvjerb5mhr/'
@@ -38,8 +39,8 @@ const GAMES = [
   { 
     id: 'g_escape', 
     name: 'The Escape Block', 
-    reward: 12, 
-    time: 300, // 5 minutes
+    reward: 0.012, 
+    time: 300, 
     difficulty: 'Hard', 
     division: 'B',
     gameUrl: 'https://html5.gamemonetize.co/qtba3xs4tqydx8kgmnbgl7pdzgkal9t3/'
@@ -82,13 +83,13 @@ export default function GamesPage() {
                 </div>
               </div>
               <CardTitle className="mt-2 text-lg">{game.name}</CardTitle>
-              <CardDescription className="text-[10px] font-bold uppercase">Reward: {game.reward} OR Coins</CardDescription>
+              <CardDescription className="text-[10px] font-bold uppercase">Reward: ₹{game.reward.toFixed(3)}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                   <Timer className="h-3 w-3" />
-                  {Math.floor(game.time / 60)}m {game.time % 60}s
+                  {Math.floor(game.time / 60)}m
                 </div>
                 <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                   <Trophy className="h-3 w-3" />
@@ -101,7 +102,6 @@ export default function GamesPage() {
         ))}
       </div>
 
-      {/* Coming Soon Section */}
       <div className="space-y-4 mt-4">
         <div className="flex items-center gap-4">
           <h3 className="text-lg font-bold text-muted-foreground uppercase tracking-tighter flex items-center gap-2">
@@ -110,16 +110,11 @@ export default function GamesPage() {
           </h3>
           <Separator className="flex-1 opacity-20" />
         </div>
-        
         <div className="grid gap-4 grid-cols-2">
           {[1, 2].map((i) => (
             <Card key={i} className="border-dashed border-2 border-muted-foreground/20 bg-muted/5 flex flex-col items-center justify-center p-6 text-center gap-2 opacity-60">
               <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center animate-pulse">
                 <Gamepad2 className="h-5 w-5 text-muted-foreground/50" />
-              </div>
-              <div className="space-y-1">
-                <div className="h-3 w-20 bg-muted rounded animate-pulse mx-auto" />
-                <div className="h-2 w-12 bg-muted rounded animate-pulse mx-auto opacity-50" />
               </div>
             </Card>
           ))}

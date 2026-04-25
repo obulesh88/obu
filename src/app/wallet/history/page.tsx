@@ -27,7 +27,6 @@ export default function HistoryPage() {
     }
   }, [user, userLoading, router]);
 
-  // Query for general transactions
   const transactionsQuery = useMemo(() => {
     if (!firestore || !user) return null;
     return query(
@@ -36,7 +35,6 @@ export default function HistoryPage() {
     );
   }, [firestore, user]);
 
-  // Query for payout requests
   const payoutsQuery = useMemo(() => {
     if (!firestore || !user) return null;
     return query(
@@ -48,7 +46,6 @@ export default function HistoryPage() {
   const { data: rawTransactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
   const { data: rawPayouts, loading: payoutsLoading } = useCollection<WithdrawalRequest>(payoutsQuery);
 
-  // Helper to parse dates safely from Firestore Timestamps or strings
   const getTimestamp = (date: any) => {
     if (!date) return 0;
     if (date.toDate) return date.toDate().getTime();
@@ -57,26 +54,17 @@ export default function HistoryPage() {
     return 0;
   };
 
-  // Sort transactions by date descending
   const transactions = useMemo(() => {
     if (!rawTransactions) return [];
     return [...rawTransactions].sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
   }, [rawTransactions]);
 
-  // Sort payouts by date descending
   const payouts = useMemo(() => {
     if (!rawPayouts) return [];
     return [...rawPayouts].sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
   }, [rawPayouts]);
 
   const isLoading = userLoading || transactionsLoading || payoutsLoading;
-
-  const getAmountColor = (tx: Transaction) => {
-    if (tx.type === 'withdrawal' || (tx.type === 'conversion' && tx.currency === 'OR')) {
-      return 'text-destructive';
-    }
-    return 'text-green-500';
-  };
 
   const formatTxDate = (txDate: any) => {
     if (!txDate) return 'Syncing...';
@@ -93,11 +81,9 @@ export default function HistoryPage() {
     switch (s) {
       case 'completed':
       case 'success':
-      case 'approved':
         return <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/10 gap-1"><CheckCircle2 className="h-3 w-3" /> SUCCESS</Badge>;
       case 'rejected':
       case 'failed':
-      case 'cancelled':
         return <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/10 gap-1"><XCircle className="h-3 w-3" /> FAILED</Badge>;
       default:
         return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 hover:bg-yellow-500/10 gap-1"><Clock className="h-3 w-3" /> PENDING</Badge>;
@@ -145,11 +131,11 @@ export default function HistoryPage() {
                           <div className="flex items-center gap-3">
                             <div className={cn(
                               "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                              tx.type === 'withdrawal' || (tx.type === 'conversion' && tx.currency === 'OR') 
+                              tx.type === 'withdrawal' 
                                 ? "bg-destructive/10 text-destructive" 
                                 : "bg-green-500/10 text-green-500"
                             )}>
-                              {tx.type === 'withdrawal' || (tx.type === 'conversion' && tx.currency === 'OR') 
+                              {tx.type === 'withdrawal' 
                                 ? <ArrowUpRight className="h-4 w-4" /> 
                                 : <ArrowDownLeft className="h-4 w-4" />}
                             </div>
@@ -162,9 +148,12 @@ export default function HistoryPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right py-4">
-                          <div className={`font-black text-sm tabular-nums ${getAmountColor(tx)}`}>
-                            {tx.type === 'withdrawal' || (tx.type === 'conversion' && tx.currency === 'OR') ? '-' : '+'}
-                            {tx.amount.toLocaleString()} {tx.currency}
+                          <div className={cn(
+                            "font-black text-sm tabular-nums",
+                            tx.type === 'withdrawal' ? "text-destructive" : "text-green-500"
+                          )}>
+                            {tx.type === 'withdrawal' ? '-' : '+'}
+                            ₹{tx.amount.toFixed(3)}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -173,13 +162,7 @@ export default function HistoryPage() {
                 </Table>
               ) : (
                 <div className="text-center py-20 bg-muted/5 flex flex-col items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground/30 font-black text-xl">
-                    ?
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-black uppercase tracking-tighter">No Activity Yet</p>
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Complete tasks to see logs.</p>
-                  </div>
+                  <p className="text-xs font-black uppercase tracking-tighter">No Activity Yet</p>
                 </div>
               )}
             </CardContent>
@@ -212,11 +195,6 @@ export default function HistoryPage() {
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                               {formatTxDate(payout.createdAt)} • {payout.payoutDetails.payoutType}
                             </span>
-                            {payout.payoutDetails.vpa && (
-                               <span className="text-[9px] font-mono text-muted-foreground opacity-70 truncate max-w-[150px]">
-                                 ID: {payout.payoutDetails.vpa}
-                               </span>
-                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right py-4">
@@ -230,13 +208,7 @@ export default function HistoryPage() {
                 </Table>
               ) : (
                 <div className="text-center py-20 bg-muted/5 flex flex-col items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground/30">
-                    <Landmark className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-black uppercase tracking-tighter">No Withdrawals</p>
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Request a payout in the wallet.</p>
-                  </div>
+                  <p className="text-xs font-black uppercase tracking-tighter">No Withdrawals</p>
                 </div>
               )}
             </CardContent>
