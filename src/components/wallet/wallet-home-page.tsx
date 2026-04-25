@@ -1,8 +1,9 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { History, ArrowRight, Wallet, Landmark } from 'lucide-react';
+import { History, ArrowRight, Wallet, Landmark, Fingerprint } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
@@ -50,7 +51,11 @@ export default function WalletHomePage() {
           <Logo className="h-6 w-6" />
           <span className="font-headline text-lg font-black uppercase tracking-tighter">OR wallet</span>
         </div>
-        <Link href="/profile">
+        <Link href="/profile" className="flex items-center gap-3">
+           <div className="text-right hidden sm:block">
+              <p className="text-[10px] font-black uppercase text-primary tracking-tighter">{userProfile?.memberId}</p>
+              <p className="text-[8px] font-bold text-muted-foreground uppercase">Member ID</p>
+           </div>
            <Avatar className="h-10 w-10 border-2 border-primary/20">
               <AvatarFallback className="bg-primary/10 text-primary font-black">
                 {userProfile?.profile?.displayName?.charAt(0) || user?.email?.charAt(0) || 'U'}
@@ -64,9 +69,15 @@ export default function WalletHomePage() {
           <Wallet className="h-64 w-64" />
         </div>
         <CardContent className="p-8 space-y-4">
-           <div>
-             <p className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">Total INR Balance</p>
-             <h2 className="text-5xl font-black tracking-tighter">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</h2>
+           <div className="flex justify-between items-start">
+             <div>
+               <p className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">Total INR Balance</p>
+               <h2 className="text-5xl font-black tracking-tighter">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</h2>
+             </div>
+             <div className="bg-white/10 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/20 flex flex-col items-end">
+                <span className="text-[10px] font-black tracking-widest uppercase opacity-70">ID</span>
+                <span className="text-xs font-black tracking-tight">{userProfile?.memberId}</span>
+             </div>
            </div>
            <div className="flex items-center gap-4">
               <Button variant="secondary" className="w-full font-black uppercase text-xs h-11" asChild>

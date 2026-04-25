@@ -1,6 +1,7 @@
 
 export type UserProfile = {
   uid: string;
+  memberId: string;
   email: string;
   phoneNumber: string;
   profile: {

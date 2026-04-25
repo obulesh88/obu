@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -58,9 +59,11 @@ export function useUser() {
             return addr;
           };
           const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+          const memberId = 'OR-' + Math.floor(100000 + Math.random() * 900000);
 
           const newProfile: UserProfile = {
             uid: guestUid,
+            memberId: memberId,
             email: authUser.email || '',
             phoneNumber: pendingPhone,
             createdAt: serverTimestamp(),

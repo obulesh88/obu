@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, FileText, Shield, Ticket, Info, Undo2, LifeBuoy, Edit2, Check, RefreshCw, LogOut } from 'lucide-react';
+import { Moon, Sun, FileText, Shield, Ticket, Info, Undo2, LifeBuoy, Edit2, Check, RefreshCw, LogOut, Fingerprint } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -163,7 +164,11 @@ export default function ProfilePage() {
             </Avatar>
             <div className="grid gap-1">
               <h2 className="text-2xl font-black uppercase tracking-tight">{userProfile.profile?.displayName}</h2>
-              <p className="text-xs font-bold text-muted-foreground uppercase">{userProfile.email}</p>
+              <div className="flex items-center gap-1.5 text-primary">
+                <Fingerprint className="h-3 w-3" />
+                <p className="text-[10px] font-black tracking-widest uppercase">{userProfile.memberId}</p>
+              </div>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase">{userProfile.email}</p>
             </div>
           </div>
           <Dialog open={isEditingName} onOpenChange={setIsEditingName}>
@@ -205,6 +210,10 @@ export default function ProfilePage() {
           <CardTitle className="text-sm font-black uppercase">Account Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="memberId" className="text-[10px] font-bold uppercase text-primary">Unique Member ID</Label>
+                <Input id="memberId" value={userProfile.memberId} readOnly className="h-11 font-black bg-muted text-primary" />
+            </div>
             <div className="space-y-2">
                 <Label htmlFor="accountType" className="text-[10px] font-bold uppercase">Account Type</Label>
                 <Input id="accountType" value="Verified Earner" readOnly className="h-11 font-bold bg-muted" />
