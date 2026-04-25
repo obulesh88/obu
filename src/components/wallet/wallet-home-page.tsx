@@ -1,9 +1,8 @@
-
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, History, Link as LinkIcon, ArrowRight, Wallet, RefreshCw, Landmark } from 'lucide-react';
+import { History, ArrowRight, Wallet, Landmark } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
@@ -15,7 +14,6 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Separator } from '../ui/separator';
 
-
 export default function WalletHomePage() {
   const { toast } = useToast();
   const { user, userProfile, loading } = useUser();
@@ -26,15 +24,6 @@ export default function WalletHomePage() {
       router.push('/login');
     }
   }, [user, loading, router]);
-
-  const copyToClipboard = () => {
-    if (!userProfile?.wallet.walletAddress) return;
-    navigator.clipboard.writeText(userProfile.wallet.walletAddress);
-    toast({
-      title: 'Copied!',
-      description: 'Wallet address copied to clipboard.',
-    });
-  };
 
   if (loading || !user) {
     return (
@@ -80,14 +69,9 @@ export default function WalletHomePage() {
              <h2 className="text-5xl font-black tracking-tighter">₹{userProfile?.wallet?.inrBalance?.toFixed(2) || '0.00'}</h2>
            </div>
            <div className="flex items-center gap-4">
-              <Button variant="secondary" className="flex-1 font-black uppercase text-xs h-11" asChild>
+              <Button variant="secondary" className="w-full font-black uppercase text-xs h-11" asChild>
                 <Link href="/wallet">
-                  <Landmark className="mr-2 h-4 w-4" /> Withdraw
-                </Link>
-              </Button>
-              <Button variant="outline" className="flex-1 font-black uppercase text-xs h-11 bg-white/10 border-white/20 hover:bg-white/20 text-white" asChild>
-                <Link href="/convert">
-                  <RefreshCw className="mr-2 h-4 w-4" /> Convert
+                  <Landmark className="mr-2 h-4 w-4" /> Withdraw Funds
                 </Link>
               </Button>
            </div>
@@ -101,39 +85,25 @@ export default function WalletHomePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-primary">{userProfile?.wallet?.orBalance?.toLocaleString() || '0'}</div>
-            <p className="text-[10px] font-bold uppercase mt-1 opacity-50">Available to convert</p>
+            <p className="text-[10px] font-bold uppercase mt-1 opacity-50">Task earnings</p>
           </CardContent>
         </Card>
 
         <Card className="border-primary/10 bg-card/50 backdrop-blur-sm" asChild>
           <Link href="/wallet/history" className="cursor-pointer hover:bg-muted/5 transition-colors">
             <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Earnings</CardTitle>
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Activity</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div className="text-2xl font-black">History</div>
                 <ArrowRight className="h-5 w-5 text-primary" />
               </div>
-              <p className="text-[10px] font-bold uppercase mt-1 opacity-50">View all records</p>
+              <p className="text-[10px] font-bold uppercase mt-1 opacity-50">View records</p>
             </CardContent>
           </Link>
         </Card>
       </div>
-
-      <Card className="border-primary/10 bg-card/50">
-        <CardContent className="p-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Wallet Address</p>
-              <Button variant="ghost" size="icon" onClick={copyToClipboard} className="h-6 w-6">
-                  <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-            <p className="font-mono text-xs font-bold break-all bg-muted/50 p-3 rounded-lg border">{userProfile?.wallet?.walletAddress}</p>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="space-y-4">
         <div className="flex items-center gap-4">

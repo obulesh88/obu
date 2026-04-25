@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -213,10 +212,6 @@ export default function ProfilePage() {
              <div className="space-y-2">
                 <Label htmlFor="email" className="text-[10px] font-bold uppercase">Email Address</Label>
                 <Input id="email" type="email" value={userProfile.email ?? ''} readOnly className="h-11 font-bold bg-muted" />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="wallet-addr" className="text-[10px] font-bold uppercase">Internal Wallet ID</Label>
-                <Input id="wallet-addr" value={userProfile.wallet.walletAddress} readOnly className="font-mono text-[10px] bg-muted h-11" />
             </div>
         </CardContent>
       </Card>

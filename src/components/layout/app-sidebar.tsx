@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -12,7 +11,7 @@ import {
   SidebarMenuButton, 
   SidebarMenuItem 
 } from '@/components/ui/sidebar';
-import { Home, RefreshCw, User, Wallet, CircleDollarSign, History, Share2 } from 'lucide-react';
+import { Home, User, Wallet, CircleDollarSign, History, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/icons';
 import { usePathname } from 'next/navigation';
@@ -24,7 +23,6 @@ export function AppSidebar() {
     { title: 'Home', icon: Home, url: '/' },
     { title: 'Earn OR', icon: CircleDollarSign, url: '/earning' },
     { title: 'My Wallet', icon: Wallet, url: '/wallet' },
-    { title: 'Convert Coins', icon: RefreshCw, url: '/convert' },
     { title: 'Invite Friends', icon: Share2, url: '/referral' },
     { title: 'Earning History', icon: History, url: '/wallet/history' },
     { title: 'My Profile', icon: User, url: '/profile' },

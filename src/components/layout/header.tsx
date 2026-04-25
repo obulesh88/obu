@@ -4,7 +4,7 @@ import { Logo } from '@/components/icons';
 import { UserNav } from '@/components/layout/user-nav';
 import { Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from '../ui/sidebar';
 import Link from 'next/link';
-import { Home, RefreshCw, User as UserIcon, Wallet, CircleDollarSign } from 'lucide-react';
+import { Home, User as UserIcon, Wallet, CircleDollarSign } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
 
 export function Header() {
@@ -25,11 +25,6 @@ export function Header() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
                 <Link href="/earning"><CircleDollarSign />Earn</Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-                <Link href="/convert"><RefreshCw />Convert</Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
