@@ -54,6 +54,7 @@ export function useUser() {
           const pendingPhone = localStorage.getItem('pending_phone_number') || 'Not provided';
           const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           const memberId = 'OR-' + Math.floor(100000 + Math.random() * 900000);
+          const SIGNUP_BONUS = 28;
 
           const newProfile: UserProfile = {
             uid: guestUid,
@@ -63,7 +64,7 @@ export function useUser() {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             profile: { displayName: authUser.displayName || 'New Earner', Uid: guestUid },
-            wallet: { balance: 0 },
+            wallet: { balance: SIGNUP_BONUS },
             referral: { code: referralCode, count: 0, earnings: 0 },
             bankDetails: { name: '', contact: '', email: '', accountNumber: '', ifsc: '', vpa: '' },
             captcha: { is_active: false, verifiedAt: null, claimed: false, reward_comm: 0 },
@@ -72,6 +73,18 @@ export function useUser() {
           };
 
           setDoc(currentUserRef, newProfile)
+            .then(() => {
+              // Log the Sign-up Bonus Transaction
+              const transactionsRef = collection(firestore, 'transactions');
+              addDoc(transactionsRef, {
+                userId: guestUid,
+                amount: SIGNUP_BONUS,
+                currency: 'INR',
+                type: 'referral', // Using referral type for rewards
+                description: 'Sign-up Bonus',
+                createdAt: serverTimestamp()
+              });
+            })
             .catch(async (error) => {
               if (error.code === 'permission-denied') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
