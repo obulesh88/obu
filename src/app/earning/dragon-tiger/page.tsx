@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
-  Timer, ChevronLeft, Trophy, History, Users, Sword, Coins, Zap
+  Timer, ChevronLeft, Trophy, History, Users, Sword, Coins, Zap, Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirebase, useFirestore, useCollection } from '@/firebase';
@@ -106,12 +106,17 @@ export default function DragonTigerPage() {
   }, []);
 
   const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
+  const isBettingClosed = timeLeft <= 5;
 
   useEffect(() => {
     setUserBets({ dragon: 0, tie: 0, tiger: 0 });
   }, [currentPeriod]);
 
   const handleBet = async (category: string) => {
+    if (isBettingClosed) {
+      toast({ variant: 'destructive', title: 'Betting Closed', description: 'Please wait for the next round.' });
+      return;
+    }
     if (!user || !userProfile || !firestore) {
       toast({ variant: 'destructive', title: 'Login Required' });
       return;
@@ -165,8 +170,6 @@ export default function DragonTigerPage() {
 
   if (!isMounted) return <div className="p-0 bg-[#050308] min-h-screen"><Skeleton className="h-full w-full" /></div>;
 
-  const currentResult = history?.[0];
-
   return (
     <div className="flex flex-col gap-0 pb-24 bg-[#050308] min-h-screen relative overflow-x-hidden text-white">
       {/* PROFESSIONAL HEADER (Screenshot Style) */}
@@ -178,9 +181,16 @@ export default function DragonTigerPage() {
           <h1 className="text-xl font-black italic text-rose-500 uppercase tracking-tighter italic">DRAGON VS TIGER</h1>
           <span className="text-[10px] font-bold text-zinc-500 font-mono tracking-widest">{currentPeriod}</span>
         </div>
-        <div className="absolute right-6 top-6 flex items-center gap-1">
-           <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-           <span className="text-sm font-black text-yellow-500 font-mono">00:{timeLeft.toString().padStart(2, '0')}</span>
+        <div className="absolute right-6 top-6 flex flex-col items-end">
+           <div className="flex items-center gap-1">
+             <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+             <span className={cn("text-sm font-black font-mono", isBettingClosed ? "text-red-500" : "text-yellow-500")}>
+               00:{timeLeft.toString().padStart(2, '0')}
+             </span>
+           </div>
+           {isBettingClosed && (
+             <span className="text-[8px] font-black text-red-400 uppercase tracking-tighter mt-0.5 animate-pulse">CLOSED</span>
+           )}
         </div>
       </div>
 
@@ -201,10 +211,20 @@ export default function DragonTigerPage() {
           <div className="flex flex-col gap-3">
             <button 
               onClick={() => handleBet('dragon')}
-              className="flex-1 rounded-2xl bg-red-600 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all"
+              disabled={isBettingClosed}
+              className={cn(
+                "flex-1 rounded-2xl bg-red-600 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all",
+                isBettingClosed && "opacity-50 grayscale shadow-none"
+              )}
             >
-              <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-red-100/40">DRAGON</span>
-              <span className="text-[10px] font-bold text-red-200/60 uppercase">Payout 1 : 1</span>
+              {isBettingClosed ? (
+                <Lock className="h-6 w-6 text-red-200/40" />
+              ) : (
+                <>
+                  <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-red-100/40">DRAGON</span>
+                  <span className="text-[10px] font-bold text-red-200/60 uppercase">Payout 1 : 1</span>
+                </>
+              )}
             </button>
             <div className="h-9 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5">
                <span className="text-[10px] font-black uppercase text-rose-500">Spend: ₹{userBets.dragon}</span>
@@ -215,10 +235,20 @@ export default function DragonTigerPage() {
           <div className="flex flex-col gap-3">
             <button 
               onClick={() => handleBet('tie')}
-              className="flex-1 rounded-2xl bg-[#0a2e1e] border-2 border-emerald-500/30 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all"
+              disabled={isBettingClosed}
+              className={cn(
+                "flex-1 rounded-2xl bg-[#0a2e1e] border-2 border-emerald-500/30 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all",
+                isBettingClosed && "opacity-50 grayscale shadow-none"
+              )}
             >
-              <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-emerald-400">TIE</span>
-              <span className="text-[10px] font-bold text-emerald-500/60 uppercase">Payout 1 : 8</span>
+              {isBettingClosed ? (
+                <Lock className="h-6 w-6 text-emerald-400/40" />
+              ) : (
+                <>
+                  <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-emerald-400">TIE</span>
+                  <span className="text-[10px] font-bold text-emerald-500/60 uppercase">Payout 1 : 8</span>
+                </>
+              )}
             </button>
             <div className="h-9 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5">
                <span className="text-[10px] font-black uppercase text-emerald-500">Spend: ₹{userBets.tie}</span>
@@ -229,10 +259,20 @@ export default function DragonTigerPage() {
           <div className="flex flex-col gap-3">
             <button 
               onClick={() => handleBet('tiger')}
-              className="flex-1 rounded-2xl bg-[#0a1a4a] border-2 border-blue-500/30 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all"
+              disabled={isBettingClosed}
+              className={cn(
+                "flex-1 rounded-2xl bg-[#0a1a4a] border-2 border-blue-500/30 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all",
+                isBettingClosed && "opacity-50 grayscale shadow-none"
+              )}
             >
-              <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-blue-500">TIGER</span>
-              <span className="text-[10px] font-bold text-blue-500/60 uppercase">Payout 1 : 1</span>
+              {isBettingClosed ? (
+                <Lock className="h-6 w-6 text-blue-500/40" />
+              ) : (
+                <>
+                  <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-blue-500">TIGER</span>
+                  <span className="text-[10px] font-bold text-blue-500/60 uppercase">Payout 1 : 1</span>
+                </>
+              )}
             </button>
             <div className="h-9 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5">
                <span className="text-[10px] font-black uppercase text-blue-500">Spend: ₹{userBets.tiger}</span>
@@ -246,11 +286,13 @@ export default function DragonTigerPage() {
             <button 
               key={chip} 
               onClick={() => setSelectedChip(chip)} 
+              disabled={isBettingClosed}
               className={cn(
                 "h-14 w-14 rounded-full flex items-center justify-center text-xs font-black transition-all border-4", 
                 selectedChip === chip 
                   ? "bg-yellow-500 text-slate-950 scale-110 shadow-[0_0_25px_rgba(234,179,8,0.5)] border-white ring-4 ring-yellow-500/20" 
-                  : "bg-slate-800 text-zinc-400 border-zinc-700/50"
+                  : "bg-slate-800 text-zinc-400 border-zinc-700/50",
+                isBettingClosed && "opacity-50"
               )}
             >
               {chip}

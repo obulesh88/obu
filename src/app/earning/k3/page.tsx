@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
-  Timer, ChevronLeft, Zap, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, History, Gamepad2, Coins
+  Timer, ChevronLeft, Zap, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, History, Gamepad2, Coins, Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection } from '@/firebase';
@@ -69,12 +69,17 @@ export default function K3Page() {
   }, []);
 
   const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
+  const isBettingClosed = timeLeft <= 5;
 
   useEffect(() => {
     setUserBets({ big: 0, small: 0, odd: 0, even: 0 });
   }, [currentPeriod]);
 
   const handleBet = async (category: string) => {
+    if (isBettingClosed) {
+      toast({ variant: 'destructive', title: 'Betting Closed', description: 'Please wait for the next round.' });
+      return;
+    }
     if (!user || !userProfile || !firestore) {
       toast({ variant: 'destructive', title: 'Login Required' });
       return;
@@ -181,34 +186,65 @@ export default function K3Page() {
              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Next Draw In</span>
              <div className="flex gap-1">
                 {['0', '0', ':', ...timeLeft.toString().padStart(2, '0').split('')].map((char, i) => (
-                  <span key={i} className={cn("flex items-center justify-center font-mono text-xl font-black rounded min-w-[32px] h-12", char === ':' ? "text-blue-400" : "bg-[#161145] text-blue-400 shadow-inner")}>{char}</span>
+                  <span key={i} className={cn("flex items-center justify-center font-mono text-xl font-black rounded min-w-[32px] h-12", char === ':' ? "text-blue-400" : "bg-[#161145] shadow-inner", isBettingClosed ? "text-red-500" : "text-blue-400")}>{char}</span>
                 ))}
              </div>
+             {isBettingClosed && (
+               <span className="text-[10px] font-black text-red-500 uppercase tracking-widest mt-2 animate-pulse">Betting Closed</span>
+             )}
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 mt-2">
            <div className="flex flex-col gap-2">
-             <Button onClick={() => handleBet('big')} className="h-16 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-xl rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase italic">
-                Big
+             <Button 
+                onClick={() => handleBet('big')} 
+                disabled={isBettingClosed}
+                className={cn(
+                  "h-16 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-xl rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase italic",
+                  isBettingClosed && "opacity-50 grayscale shadow-none"
+                )}
+             >
+                {isBettingClosed ? <Lock className="h-6 w-6" /> : 'Big'}
              </Button>
              <div className="text-[9px] font-black text-center uppercase py-1 rounded-full bg-white/5 text-amber-500">Spend: ₹{userBets.big}</div>
            </div>
            <div className="flex flex-col gap-2">
-             <Button onClick={() => handleBet('small')} className="h-16 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-black text-xl rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase italic">
-                Small
+             <Button 
+                onClick={() => handleBet('small')} 
+                disabled={isBettingClosed}
+                className={cn(
+                  "h-16 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-black text-xl rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase italic",
+                  isBettingClosed && "opacity-50 grayscale shadow-none"
+                )}
+             >
+                {isBettingClosed ? <Lock className="h-6 w-6" /> : 'Small'}
              </Button>
              <div className="text-[9px] font-black text-center uppercase py-1 rounded-full bg-white/5 text-blue-500">Spend: ₹{userBets.small}</div>
            </div>
            <div className="flex flex-col gap-2">
-             <Button onClick={() => handleBet('odd')} className="h-16 bg-gradient-to-r from-rose-500 to-rose-600 text-white font-black text-xl rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase italic">
-                Odd
+             <Button 
+                onClick={() => handleBet('odd')} 
+                disabled={isBettingClosed}
+                className={cn(
+                  "h-16 bg-gradient-to-r from-rose-500 to-rose-600 text-white font-black text-xl rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase italic",
+                  isBettingClosed && "opacity-50 grayscale shadow-none"
+                )}
+             >
+                {isBettingClosed ? <Lock className="h-6 w-6" /> : 'Odd'}
              </Button>
              <div className="text-[9px] font-black text-center uppercase py-1 rounded-full bg-white/5 text-rose-500">Spend: ₹{userBets.odd}</div>
            </div>
            <div className="flex flex-col gap-2">
-             <Button onClick={() => handleBet('even')} className="h-16 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black text-xl rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase italic">
-                Even
+             <Button 
+                onClick={() => handleBet('even')} 
+                disabled={isBettingClosed}
+                className={cn(
+                  "h-16 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black text-xl rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase italic",
+                  isBettingClosed && "opacity-50 grayscale shadow-none"
+                )}
+             >
+                {isBettingClosed ? <Lock className="h-6 w-6" /> : 'Even'}
              </Button>
              <div className="text-[9px] font-black text-center uppercase py-1 rounded-full bg-white/5 text-emerald-500">Spend: ₹{userBets.even}</div>
            </div>
@@ -216,7 +252,20 @@ export default function K3Page() {
 
         <div className="bg-[#161145]/60 p-4 rounded-3xl border border-white/5 flex items-center justify-around gap-2">
           {CHIPS.map((chip) => (
-            <button key={chip} onClick={() => setSelectedChip(chip)} className={cn("h-12 w-12 rounded-full flex items-center justify-center text-[11px] font-black transition-all", selectedChip === chip ? "bg-blue-500 text-white scale-110 shadow-[0_0_20px_rgba(59,130,246,0.6)] border-2 border-white ring-4 ring-blue-500/20" : "bg-[#0a052e] text-zinc-400 border border-white/10")}>{chip}</button>
+            <button 
+              key={chip} 
+              onClick={() => setSelectedChip(chip)} 
+              disabled={isBettingClosed}
+              className={cn(
+                "h-12 w-12 rounded-full flex items-center justify-center text-[11px] font-black transition-all", 
+                selectedChip === chip 
+                  ? "bg-blue-500 text-white scale-110 shadow-[0_0_20px_rgba(59,130,246,0.6)] border-2 border-white ring-4 ring-blue-500/20" 
+                  : "bg-[#0a052e] text-zinc-400 border border-white/10",
+                isBettingClosed && "opacity-50"
+              )}
+            >
+              {chip}
+            </button>
           ))}
         </div>
 

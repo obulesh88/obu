@@ -9,7 +9,8 @@ import {
   ChevronLeft, 
   Zap,
   History,
-  Coins
+  Coins,
+  Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection } from '@/firebase';
@@ -74,12 +75,17 @@ export default function WingoPage() {
   }, []);
 
   const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
+  const isBettingClosed = timeLeft <= 5;
 
   useEffect(() => {
     setUserBets({ green: 0, violet: 0, red: 0, big: 0, small: 0 });
   }, [currentPeriod]);
 
   const handleBet = async (category: string) => {
+    if (isBettingClosed) {
+      toast({ variant: 'destructive', title: 'Betting Closed', description: 'Please wait for the next round.' });
+      return;
+    }
     if (!user || !userProfile || !firestore) {
       toast({ variant: 'destructive', title: 'Login Required' });
       return;
@@ -167,11 +173,14 @@ export default function WingoPage() {
                <span className="text-[10px] font-black text-white/70 uppercase tracking-widest">Count Down</span>
                <div className="flex gap-1 mt-1">
                 {['0', '0', ':', ...timeLeft.toString().padStart(2, '0').split('')].map((char, i) => (
-                  <span key={i} className={cn("flex items-center justify-center font-mono text-xl font-black rounded h-10 w-7", char === ':' ? "text-white" : "bg-black/30 text-white backdrop-blur-md")}>
+                  <span key={i} className={cn("flex items-center justify-center font-mono text-xl font-black rounded h-10 w-7", char === ':' ? "text-white" : "bg-black/30 text-white backdrop-blur-md", isBettingClosed && !char.includes(':') && "text-red-500")}>
                     {char}
                   </span>
                 ))}
                </div>
+               {isBettingClosed && (
+                 <span className="text-[8px] font-black text-red-400 uppercase tracking-tighter mt-1 animate-pulse">Betting Closed</span>
+               )}
             </div>
           </CardContent>
         </Card>
@@ -179,8 +188,16 @@ export default function WingoPage() {
         <div className="grid grid-cols-3 gap-3">
           {['green', 'violet', 'red'].map((cat) => (
             <div key={cat} className="flex flex-col gap-2">
-              <Button onClick={() => handleBet(cat)} className={cn("h-16 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase", cat === 'green' ? "bg-green-500 shadow-[0_6px_0_rgb(21,128,61)]" : cat === 'violet' ? "bg-violet-500 shadow-[0_6px_0_rgb(109,40,217)]" : "bg-red-500 shadow-[0_6px_0_rgb(185,28,28)]")}>
-                {cat}
+              <Button 
+                onClick={() => handleBet(cat)} 
+                disabled={isBettingClosed}
+                className={cn(
+                  "h-16 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase", 
+                  cat === 'green' ? "bg-green-500 shadow-[0_6px_0_rgb(21,128,61)]" : cat === 'violet' ? "bg-violet-500 shadow-[0_6px_0_rgb(109,40,217)]" : "bg-red-500 shadow-[0_6px_0_rgb(185,28,28)]",
+                  isBettingClosed && "opacity-50 grayscale shadow-none"
+                )}
+              >
+                {isBettingClosed ? <Lock className="h-4 w-4" /> : cat}
               </Button>
               <div className={cn("text-[9px] font-black text-center uppercase py-1 rounded-full bg-white/5", cat === 'green' ? 'text-green-500' : cat === 'violet' ? 'text-violet-500' : 'text-red-500')}>Spend: ₹{userBets[cat]}</div>
             </div>
@@ -190,7 +207,16 @@ export default function WingoPage() {
         <div className="bg-[#101025] p-5 rounded-[32px] border border-white/5">
           <div className="grid grid-cols-5 gap-3">
             {NUMBERS.map((num) => (
-              <button key={num} onClick={() => handleBet(`number_${num}`)} className={cn("aspect-square rounded-full flex items-center justify-center text-xl font-black text-white border-2 border-white/10", (num === 0 || num === 5) ? 'bg-gradient-to-br from-violet-500 to-red-500' : ([2, 4, 6, 8].includes(num) ? 'bg-red-500' : 'bg-green-500'))}>
+              <button 
+                key={num} 
+                onClick={() => handleBet(`number_${num}`)} 
+                disabled={isBettingClosed}
+                className={cn(
+                  "aspect-square rounded-full flex items-center justify-center text-xl font-black text-white border-2 border-white/10 transition-all", 
+                  (num === 0 || num === 5) ? 'bg-gradient-to-br from-violet-500 to-red-500' : ([2, 4, 6, 8].includes(num) ? 'bg-red-500' : 'bg-green-500'),
+                  isBettingClosed && "opacity-20 scale-90"
+                )}
+              >
                 {num}
               </button>
             ))}
@@ -200,8 +226,16 @@ export default function WingoPage() {
         <div className="grid grid-cols-2 gap-4">
           {['big', 'small'].map((cat) => (
             <div key={cat} className="flex flex-col gap-2">
-              <Button onClick={() => handleBet(cat)} className={cn("h-16 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase", cat === 'big' ? "bg-amber-500 shadow-[0_6px_0_rgb(180,83,9)]" : "bg-blue-500 shadow-[0_6px_0_rgb(29,78,216)]")}>
-                {cat}
+              <Button 
+                onClick={() => handleBet(cat)} 
+                disabled={isBettingClosed}
+                className={cn(
+                  "h-16 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 transition-all uppercase", 
+                  cat === 'big' ? "bg-amber-500 shadow-[0_6px_0_rgb(180,83,9)]" : "bg-blue-500 shadow-[0_6px_0_rgb(29,78,216)]",
+                  isBettingClosed && "opacity-50 grayscale shadow-none"
+                )}
+              >
+                {isBettingClosed ? <Lock className="h-4 w-4" /> : cat}
               </Button>
               <div className={cn("text-[9px] font-black text-center uppercase py-1 rounded-full bg-white/5", cat === 'big' ? 'text-amber-500' : 'text-blue-500')}>Spend: ₹{userBets[cat]}</div>
             </div>
@@ -210,7 +244,20 @@ export default function WingoPage() {
 
         <div className="bg-[#101025]/60 p-4 rounded-3xl border border-white/5 flex items-center justify-around gap-2">
           {CHIPS.map((chip) => (
-            <button key={chip} onClick={() => setSelectedChip(chip)} className={cn("h-12 w-12 rounded-full flex items-center justify-center text-[11px] font-black transition-all", selectedChip === chip ? "bg-cyan-500 text-white scale-110 shadow-[0_0_20px_rgba(34,211,238,0.6)] border-2 border-white ring-4 ring-cyan-500/20" : "bg-slate-900 text-zinc-500 border border-white/10")}>{chip}</button>
+            <button 
+              key={chip} 
+              onClick={() => setSelectedChip(chip)} 
+              disabled={isBettingClosed}
+              className={cn(
+                "h-12 w-12 rounded-full flex items-center justify-center text-[11px] font-black transition-all", 
+                selectedChip === chip 
+                  ? "bg-cyan-500 text-white scale-110 shadow-[0_0_20px_rgba(34,211,238,0.6)] border-2 border-white ring-4 ring-cyan-500/20" 
+                  : "bg-slate-900 text-zinc-500 border border-white/10",
+                isBettingClosed && "opacity-50"
+              )}
+            >
+              {chip}
+            </button>
           ))}
         </div>
 
