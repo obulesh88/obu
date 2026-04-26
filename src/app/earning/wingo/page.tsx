@@ -11,14 +11,16 @@ import {
   Zap,
   History,
   TrendingUp,
-  Coins
+  Coins,
+  DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useUser } from '@/firebase';
-import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp, updateDoc, increment, addDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { useToast } from '@/hooks/use-toast';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'WinGo 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -39,13 +41,23 @@ type GameResult = {
 };
 
 export default function WingoPage() {
+  const { toast } = useToast();
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
   const [activeTab, setActiveTab] = useState('history');
   const [selectedChip, setSelectedChip] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
   const firestore = useFirestore();
+
+  // Betting state
+  const [userBets, setUserBets] = useState<Record<string, number>>({
+    green: 0,
+    violet: 0,
+    red: 0,
+    big: 0,
+    small: 0,
+  });
 
   const resultsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -72,6 +84,68 @@ export default function WingoPage() {
   }, []);
 
   const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
+
+  // Reset bets when period changes
+  useEffect(() => {
+    setUserBets({
+      green: 0,
+      violet: 0,
+      red: 0,
+      big: 0,
+      small: 0,
+    });
+  }, [currentPeriod]);
+
+  const handleBet = async (category: string) => {
+    if (!user || !userProfile || !firestore) {
+      toast({ variant: 'destructive', title: 'Login Required' });
+      return;
+    }
+
+    if (userProfile.wallet.balance < selectedChip) {
+      toast({ variant: 'destructive', title: 'Insufficient Balance' });
+      return;
+    }
+
+    const userDocRef = doc(firestore, 'users', user.uid);
+    const updateData = {
+      'wallet.balance': increment(-selectedChip),
+      updatedAt: serverTimestamp()
+    };
+
+    // Deduct balance
+    updateDoc(userDocRef, updateData)
+      .then(() => {
+        // Log transaction
+        const transactionsRef = collection(firestore, 'transactions');
+        const txData = {
+          userId: user.uid,
+          amount: selectedChip,
+          currency: 'INR',
+          type: 'game',
+          description: `WinGo Bet: ${category} (Period ${currentPeriod})`,
+          createdAt: serverTimestamp()
+        };
+        addDoc(transactionsRef, txData);
+
+        // Update local bet state
+        setUserBets(prev => ({
+          ...prev,
+          [category]: (prev[category] || 0) + selectedChip
+        }));
+
+        toast({ title: 'Bet Placed!', description: `₹${selectedChip} on ${category.toUpperCase()}` });
+      })
+      .catch(async (error: any) => {
+        if (error.code === 'permission-denied') {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: updateData,
+          } satisfies SecurityRuleContext));
+        }
+      });
+  };
 
   const generateAndSaveResult = useCallback(async () => {
     if (!firestore || !user) return;
@@ -182,7 +256,7 @@ export default function WingoPage() {
         <CardContent className="p-4 flex justify-between items-center relative z-10">
           <div className="flex flex-col gap-2">
             <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none h-7 px-3 text-[10px] font-black rounded-full uppercase">
-              <Info className="h-3 w-3 mr-1" /> How to play
+              <Coins className="h-3 w-3 mr-1" /> ₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}
             </Button>
             <div className="mt-2">
                <p className="text-[10px] font-black text-white/80 uppercase">Recent Results</p>
@@ -213,9 +287,33 @@ export default function WingoPage() {
       </Card>
 
       <div className="grid grid-cols-3 gap-3">
-        <Button className="h-12 bg-green-500 hover:bg-green-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(21,128,61)] active:translate-y-1 active:shadow-none transition-all uppercase">Green</Button>
-        <Button className="h-12 bg-violet-500 hover:bg-violet-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(109,40,217)] active:translate-y-1 active:shadow-none transition-all uppercase">Violet</Button>
-        <Button className="h-12 bg-red-500 hover:bg-red-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(185,28,28)] active:translate-y-1 active:shadow-none transition-all uppercase">Red</Button>
+        <div className="flex flex-col gap-1">
+          <Button 
+            onClick={() => handleBet('green')}
+            className="h-12 bg-green-500 hover:bg-green-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(21,128,61)] active:translate-y-1 active:shadow-none transition-all uppercase"
+          >
+            Green
+          </Button>
+          <p className="text-[9px] font-black text-center text-green-500/80 uppercase">Spend: ₹{userBets.green}</p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Button 
+            onClick={() => handleBet('violet')}
+            className="h-12 bg-violet-500 hover:bg-violet-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(109,40,217)] active:translate-y-1 active:shadow-none transition-all uppercase"
+          >
+            Violet
+          </Button>
+          <p className="text-[9px] font-black text-center text-violet-500/80 uppercase">Spend: ₹{userBets.violet}</p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Button 
+            onClick={() => handleBet('red')}
+            className="h-12 bg-red-500 hover:bg-red-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(185,28,28)] active:translate-y-1 active:shadow-none transition-all uppercase"
+          >
+            Red
+          </Button>
+          <p className="text-[9px] font-black text-center text-red-500/80 uppercase">Spend: ₹{userBets.red}</p>
+        </div>
       </div>
 
       <div className="bg-slate-900/50 p-4 rounded-3xl border border-white/5 shadow-xl">
@@ -223,6 +321,7 @@ export default function WingoPage() {
           {NUMBERS.map((num) => (
             <button
               key={num}
+              onClick={() => handleBet(`number_${num}`)}
               className={cn(
                 "aspect-square rounded-full flex items-center justify-center text-xl font-black text-white border-2 border-white/10 shadow-lg transition-transform active:scale-90",
                 getNumberColor(num)
@@ -231,6 +330,27 @@ export default function WingoPage() {
               {num}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1">
+          <Button 
+            onClick={() => handleBet('big')}
+            className="h-12 bg-amber-500 hover:bg-amber-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(180,83,9)] active:translate-y-1 active:shadow-none transition-all uppercase"
+          >
+            Big
+          </Button>
+          <p className="text-[9px] font-black text-center text-amber-500/80 uppercase">Spend: ₹{userBets.big}</p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Button 
+            onClick={() => handleBet('small')}
+            className="h-12 bg-blue-500 hover:bg-blue-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(29,78,216)] active:translate-y-1 active:shadow-none transition-all uppercase"
+          >
+            Small
+          </Button>
+          <p className="text-[9px] font-black text-center text-blue-500/80 uppercase">Spend: ₹{userBets.small}</p>
         </div>
       </div>
 
