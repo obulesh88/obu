@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
@@ -135,15 +136,15 @@ export function GameAutomationManager() {
 
           if (gameType === 'wingo') {
             if (bet === 'big' || bet === 'small') {
-              isWin = resultData.bs.toLowerCase() === bet;
+              isWin = resultData.bs.toLowerCase() === bet.toLowerCase();
               multiplier = 2;
-            } else if (['green', 'red', 'violet'].includes(bet)) {
+            } else if (['green', 'red', 'violet'].includes(bet.toLowerCase())) {
               const resColor = resultData.color.toLowerCase();
-              if (bet === 'violet') {
+              if (bet.toLowerCase() === 'violet') {
                 isWin = resColor.includes('violet');
                 multiplier = 4.5;
               } else {
-                isWin = resColor.includes(bet);
+                isWin = resColor.includes(bet.toLowerCase());
                 multiplier = 2;
               }
             } else if (bet.startsWith('number_')) {
@@ -153,15 +154,15 @@ export function GameAutomationManager() {
             }
           } else if (gameType === 'k3') {
             if (bet === 'big' || bet === 'small') {
-              isWin = resultData.bs.toLowerCase() === bet;
+              isWin = resultData.bs.toLowerCase() === bet.toLowerCase();
               multiplier = 2;
             } else if (bet === 'odd' || bet === 'even') {
-              isWin = resultData.oe.toLowerCase() === bet;
+              isWin = resultData.oe.toLowerCase() === bet.toLowerCase();
               multiplier = 2;
             }
           } else if (gameType === 'dt') {
-            isWin = resultData.winner.toLowerCase() === bet;
-            multiplier = bet === 'tie' ? 9 : 2;
+            isWin = resultData.winner.toLowerCase() === bet.toLowerCase();
+            multiplier = bet.toLowerCase() === 'tie' ? 9 : 2;
           }
 
           if (isWin) {
@@ -200,7 +201,7 @@ export function GameAutomationManager() {
     const interval = setInterval(() => {
       runResultGeneration();
       settleBets();
-    }, 3000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [runResultGeneration, settleBets]);
 
