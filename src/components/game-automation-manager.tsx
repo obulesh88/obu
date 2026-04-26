@@ -69,7 +69,10 @@ export function GameAutomationManager() {
       try {
         const snap = await getDoc(resultRef);
         if (!snap.exists()) {
-          resultData = { period: periodId, createdAt: serverTimestamp() };
+          resultData = { 
+            period: periodId, 
+            createdAt: serverTimestamp() 
+          };
 
           if (gameType === 'wingo') {
             const num = Math.floor(Math.random() * 10);
@@ -80,27 +83,44 @@ export function GameAutomationManager() {
             else if (num % 2 === 0) colorClass = 'bg-red-500';
             else colorClass = 'bg-green-500';
 
-            resultData = { ...resultData, num, bs: num >= 5 ? 'Big' : 'Small', color: colorClass };
+            resultData = { 
+              ...resultData, 
+              num, 
+              bs: num >= 5 ? 'Big' : 'Small', 
+              color: colorClass 
+            };
           } else if (gameType === 'k3') {
             const dice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
             const sum = dice.reduce((a, b) => a + b, 0);
-            resultData = { ...resultData, dice, sum, oe: sum % 2 === 0 ? 'Even' : 'Odd', bs: sum >= 11 ? 'Big' : 'Small' };
+            resultData = { 
+              ...resultData, 
+              dice, 
+              sum, 
+              oe: sum % 2 === 0 ? 'Even' : 'Odd', 
+              bs: sum >= 11 ? 'Big' : 'Small' 
+            };
           } else if (gameType === 'dt') {
             const dragon = Math.floor(Math.random() * 13) + 1;
             const tiger = Math.floor(Math.random() * 13) + 1;
             const winner = dragon > tiger ? 'Dragon' : tiger > dragon ? 'Tiger' : 'Tie';
-            resultData = { ...resultData, dragonCard: dragon, tigerCard: tiger, winner };
+            resultData = { 
+              ...resultData, 
+              dragonCard: dragon, 
+              tigerCard: tiger, 
+              winner 
+            };
           }
 
+          // Strict write: simulating the server's result creation
           await setDoc(resultRef, resultData);
         }
       } catch (err: any) {
-        if (err.code === 'permission-denied') {
+        if (err.code === 'permission-denied' && resultData) {
           errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: resultRef.path,
             operation: 'create',
             requestResourceData: resultData
-          }));
+          } satisfies SecurityRuleContext));
         }
       }
     }
@@ -120,7 +140,7 @@ export function GameAutomationManager() {
         where('userId', '==', user.uid),
         where('type', '==', 'game'),
         where('settled', '==', false),
-        limit(10) // Process in small batches
+        limit(10)
       );
 
       const querySnapshot = await getDocs(unsettledQuery);
@@ -141,12 +161,11 @@ export function GameAutomationManager() {
         const { period, bet, gameType, amount } = txData.metadata || {};
 
         if (!period || !gameType || !bet || !amount) {
-          // Cleanup malformed bets
           await updateDoc(doc(firestore, 'transactions', txDoc.id), { settled: true });
           continue;
         }
 
-        // STRICT RULE: Only settle if the period has concluded
+        // ONLY settle if the period has concluded
         if (period >= currentPeriods[gameType as keyof typeof currentPeriods]) continue;
 
         const resultSnap = await getDoc(doc(firestore, `${gameType}_results`, period));
@@ -176,7 +195,6 @@ export function GameAutomationManager() {
             const winAmount = amount * multiplier;
             const userRef = doc(firestore, 'users', user.uid);
             
-            // Atomic Update: Add Balance + Record Transaction
             await updateDoc(userRef, { 'wallet.balance': increment(winAmount), updatedAt: serverTimestamp() });
             await addDoc(collection(firestore, 'transactions'), {
               userId: user.uid,
@@ -195,7 +213,6 @@ export function GameAutomationManager() {
             });
           }
 
-          // Mark bet as settled regardless of outcome
           await updateDoc(doc(firestore, 'transactions', txDoc.id), {
             settled: true,
             updatedAt: serverTimestamp()
