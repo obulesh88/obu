@@ -7,7 +7,8 @@ import {
   Timer, ChevronLeft, Zap, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, History, Gamepad2, Coins
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFirestore, useCollection, useUser } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { collection, query, orderBy, limit, doc, updateDoc, increment, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLayout } from '@/context/layout-context';

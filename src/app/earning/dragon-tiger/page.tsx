@@ -7,7 +7,8 @@ import {
   Timer, ChevronLeft, Trophy, History, Users, Sword, Coins, Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFirebase, useFirestore, useCollection, useUser } from '@/firebase';
+import { useFirebase, useFirestore, useCollection } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { collection, query, orderBy, limit, doc, updateDoc, increment, addDoc, serverTimestamp } from 'firebase/firestore';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
