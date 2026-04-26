@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'K3 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -94,14 +96,25 @@ export default function K3Page() {
     const sum = d1 + d2 + d3;
 
     const resultDocRef = doc(firestore, 'k3_results', periodId);
-    setDoc(resultDocRef, {
+    const resultData = {
       period: periodId,
       dice: [d1, d2, d3],
       sum: sum,
       bs: sum >= 11 ? 'Big' : 'Small',
       oe: sum % 2 === 0 ? 'Even' : 'Odd',
       createdAt: serverTimestamp()
-    });
+    };
+
+    setDoc(resultDocRef, resultData)
+      .catch(async (error: any) => {
+        if (error.code === 'permission-denied') {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: resultDocRef.path,
+            operation: 'create',
+            requestResourceData: resultData,
+          } satisfies SecurityRuleContext));
+        }
+      });
   }, [firestore, generatePeriodId, history]);
 
   useEffect(() => {

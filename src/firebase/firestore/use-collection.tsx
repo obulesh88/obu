@@ -1,7 +1,8 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { onSnapshot, Query, QuerySnapshot, DocumentData } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 /**
  * A hook that listens to a Firestore collection or query and returns the data.
@@ -33,8 +34,16 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setSnapshot(snapshot);
         setLoading(false);
       },
-      (err) => {
-        console.error("useCollection error:", err);
+      async (err) => {
+        if (err.code === 'permission-denied') {
+          // Attempt to extract the path from the query object if available
+          const path = (query as any)._query?.path?.toString() || 'unknown collection path';
+          const permissionError = new FirestorePermissionError({
+            path,
+            operation: 'list',
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+        }
         setError(err);
         setLoading(false);
       }

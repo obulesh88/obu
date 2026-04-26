@@ -18,6 +18,8 @@ import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'DT 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -112,13 +114,24 @@ export default function DragonTigerPage() {
     }
 
     const resultDocRef = doc(firestore, 'dragon_tiger_results', periodId);
-    setDoc(resultDocRef, {
+    const resultData = {
       period: periodId,
       dragonCard: dVal,
       tigerCard: tVal,
       winner: winner,
       createdAt: serverTimestamp()
-    });
+    };
+
+    setDoc(resultDocRef, resultData)
+      .catch(async (error: any) => {
+        if (error.code === 'permission-denied') {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: resultDocRef.path,
+            operation: 'create',
+            requestResourceData: resultData,
+          } satisfies SecurityRuleContext));
+        }
+      });
   }, [firestore, generatePeriodId, history]);
 
   useEffect(() => {

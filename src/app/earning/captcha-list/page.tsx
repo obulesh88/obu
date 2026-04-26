@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -241,14 +240,25 @@ export default function CaptchaListPage() {
         });
 
       const transactionsRef = collection(firestore, 'transactions');
-      addDoc(transactionsRef, {
+      const txData = {
         userId: user.uid,
         amount: REWARD_PER_CAPTCHA,
         currency: 'INR',
         type: 'captcha',
         description: `Solved Captcha #${index + 1}`,
         createdAt: serverTimestamp()
-      });
+      };
+
+      addDoc(transactionsRef, txData)
+        .catch(async (error: any) => {
+          if (error.code === 'permission-denied') {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: transactionsRef.path,
+              operation: 'create',
+              requestResourceData: txData,
+            } satisfies SecurityRuleContext));
+          }
+        });
 
     toast({ title: 'Success!', description: `You earned ₹${REWARD_PER_CAPTCHA.toFixed(3)}.` });
 
