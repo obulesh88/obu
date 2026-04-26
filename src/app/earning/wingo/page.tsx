@@ -379,6 +379,7 @@ export default function WingoPage() {
             <thead className="bg-cyan-600/20 text-cyan-400/60 uppercase text-[9px] font-black tracking-widest">
               <tr>
                 <th className="py-4 px-6 text-left">Period</th>
+                <th className="py-4 px-6 text-center">Number</th>
                 <th className="py-4 px-6 text-right">Result</th>
               </tr>
             </thead>
@@ -386,6 +387,14 @@ export default function WingoPage() {
               {history?.map((row, i) => (
                 <tr key={i} className="hover:bg-white/5 transition-colors">
                   <td className="py-4 px-6 font-mono text-[10px] text-zinc-500 text-left">{row.period}</td>
+                  <td className="py-4 px-6 text-center">
+                    <span className={cn(
+                      "h-6 w-6 rounded-full inline-flex items-center justify-center text-[10px] font-black text-white border border-white/10",
+                      row.color || getNumberColor(row.num)
+                    )}>
+                      {row.num}
+                    </span>
+                  </td>
                   <td className="py-4 px-6 uppercase italic tracking-tighter text-right text-cyan-400 font-black text-sm">
                     {row.bs}
                   </td>
