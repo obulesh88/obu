@@ -59,8 +59,8 @@ export default function RootLayout({
           <div className="relative h-full w-full max-w-[430px] bg-background shadow-[0_0_80px_-20px_rgba(0,0,0,0.8)] md:h-[92dvh] md:max-h-[880px] md:rounded-[54px] md:border-[12px] md:border-zinc-900 md:ring-2 md:ring-zinc-800 flex flex-col overflow-hidden">
             <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
               <FirebaseClientProvider>
-                <GameAutomationManager />
                 <LayoutProvider>
+                  <GameAutomationManager />
                   <AppContent>{children}</AppContent>
                   <Toaster />
                 </LayoutProvider>

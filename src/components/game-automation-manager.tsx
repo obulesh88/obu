@@ -1,11 +1,11 @@
-
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs, updateDoc, increment, addDoc, limit, orderBy } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs, updateDoc, increment, addDoc, limit } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * Global component that handles automatic generation of game results
@@ -14,6 +14,7 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 export function GameAutomationManager() {
   const { user } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
   const lastProcessedMinute = useRef<number | null>(null);
   const isSettling = useRef(false);
 
@@ -122,7 +123,11 @@ export function GameAutomationManager() {
         const txData = txDoc.data();
         const { period, bet, gameType, amount } = txData.metadata || {};
 
-        if (!period || !bet || !gameType) continue;
+        if (!period || !bet || !gameType) {
+          // Incomplete metadata, mark as settled to avoid infinite retry
+          await updateDoc(doc(firestore, 'transactions', txDoc.id), { settled: true });
+          continue;
+        }
 
         let resultSnap;
         if (gameType === 'wingo') resultSnap = await getDoc(doc(firestore, 'wingo_results', period));
@@ -182,8 +187,15 @@ export function GameAutomationManager() {
               settled: true,
               createdAt: serverTimestamp()
             });
+
+            toast({
+              title: 'Congratulations!',
+              description: `You won ₹${winAmount.toFixed(2)} in ${gameType.toUpperCase()}!`,
+              className: 'bg-green-600 text-white'
+            });
           }
 
+          // Mark original bet as settled regardless of outcome
           await updateDoc(doc(firestore, 'transactions', txDoc.id), {
             settled: true,
             updatedAt: serverTimestamp()
@@ -195,7 +207,7 @@ export function GameAutomationManager() {
     } finally {
       isSettling.current = false;
     }
-  }, [firestore, user]);
+  }, [firestore, user, toast]);
 
   useEffect(() => {
     const interval = setInterval(() => {
