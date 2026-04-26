@@ -22,9 +22,6 @@ import { useLayout } from '@/context/layout-context';
 
 const TIME_OPTIONS = [
   { id: '1m', label: '1 Min', icon: <Zap className="h-4 w-4" /> },
-  { id: '3m', label: '3 Min', icon: <Timer className="h-4 w-4" /> },
-  { id: '5m', label: '5 Min', icon: <Timer className="h-4 w-4" /> },
-  { id: '10m', label: '10 Min', icon: <Timer className="h-4 w-4" /> },
 ];
 
 const NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -230,13 +227,13 @@ export default function WingoPage() {
 
       <div className="p-4 flex flex-col gap-4">
         {/* Game Mode Selector */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="flex justify-center">
           {TIME_OPTIONS.map((opt) => (
             <button
               key={opt.id}
               onClick={() => setSelectedTime(opt.id)}
               className={cn(
-                "flex flex-col items-center justify-center p-3 rounded-2xl transition-all border border-white/5",
+                "flex flex-col items-center justify-center p-3 px-8 rounded-2xl transition-all border border-white/5",
                 selectedTime === opt.id 
                   ? "bg-gradient-to-b from-cyan-600 to-cyan-900 text-white shadow-[0_0_15px_rgba(34,211,238,0.3)] border-b-2 border-b-cyan-400" 
                   : "bg-[#101025] text-zinc-500"

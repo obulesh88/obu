@@ -21,9 +21,6 @@ import { useLayout } from '@/context/layout-context';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'K3 1 Min', icon: <Zap className="h-4 w-4" /> },
-  { id: '3m', label: 'K3 3 Min', icon: <Timer className="h-4 w-4" /> },
-  { id: '5m', label: 'K3 5 Min', icon: <Timer className="h-4 w-4" /> },
-  { id: '10m', label: 'K3 10 Min', icon: <Timer className="h-4 w-4" /> },
 ];
 
 const CHIPS = [1, 5, 10, 50, 100];
@@ -155,13 +152,13 @@ export default function K3Page() {
       </div>
 
       <div className="p-4 flex flex-col gap-4">
-        <div className="grid grid-cols-4 gap-2">
+        <div className="flex justify-center">
           {TIME_OPTIONS.map((opt) => (
             <button
               key={opt.id}
               onClick={() => setSelectedTime(opt.id)}
               className={cn(
-                "flex flex-col items-center justify-center p-3 rounded-2xl transition-all border border-white/5",
+                "flex flex-col items-center justify-center p-3 px-8 rounded-2xl transition-all border border-white/5",
                 selectedTime === opt.id 
                   ? "bg-gradient-to-b from-[#1b106b] to-[#0a052e] text-white shadow-[0_0_15px_rgba(59,130,246,0.3)] border-b-2 border-b-blue-500" 
                   : "bg-[#161145] text-zinc-400"
