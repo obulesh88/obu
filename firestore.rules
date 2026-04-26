@@ -13,12 +13,12 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // User Profiles: Only the owner can read/write their own profile
+    // User Profiles: Owner can read/write their own profile
     match /users/{userId} {
       allow read, write: if isOwner(userId);
     }
 
-    // Transactions: Users can see and create their own transactions
+    // Transactions: Users can manage their own log
     match /transactions/{transactionId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
@@ -26,23 +26,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Payout Requests: Users can only create and see their own requests
+    // Payout & Deposit Requests
     match /payout_requests/{requestId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
     }
 
-    // Deposit Requests: Users can only create and see their own requests
     match /deposit_requests/{requestId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
     }
 
-    // Game Results: Public read access, but only authenticated users can write (for prototype automation)
+    // Game Results: Public read, Auth-only write (for simulation)
     match /wingo_results/{resultId} {
       allow read: if true;
       allow write: if isAuthenticated();

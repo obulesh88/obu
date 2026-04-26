@@ -1,24 +1,40 @@
+
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs, updateDoc, increment, addDoc, limit } from 'firebase/firestore';
+import { 
+  doc, 
+  setDoc, 
+  serverTimestamp, 
+  getDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  updateDoc, 
+  increment, 
+  addDoc, 
+  limit 
+} from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
 
 /**
- * Global component that handles automatic generation of game results
- * and strict settling of user bets after the round concludes.
+ * Global component that simulates a backend server.
+ * It strictly handles:
+ * 1. Result Generation (Only for completed periods)
+ * 2. Bet Settlement (Calculating winners and updating balances)
  */
 export function GameAutomationManager() {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const lastResultGeneratedMinute = useRef<number | null>(null);
+  const lastProcessedMinute = useRef<number | null>(null);
   const isSettling = useRef(false);
 
-  // Generates a Period ID based on a specific date/time
+  // Helper to generate a Period ID (YYYMMDD TypeCode HHMM)
   const getPeriodId = useCallback((gameType: 'wingo' | 'k3' | 'dt', date: Date) => {
     const datePart = date.toISOString().slice(0, 10).replace(/-/g, '');
     const totalMinutes = date.getHours() * 60 + date.getMinutes();
@@ -26,173 +42,154 @@ export function GameAutomationManager() {
     return `${datePart}${typeCode}${totalMinutes.toString().padStart(4, '0')}`;
   }, []);
 
-  const runResultGeneration = useCallback(async () => {
+  /**
+   * Generates results for the minute that JUST ENDED.
+   * This ensures results are never available before the betting window closes.
+   */
+  const generatePastResults = useCallback(async () => {
     if (!firestore || !user) return;
 
     const now = new Date();
     const currentMinute = now.getMinutes();
 
-    // Result generation should happen at the start of a new minute for the PREVIOUS minute
-    if (lastResultGeneratedMinute.current === currentMinute) return;
-    lastResultGeneratedMinute.current = currentMinute;
+    // Check if we already tried generating results for the previous minute
+    if (lastProcessedMinute.current === currentMinute) return;
+    lastProcessedMinute.current = currentMinute;
 
-    // We generate results for the minute that just ended
-    const prevMinuteDate = new Date(now.getTime() - 60000);
-    
-    const games: ('wingo' | 'k3' | 'dt')[] = ['wingo', 'k3', 'dt'];
+    // We target the minute that just passed
+    const pastMinuteDate = new Date(now.getTime() - 60000);
+    const gameTypes: ('wingo' | 'k3' | 'dt')[] = ['wingo', 'k3', 'dt'];
 
-    for (const gameType of games) {
-      const periodId = getPeriodId(gameType, prevMinuteDate);
-      const resRef = doc(firestore, `${gameType}_results`, periodId);
-      const resSnap = await getDoc(resRef);
+    for (const gameType of gameTypes) {
+      const periodId = getPeriodId(gameType, pastMinuteDate);
+      const resultRef = doc(firestore, `${gameType}_results`, periodId);
+      
+      try {
+        const snap = await getDoc(resultRef);
+        if (!snap.exists()) {
+          let resultData: any = { period: periodId, createdAt: serverTimestamp() };
 
-      if (!resSnap.exists()) {
-        let data: any = { period: periodId, createdAt: serverTimestamp() };
+          if (gameType === 'wingo') {
+            const num = Math.floor(Math.random() * 10);
+            let colorClass = '';
+            // WinGo Color Rules: 0=Red+Violet, 5=Green+Violet, Even=Red, Odd=Green
+            if (num === 0) colorClass = 'bg-gradient-to-br from-violet-500 to-red-500';
+            else if (num === 5) colorClass = 'bg-gradient-to-br from-violet-500 to-green-500';
+            else if (num % 2 === 0) colorClass = 'bg-red-500';
+            else colorClass = 'bg-green-500';
 
-        if (gameType === 'wingo') {
-          const r = Math.random() * 100;
-          let num: number;
-          if (r < 45) num = [1, 3, 7, 9][Math.floor(Math.random() * 4)];
-          else if (r < 90) num = [2, 4, 6, 8][Math.floor(Math.random() * 4)];
-          else num = [0, 5][Math.floor(Math.random() * 2)];
-
-          let colorClass = '';
-          if (num === 0) colorClass = 'bg-gradient-to-br from-violet-500 to-red-500';
-          else if (num === 5) colorClass = 'bg-gradient-to-br from-violet-500 to-green-500';
-          else if ([2, 4, 6, 8].includes(num)) colorClass = 'bg-red-500';
-          else colorClass = 'bg-green-500';
-
-          data = { ...data, num, bs: num >= 5 ? 'Big' : 'Small', color: colorClass };
-        } else if (gameType === 'k3') {
-          const dice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
-          const sum = dice.reduce((a, b) => a + b, 0);
-          data = { ...data, dice, sum, oe: sum % 2 === 0 ? 'Even' : 'Odd', bs: sum >= 11 ? 'Big' : 'Small' };
-        } else if (gameType === 'dt') {
-          const r = Math.random() * 100;
-          let dVal, tVal, winner: 'Dragon' | 'Tiger' | 'Tie';
-          if (r < 4) { dVal = tVal = Math.floor(Math.random() * 13) + 1; winner = 'Tie'; }
-          else if (r < 52) { dVal = Math.floor(Math.random() * 12) + 2; tVal = Math.floor(Math.random() * (dVal - 1)) + 1; winner = 'Dragon'; }
-          else { tVal = Math.floor(Math.random() * 12) + 2; dVal = Math.floor(Math.random() * (tVal - 1)) + 1; winner = 'Tiger'; }
-          data = { ...data, dragonCard: dVal, tigerCard: tVal, winner };
-        }
-
-        setDoc(resRef, data).catch((e) => {
-          if (e.code === 'permission-denied') {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: resRef.path, operation: 'create', requestResourceData: data }));
+            resultData = { ...resultData, num, bs: num >= 5 ? 'Big' : 'Small', color: colorClass };
+          } else if (gameType === 'k3') {
+            const dice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
+            const sum = dice.reduce((a, b) => a + b, 0);
+            resultData = { ...resultData, dice, sum, oe: sum % 2 === 0 ? 'Even' : 'Odd', bs: sum >= 11 ? 'Big' : 'Small' };
+          } else if (gameType === 'dt') {
+            const dragon = Math.floor(Math.random() * 13) + 1;
+            const tiger = Math.floor(Math.random() * 13) + 1;
+            const winner = dragon > tiger ? 'Dragon' : tiger > dragon ? 'Tiger' : 'Tie';
+            resultData = { ...resultData, dragonCard: dragon, tigerCard: tiger, winner };
           }
-        });
+
+          await setDoc(resultRef, resultData);
+        }
+      } catch (err: any) {
+        if (err.code === 'permission-denied') {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: resultRef.path,
+            operation: 'create',
+            requestResourceData: resultData
+          }));
+        }
       }
     }
   }, [firestore, user, getPeriodId]);
 
-  const settleBets = useCallback(async () => {
+  /**
+   * Scans for unsettled bets and processes payouts.
+   */
+  const processSettlements = useCallback(async () => {
     if (!firestore || !user || isSettling.current) return;
     isSettling.current = true;
 
     try {
-      const now = new Date();
-      const currentPeriodIdWingo = getPeriodId('wingo', now);
-      const currentPeriodIdK3 = getPeriodId('k3', now);
-      const currentPeriodIdDT = getPeriodId('dt', now);
-
       const txRef = collection(firestore, 'transactions');
-      const q = query(
+      const unsettledQuery = query(
         txRef,
         where('userId', '==', user.uid),
         where('type', '==', 'game'),
         where('settled', '==', false),
-        limit(15)
+        limit(10) // Process in small batches
       );
 
-      const querySnapshot = await getDocs(q);
-      
+      const querySnapshot = await getDocs(unsettledQuery);
+      if (querySnapshot.empty) {
+        isSettling.current = false;
+        return;
+      }
+
+      const now = new Date();
+      const currentPeriods = {
+        wingo: getPeriodId('wingo', now),
+        k3: getPeriodId('k3', now),
+        dt: getPeriodId('dt', now)
+      };
+
       for (const txDoc of querySnapshot.docs) {
         const txData = txDoc.data();
-        const metadata = txData.metadata || {};
-        const period = metadata.period;
-        const bet = metadata.bet;
-        const gameType = metadata.gameType;
-        const amount = Number(metadata.amount || 0);
+        const { period, bet, gameType, amount } = txData.metadata || {};
 
-        if (!period || !bet || !gameType || amount <= 0) {
+        if (!period || !gameType || !bet || !amount) {
+          // Cleanup malformed bets
           await updateDoc(doc(firestore, 'transactions', txDoc.id), { settled: true });
           continue;
         }
 
-        // STRICT RULE: Only settle if the period has ended
-        const currentRef = gameType === 'wingo' ? currentPeriodIdWingo : gameType === 'k3' ? currentPeriodIdK3 : currentPeriodIdDT;
-        if (period >= currentRef) continue;
+        // STRICT RULE: Only settle if the period has concluded
+        if (period >= currentPeriods[gameType as keyof typeof currentPeriods]) continue;
 
-        let resultSnap = await getDoc(doc(firestore, `${gameType}_results`, period));
-
+        const resultSnap = await getDoc(doc(firestore, `${gameType}_results`, period));
         if (resultSnap.exists()) {
-          const resultData = resultSnap.data();
+          const res = resultSnap.data();
           let isWin = false;
           let multiplier = 0;
 
           if (gameType === 'wingo') {
-            const betLower = bet.toLowerCase();
-            const resNum = resultData.num;
-            const resColor = resultData.color.toLowerCase();
-            const resBS = resultData.bs.toLowerCase();
-
-            if (betLower === 'big' || betLower === 'small') {
-              isWin = resBS === betLower;
-              multiplier = 2;
-            } else if (['green', 'red', 'violet'].includes(betLower)) {
-              if (betLower === 'violet') {
-                isWin = resColor.includes('violet');
-                multiplier = 4.5;
-              } else if (betLower === 'green') {
-                isWin = [1, 3, 7, 9, 5].includes(resNum);
-                multiplier = resNum === 5 ? 1.5 : 2; // Strict Rule: Shared color gets 1.5x
-              } else if (betLower === 'red') {
-                isWin = [2, 4, 6, 8, 0].includes(resNum);
-                multiplier = resNum === 0 ? 1.5 : 2;
-              }
-            } else if (betLower.startsWith('number_')) {
-              const betNum = parseInt(betLower.split('_')[1]);
-              isWin = resNum === betNum;
-              multiplier = 9;
-            }
+            const b = bet.toLowerCase();
+            if (b === 'big' || b === 'small') { isWin = res.bs.toLowerCase() === b; multiplier = 2; }
+            else if (b === 'green') { isWin = [1, 3, 7, 9, 5].includes(res.num); multiplier = res.num === 5 ? 1.5 : 2; }
+            else if (b === 'red') { isWin = [2, 4, 6, 8, 0].includes(res.num); multiplier = res.num === 0 ? 1.5 : 2; }
+            else if (b === 'violet') { isWin = [0, 5].includes(res.num); multiplier = 4.5; }
+            else if (b.startsWith('number_')) { isWin = res.num === parseInt(b.split('_')[1]); multiplier = 9; }
           } else if (gameType === 'k3') {
-            const betLower = bet.toLowerCase();
-            if (['big', 'small'].includes(betLower)) {
-              isWin = resultData.bs.toLowerCase() === betLower;
-              multiplier = 2;
-            } else if (['odd', 'even'].includes(betLower)) {
-              isWin = resultData.oe.toLowerCase() === betLower;
-              multiplier = 2;
-            }
+            const b = bet.toLowerCase();
+            if (['big', 'small'].includes(b)) { isWin = res.bs.toLowerCase() === b; multiplier = 2; }
+            else if (['odd', 'even'].includes(b)) { isWin = res.oe.toLowerCase() === b; multiplier = 2; }
           } else if (gameType === 'dt') {
-            const betLower = bet.toLowerCase();
-            isWin = resultData.winner.toLowerCase() === betLower;
-            multiplier = betLower === 'tie' ? 9 : 2;
+            const b = bet.toLowerCase();
+            isWin = res.winner.toLowerCase() === b;
+            multiplier = b === 'tie' ? 9 : 2;
           }
 
-          if (isWin && multiplier > 0) {
+          if (isWin) {
             const winAmount = amount * multiplier;
             const userRef = doc(firestore, 'users', user.uid);
             
-            await updateDoc(userRef, {
-              'wallet.balance': increment(winAmount),
-              updatedAt: serverTimestamp()
-            });
-
+            // Atomic Update: Add Balance + Record Transaction
+            await updateDoc(userRef, { 'wallet.balance': increment(winAmount), updatedAt: serverTimestamp() });
             await addDoc(collection(firestore, 'transactions'), {
               userId: user.uid,
               amount: winAmount,
               currency: 'INR',
               type: 'game',
-              description: `Win Payout: ${gameType.toUpperCase()} (P: ${period})`,
+              description: `Winner Payout: ${gameType.toUpperCase()} (P:${period})`,
               settled: true,
               createdAt: serverTimestamp()
             });
 
             toast({
-              title: 'WINNER! 🏆',
-              description: `₹${winAmount.toFixed(2)} added to your wallet`,
-              className: 'bg-green-600 text-white font-black'
+              title: "WINNER! 🏆",
+              description: `₹${winAmount.toFixed(2)} credited for ${gameType.toUpperCase()}`,
+              className: "bg-green-600 text-white font-black"
             });
           }
 
@@ -203,20 +200,20 @@ export function GameAutomationManager() {
           });
         }
       }
-    } catch (error) {
-      console.error('Settlement Error:', error);
+    } catch (err) {
+      console.error("Settlement Error:", err);
     } finally {
       isSettling.current = false;
     }
   }, [firestore, user, toast, getPeriodId]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      runResultGeneration();
-      settleBets();
+    const loop = setInterval(() => {
+      generatePastResults();
+      processSettlements();
     }, 5000);
-    return () => clearInterval(interval);
-  }, [runResultGeneration, settleBets]);
+    return () => clearInterval(loop);
+  }, [generatePastResults, processSettlements]);
 
   return null;
 }
