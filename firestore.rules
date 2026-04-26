@@ -3,37 +3,50 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Full permissive access for prototype development
-    // This allows the app to function correctly during the testing phase
-    
-    match /{document=**} {
-      allow read, write: if true;
+    // Helper to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Explicitly allow access to game result collections to ensure synchronized play
+    // Helper to check if the user is accessing their own data
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User Profiles: Only the owner can read/write their own profile
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Transactions: Users can only see and create their own transactions
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // Transactions are immutable records
+    }
+
+    // Payout Requests: Users can only create and see their own requests
+    match /payout_requests/{requestId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if false; // Admin handles updates (rejected/completed)
+      allow delete: if false;
+    }
+
+    // Game Results: Public read access, but only authenticated users can write (for prototype automation)
     match /wingo_results/{resultId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
     match /k3_results/{resultId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
     match /dragon_tiger_results/{resultId} {
-      allow read, write: if true;
-    }
-
-    // Explicitly allow access to user-specific and transaction data
-    match /users/{userId} {
-      allow read, write: if true;
-    }
-
-    match /payout_requests/{requestId} {
-      allow read, write: if true;
-    }
-
-    match /transactions/{transactionId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
   }
 }

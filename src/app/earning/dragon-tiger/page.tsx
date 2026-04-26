@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -14,17 +15,12 @@ import {
   Coins
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-
-const TIME_OPTIONS = [
-  { id: '1m', label: 'DT 1 Min', icon: <Zap className="h-4 w-4" /> },
-  { id: '3m', label: 'DT 3 Min', icon: <Timer className="h-4 w-4" /> },
-];
 
 const CHIPS = [1, 5, 10, 50, 100, 500];
 
@@ -69,6 +65,7 @@ export default function DragonTigerPage() {
   const [timeLeft, setTimeLeft] = useState(60);
   const [selectedChip, setSelectedChip] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
+  const { user } = useUser();
   const firestore = useFirestore();
 
   const resultsQuery = useMemo(() => {
@@ -92,7 +89,7 @@ export default function DragonTigerPage() {
   const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
 
   const generateAndSaveResult = useCallback(async () => {
-    if (!firestore) return;
+    if (!firestore || !user) return;
 
     const periodId = generatePeriodId();
     if (history?.some(h => h.period === periodId)) return;
@@ -132,7 +129,7 @@ export default function DragonTigerPage() {
           } satisfies SecurityRuleContext));
         }
       });
-  }, [firestore, generatePeriodId, history]);
+  }, [firestore, user, generatePeriodId, history]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -165,7 +162,7 @@ export default function DragonTigerPage() {
           <ChevronLeft className="h-6 w-6" />
         </Button>
         <div className="flex flex-col items-center">
-          <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest italic">Dragon vs Tiger</span>
+          <h1 className="text-[10px] font-black text-rose-500 uppercase tracking-widest italic">Dragon vs Tiger</h1>
           <span className="text-xs font-bold text-zinc-500 font-mono">{currentPeriod}</span>
         </div>
         <div className="bg-slate-900 rounded-lg px-2 py-1 border border-white/10 flex items-center gap-2">

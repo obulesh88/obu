@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -15,7 +16,7 @@ import {
   Gamepad2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -60,8 +61,8 @@ export default function K3Page() {
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
   const [activeTab, setActiveTab] = useState('Total');
-  const [historyTab, setHistoryTab] = useState('Game history');
   const [isMounted, setIsMounted] = useState(false);
+  const { user } = useUser();
   const firestore = useFirestore();
 
   const resultsQuery = useMemo(() => {
@@ -85,7 +86,7 @@ export default function K3Page() {
   const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
 
   const generateAndSaveResult = useCallback(async () => {
-    if (!firestore) return;
+    if (!firestore || !user) return;
 
     const periodId = generatePeriodId();
     if (history?.some(h => h.period === periodId)) return;
@@ -115,7 +116,7 @@ export default function K3Page() {
           } satisfies SecurityRuleContext));
         }
       });
-  }, [firestore, generatePeriodId, history]);
+  }, [firestore, user, generatePeriodId, history]);
 
   useEffect(() => {
     setIsMounted(true);

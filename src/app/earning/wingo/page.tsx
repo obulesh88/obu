@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -11,7 +12,7 @@ import {
   Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -39,6 +40,7 @@ export default function WingoPage() {
   const [timeLeft, setTimeLeft] = useState(60);
   const [activeTab, setActiveTab] = useState('history');
   const [isMounted, setIsMounted] = useState(false);
+  const { user } = useUser();
   const firestore = useFirestore();
 
   const resultsQuery = useMemo(() => {
@@ -68,7 +70,7 @@ export default function WingoPage() {
   const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
 
   const generateAndSaveResult = useCallback(async () => {
-    if (!firestore) return;
+    if (!firestore || !user) return;
     
     const periodId = generatePeriodId();
     if (history?.some(h => h.period === periodId)) return;
@@ -106,7 +108,7 @@ export default function WingoPage() {
           } satisfies SecurityRuleContext));
         }
       });
-  }, [firestore, generatePeriodId, history]);
+  }, [firestore, user, generatePeriodId, history]);
 
   useEffect(() => {
     setIsMounted(true);
