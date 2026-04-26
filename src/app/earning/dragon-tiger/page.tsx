@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -15,6 +16,7 @@ import { useLayout } from '@/context/layout-context';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const CHIPS = [1, 5, 10, 50, 100];
 
@@ -52,8 +54,8 @@ const CardIcon = ({ val, winner, label }: { val: number, winner: boolean, label:
         {label}
       </span>
       <div className={cn(
-        "h-32 w-24 bg-white rounded-xl flex flex-col items-center justify-center relative shadow-[0_0_30px_rgba(255,255,255,0.1)] transition-all duration-700 animate-in zoom-in-75", 
-        winner ? "ring-4 ring-yellow-400 scale-110 z-20" : "opacity-90"
+        "h-36 w-24 bg-white rounded-xl flex flex-col items-center justify-center relative shadow-[0_0_40px_rgba(255,255,255,0.15)] transition-all duration-700 animate-in zoom-in-75", 
+        winner ? "ring-4 ring-yellow-400 scale-110 z-20" : "opacity-95 z-10"
       )}>
          <span className={cn("absolute top-2 left-2 text-sm font-black flex flex-col items-center leading-none", isRed(val) ? "text-red-600" : "text-slate-900")}>
            {getLabel(val)}
@@ -83,6 +85,8 @@ export default function DragonTigerPage() {
   const [userBets, setUserBets] = useState<Record<string, number>>({
     dragon: 0, tie: 0, tiger: 0
   });
+
+  const dealerImage = PlaceHolderImages.find(img => img.id === 'user-avatar')?.imageUrl || '';
 
   useEffect(() => {
     setPaddingDisabled(true);
@@ -188,11 +192,11 @@ export default function DragonTigerPage() {
       </div>
 
       {/* Main Dealer/Card Table */}
-      <div className="relative h-[320px] w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#1a1525] via-[#050308] overflow-hidden">
-        <div className="absolute top-0 w-full flex justify-center opacity-40">
-           <div className="relative h-40 w-40 mt-4 rounded-full overflow-hidden border-4 border-white/5">
+      <div className="relative h-[360px] w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#1a1525] via-[#050308] overflow-hidden">
+        <div className="absolute top-0 w-full flex justify-center opacity-30">
+           <div className="relative h-44 w-44 mt-4 rounded-full overflow-hidden border-4 border-white/5 grayscale">
               <Image 
-                src="https://images.unsplash.com/photo-1595514191830-3e96a518989b?q=80&w=400&h=400&fit=crop" 
+                src={dealerImage} 
                 alt="Dealer" 
                 fill 
                 className="object-cover" 
@@ -201,13 +205,13 @@ export default function DragonTigerPage() {
            </div>
         </div>
         
-        <div className="relative z-10 w-full flex justify-around items-end px-4 mt-8">
+        <div className="relative z-20 w-full flex justify-around items-end px-4 mt-12">
           <CardIcon label="Dragon" val={history?.[0]?.dragonCard || 1} winner={history?.[0]?.winner === 'Dragon'} />
           
-          <div className="flex flex-col items-center gap-4 mb-4">
-            <div className="h-12 w-12 bg-yellow-500 rounded-full flex items-center justify-center font-black text-slate-950 shadow-[0_0_30px_rgba(234,179,8,0.4)] z-20 border-4 border-slate-950">VS</div>
+          <div className="flex flex-col items-center gap-4 mb-8">
+            <div className="h-14 w-14 bg-yellow-500 rounded-full flex items-center justify-center font-black text-slate-950 shadow-[0_0_40px_rgba(234,179,8,0.5)] z-30 border-4 border-slate-950 animate-bounce">VS</div>
             <div className="flex flex-col items-center gap-1">
-               <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Multiplier</span>
+               <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Payout</span>
                <span className="text-xs font-black text-white italic">Tie 1:8</span>
             </div>
           </div>
@@ -216,7 +220,7 @@ export default function DragonTigerPage() {
         </div>
 
         {/* Dynamic Status Bar */}
-        <div className="absolute bottom-4 w-full flex justify-between px-6">
+        <div className="absolute bottom-4 w-full flex justify-between px-6 z-10">
            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
               <Users className="h-3 w-3 text-zinc-400" />
               <span className="text-[10px] font-black text-zinc-300 uppercase">1.2k Active</span>
