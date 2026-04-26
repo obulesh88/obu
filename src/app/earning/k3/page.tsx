@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -37,7 +36,7 @@ const SUM_MULTIPLIERS: Record<number, string> = {
   15: '20.74', 16: '34.56', 17: '69.12', 18: '207.36'
 };
 
-const CHIPS = [1, 5, 10, 50, 100, 500];
+const CHIPS = [1, 5, 10, 50, 100];
 
 type K3Result = {
   id?: string;

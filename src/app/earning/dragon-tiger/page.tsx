@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -22,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-const CHIPS = [1, 5, 10, 50, 100, 500];
+const CHIPS = [1, 5, 10, 50, 100];
 
 type DTResult = {
   id?: string;

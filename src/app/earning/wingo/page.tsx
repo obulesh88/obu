@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -29,7 +28,7 @@ const TIME_OPTIONS = [
 ];
 
 const NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-const CHIPS = [1, 5, 10, 50, 100, 500];
+const CHIPS = [1, 5, 10, 50, 100];
 
 type GameResult = {
   id?: string;
