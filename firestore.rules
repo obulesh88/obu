@@ -18,7 +18,7 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-    // Transactions: Users can see, create, and update their own transactions (for settlement)
+    // Transactions: Users can see and create their own transactions
     match /transactions/{transactionId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
@@ -30,7 +30,15 @@ service cloud.firestore {
     match /payout_requests/{requestId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if false; // Admin handles updates (rejected/completed)
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Deposit Requests: Users can only create and see their own requests
+    match /deposit_requests/{requestId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if false;
       allow delete: if false;
     }
 

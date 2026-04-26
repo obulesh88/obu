@@ -98,6 +98,20 @@
       },
       "required": ["userId", "amount", "status", "payoutDetails", "createdAt"]
     },
+    "DepositRequest": {
+      "title": "Deposit Request",
+      "description": "A request from a user to deposit INR balance.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "utr": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "utr", "status", "createdAt"]
+    },
     "Transaction": {
       "title": "Transaction",
       "description": "A record of any balance change.",
@@ -106,7 +120,7 @@
         "userId": { "type": "string" },
         "amount": { "type": "number" },
         "currency": { "type": "string", "enum": ["INR"] },
-        "type": { "type": "string", "enum": ["ad", "captcha", "game", "referral", "withdrawal"] },
+        "type": { "type": "string", "enum": ["ad", "captcha", "game", "referral", "withdrawal", "deposit"] },
         "description": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
@@ -158,6 +172,10 @@
     "/payout_requests/{requestId}": {
       "schema": { "$ref": "#/entities/WithdrawalRequest" },
       "description": "Manual payout requests for admin processing."
+    },
+    "/deposit_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/DepositRequest" },
+      "description": "Manual deposit requests for admin processing."
     },
     "/transactions/{transactionId}": {
       "schema": { "$ref": "#/entities/Transaction" },

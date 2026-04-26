@@ -45,7 +45,7 @@ export type UserProfile = {
   };
 };
 
-export type TransactionType = 'ad' | 'captcha' | 'game' | 'referral' | 'withdrawal';
+export type TransactionType = 'ad' | 'captcha' | 'game' | 'referral' | 'withdrawal' | 'deposit';
 
 export type Transaction = {
   id?: string;
@@ -69,6 +69,16 @@ export type WithdrawalRequest = {
     vpa?: string;
     payoutType: 'bank' | 'upi';
   };
+  createdAt: any;
+  updatedAt: any;
+};
+
+export type DepositRequest = {
+  id?: string;
+  userId: string;
+  amount: number;
+  utr: string;
+  status: 'pending' | 'completed' | 'rejected';
   createdAt: any;
   updatedAt: any;
 };

@@ -1,9 +1,9 @@
 
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Building2, Send, Landmark, Clock, Construction, RefreshCw } from 'lucide-react';
+import { DollarSign, Building2, Send, Landmark, Clock, Construction, RefreshCw, Copy, CheckCircle2, QrCode } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
@@ -22,8 +22,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Image from 'next/image';
 
 const MIN_WITHDRAWAL = 100;
+const DEPOSIT_UPI_ID = "orwallet@paytm";
 
 export default function WalletPageContent() {
   const [activeTab, setActiveTab] = useState<'withdraw' | 'deposit'>('withdraw');
@@ -33,6 +35,11 @@ export default function WalletPageContent() {
 
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  
+  const [depositAmount, setDepositAmount] = useState('');
+  const [utrNumber, setUtrNumber] = useState('');
+  const [isDepositing, setIsDepositing] = useState(false);
+
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   const [isSavingBank, setIsSavingBank] = useState(false);
   const [payoutType, setPayoutType] = useState<'bank' | 'upi'>('upi');
@@ -53,6 +60,11 @@ export default function WalletPageContent() {
       }
     }
   }, [userProfile]);
+
+  const handleCopyUpi = () => {
+    navigator.clipboard.writeText(DEPOSIT_UPI_ID);
+    toast({ title: 'Copied!', description: 'UPI ID copied to clipboard.' });
+  };
 
   const handleSaveBankDetails = async () => {
     if (!user || !firestore) return;
@@ -75,6 +87,52 @@ export default function WalletPageContent() {
         }
       })
       .finally(() => setIsSavingBank(false));
+  };
+
+  const handleDeposit = async () => {
+    if (!user || !firestore) return;
+
+    const amount = parseFloat(depositAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ variant: 'destructive', title: 'Invalid Amount' });
+      return;
+    }
+
+    if (!utrNumber || utrNumber.length < 12) {
+      toast({ variant: 'destructive', title: 'Invalid UTR', description: 'Please enter a valid 12-digit UTR/Ref number.' });
+      return;
+    }
+
+    setIsDepositing(true);
+    const requestsRef = collection(firestore, 'deposit_requests');
+    const depositData = {
+      userId: user.uid,
+      amount: amount,
+      utr: utrNumber,
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    addDoc(requestsRef, depositData)
+      .then(() => {
+        toast({ 
+          title: 'Deposit Submitted', 
+          description: 'Your request is being verified. Funds will be added shortly.' 
+        });
+        setDepositAmount('');
+        setUtrNumber('');
+      })
+      .catch(async (error: any) => {
+        if (error.code === 'permission-denied') {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: requestsRef.path,
+            operation: 'create',
+            requestResourceData: depositData,
+          } satisfies SecurityRuleContext));
+        }
+      })
+      .finally(() => setIsDepositing(false));
   };
 
   const handleWithdraw = async () => {
@@ -220,15 +278,68 @@ export default function WalletPageContent() {
       )}
 
       {activeTab === 'deposit' && (
-        <Card className="border-primary/10 overflow-hidden min-h-[300px] flex flex-col items-center justify-center">
-          <CardContent className="p-12 text-center space-y-6 flex flex-col items-center">
-            <div className="rounded-full bg-primary/10 p-6 animate-pulse border border-primary/20">
-              <Construction className="h-12 w-12 text-primary" />
+        <Card className="border-primary/10">
+          <CardHeader>
+            <CardTitle className="text-sm font-black uppercase">Recharge Wallet</CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase">Add funds to start playing</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Payment Method Details */}
+            <div className="flex flex-col items-center gap-4 p-6 bg-muted/50 rounded-2xl border border-primary/10">
+              <div className="relative h-40 w-40 bg-white p-2 rounded-xl shadow-inner border border-zinc-200">
+                <Image 
+                  src="https://picsum.photos/seed/deposit-qr/400/400" 
+                  alt="QR Code" 
+                  fill 
+                  className="rounded-lg"
+                  data-ai-hint="QR Code"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 hover:opacity-100 transition-opacity rounded-xl">
+                  <QrCode className="h-10 w-10 text-primary" />
+                </div>
+              </div>
+              <div className="w-full space-y-2">
+                <p className="text-[10px] font-black uppercase text-center text-muted-foreground">UPI Payment ID</p>
+                <div className="flex items-center gap-2 bg-background border rounded-lg p-3 justify-between">
+                  <span className="font-mono font-bold text-sm tracking-tight">{DEPOSIT_UPI_ID}</span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={handleCopyUpi}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-black uppercase tracking-tighter">Shortly Available</h3>
-              <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest max-w-[250px] mx-auto">
-                We are integrating automated payment gateways.
+
+            {/* Deposit Form */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase">Amount (₹)</Label>
+                <div className="relative">
+                  <Input 
+                    type="number" 
+                    placeholder="Enter amount" 
+                    value={depositAmount} 
+                    onChange={(e) => setDepositAmount(e.target.value)} 
+                    className="h-12 font-black text-lg" 
+                  />
+                  <div className="absolute inset-y-0 right-3 flex items-center font-bold text-primary">₹</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase">UTR / Reference Number</Label>
+                <Input 
+                  placeholder="12-digit transaction ID" 
+                  value={utrNumber} 
+                  onChange={(e) => setUtrNumber(e.target.value)} 
+                  className="h-12 font-mono font-bold tracking-widest uppercase" 
+                />
+              </div>
+              <Button className="w-full h-12 font-black uppercase text-lg" onClick={handleDeposit} disabled={isDepositing}>
+                {isDepositing ? <RefreshCw className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+                Submit Deposit
+              </Button>
+              <p className="text-[9px] font-bold text-center text-muted-foreground uppercase leading-relaxed">
+                Verification usually takes 10-30 minutes. <br />
+                Do not submit fake UTRs to avoid account ban.
               </p>
             </div>
           </CardContent>
