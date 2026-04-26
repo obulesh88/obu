@@ -29,13 +29,6 @@ const TIME_OPTIONS = [
   { id: '10m', label: 'K3 10 Min', icon: <Timer className="h-4 w-4" /> },
 ];
 
-const SUM_MULTIPLIERS: Record<number, string> = {
-  3: '207.36', 4: '69.12', 5: '34.56', 6: '20.74', 
-  7: '13.83', 8: '9.88', 9: '8.3', 10: '7.68', 
-  11: '7.68', 12: '8.3', 13: '9.88', 14: '13.83', 
-  15: '20.74', 16: '34.56', 17: '69.12', 18: '207.36'
-};
-
 const CHIPS = [1, 5, 10, 50, 100];
 
 type K3Result = {
@@ -181,11 +174,11 @@ export default function K3Page() {
 
       <div className="flex justify-between items-center text-white mb-2 px-2">
         <div className="flex flex-col">
-           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Period</span>
+           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">PERIOD</span>
            <span className="text-sm font-black font-mono tracking-tighter">{currentPeriod}</span>
         </div>
         <div className="text-right flex flex-col items-end">
-           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Time Remaining</span>
+           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">TIME REMAINING</span>
            <div className="flex gap-1 mt-1">
               <span className="bg-[#161145] text-blue-400 font-mono text-xl font-black p-1 rounded min-w-[28px] text-center">0</span>
               <span className="bg-[#161145] text-blue-400 font-mono text-xl font-black p-1 rounded min-w-[28px] text-center">0</span>
@@ -219,7 +212,7 @@ export default function K3Page() {
             className={cn(
               "h-10 w-10 rounded-full flex items-center justify-center text-[10px] font-black transition-all transform active:scale-90",
               selectedChip === chip 
-                ? "bg-blue-500 text-white scale-110 shadow-[0_0_15px_rgba(59,130,246,0.5)] border-2 border-white" 
+                ? "bg-blue-500 text-white scale-110 shadow-[0_0_15px_rgba(59,130,246,0.5)] border-2 border-white ring-4 ring-blue-500/20" 
                 : "bg-[#0a052e] text-zinc-400 border border-white/10"
             )}
           >
@@ -233,10 +226,10 @@ export default function K3Page() {
           onClick={() => setActiveTab('history')}
           className={cn(
             "flex-1 h-10 font-black uppercase text-[10px] rounded-xl transition-all",
-            activeTab === 'history' ? "bg-[#1b106b] text-white border border-blue-500/50" : "bg-transparent text-slate-500"
+            activeTab === 'history' ? "bg-red-600 text-white border border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)]" : "bg-transparent text-slate-500"
           )}
         >
-          <History className="h-3 w-3 mr-2" /> History
+          <History className="h-3 w-3 mr-2" /> HISTORY
         </Button>
         <Button 
           onClick={() => setActiveTab('chart')}
@@ -245,7 +238,7 @@ export default function K3Page() {
             activeTab === 'chart' ? "bg-[#1b106b] text-white border border-blue-500/50" : "bg-transparent text-slate-500"
           )}
         >
-          <TrendingUp className="h-3 w-3 mr-2" /> Chart
+          <TrendingUp className="h-3 w-3 mr-2" /> CHART
         </Button>
       </div>
 
@@ -253,9 +246,9 @@ export default function K3Page() {
         <table className="w-full text-center">
           <thead className="bg-[#1e1465] text-zinc-400 uppercase text-[9px] font-black">
             <tr>
-              <th className="py-3 px-4">Period</th>
-              <th className="py-3 px-4">Sum</th>
-              <th className="py-3 px-4">Results</th>
+              <th className="py-3 px-4">PERIOD</th>
+              <th className="py-3 px-4">SUM</th>
+              <th className="py-3 px-4">RESULTS</th>
             </tr>
           </thead>
           <tbody className="text-white text-xs font-bold divide-y divide-white/5">
