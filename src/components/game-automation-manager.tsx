@@ -72,6 +72,7 @@ export function GameAutomationManager() {
         dice: [d1, d2, d3],
         sum: sum,
         oe: sum % 2 === 0 ? 'Even' : 'Odd',
+        bs: sum >= 11 ? 'Big' : 'Small',
         createdAt: serverTimestamp()
       };
       setDoc(k3Ref, data).catch((e) => {
