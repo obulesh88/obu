@@ -1,4 +1,3 @@
-
 export type UserProfile = {
   uid: string;
   memberId: string;
@@ -22,12 +21,6 @@ export type UserProfile = {
   };
   createdAt: any;
   updatedAt: any;
-  captcha: {
-    is_active: boolean;
-    verifiedAt: any;
-    claimed: boolean;
-    reward_comm: number;
-  };
   watchAds: {
     ad_provider: string;
     ad_start: any;

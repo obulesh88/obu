@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -45,15 +44,6 @@
             "ifsc": { "type": "string" },
             "vpa": { "type": "string" },
             "payoutType": { "type": "string", "enum": ["bank", "upi"] }
-          }
-        },
-        "captcha": {
-          "type": "object",
-          "properties": {
-            "is_active": { "type": "boolean" },
-            "verifiedAt": { "type": ["string", "null"], "format": "date-time" },
-            "claimed": { "type": "boolean" },
-            "reward_comm": { "type": "number" }
           }
         },
         "watchAds": {

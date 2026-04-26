@@ -1,13 +1,11 @@
-
 'use client';
 
 import { Card } from '@/components/ui/card';
-import { Key, Tv, Gamepad2, Users, Dices, Layers, Sword } from 'lucide-react';
+import { Tv, Gamepad2, Users, Dices, Layers, Sword } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EarningPage() {
   const earningOptions = [
-    { name: 'Solve Captcha', icon: <Key className="h-8 w-8 text-primary" />, href: '/earning/captcha-list', description: 'Quick & Easy' },
     { name: 'Watch Ads', icon: <Tv className="h-8 w-8 text-blue-500" />, href: '/earning/ad-list', description: 'High Rewards' },
     { name: 'Play Games', icon: <Gamepad2 className="h-8 w-8 text-green-500" />, href: '/earning/games', description: 'Fun Tasks' },
     { name: 'Wingo', icon: <Dices className="h-8 w-8 text-orange-500" />, href: '/earning/wingo', description: 'Color Luck' },

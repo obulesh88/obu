@@ -1,4 +1,3 @@
-
 'use client';
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -67,7 +66,6 @@ export function useUser() {
             wallet: { balance: SIGNUP_BONUS },
             referral: { code: referralCode, count: 0, earnings: 0 },
             bankDetails: { name: '', contact: '', email: '', accountNumber: '', ifsc: '', vpa: '' },
-            captcha: { is_active: false, verifiedAt: null, claimed: false, reward_comm: 0 },
             watchAds: { ad_provider: 'Monetag', ad_start: null, verifiedAt: null, ad_completed: false, reward_comm: 0 },
             status: { status: 'Active' },
           };
