@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Building2, Send, Landmark, Clock, RefreshCw, Copy, CheckCircle2, Mail } from 'lucide-react';
+import { DollarSign, Building2, Send, Landmark, Clock, RefreshCw, Copy, CheckCircle2, Mail, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
@@ -22,6 +22,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSearchParams } from 'next/navigation';
 
 const MIN_WITHDRAWAL = 100;
 const MIN_DEPOSIT = 50;
@@ -29,6 +30,7 @@ const MAX_DEPOSIT = 500;
 const DEPOSIT_UPI_ID = "orwallet@paytm";
 
 export default function WalletPageContent() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'withdraw' | 'deposit'>('withdraw');
   const { user, userProfile } = useUser();
   const { toast } = useToast();
@@ -46,6 +48,13 @@ export default function WalletPageContent() {
   const [isSavingBank, setIsSavingBank] = useState(false);
   const [payoutType, setPayoutType] = useState<'bank' | 'upi'>('upi');
   const [bankData, setBankData] = useState({ name: '', contact: '', email: '', accountNumber: '', ifsc: '', vpa: '' });
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'deposit' || tabParam === 'withdraw') {
+      setActiveTab(tabParam as 'withdraw' | 'deposit');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (userProfile?.bankDetails) {
@@ -270,28 +279,44 @@ export default function WalletPageContent() {
         </Card>
         <Card className={cn('flex flex-col items-center justify-center p-3 cursor-pointer transition-all border-primary/10', activeTab === 'deposit' && 'ring-2 ring-primary bg-primary/5 border-primary')} onClick={() => setActiveTab('deposit')}>
           <Landmark className={cn("h-5 w-5 mb-1", activeTab === 'deposit' ? "text-primary" : "text-muted-foreground")} />
-          <p className="text-[10px] font-bold uppercase">Deposit</p>
+          <p className="text-[10px] font-bold uppercase">Recharge</p>
         </Card>
       </div>
 
       {activeTab === 'withdraw' && (
          <Card className="border-primary/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-black">Balance: ₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}</CardTitle>
+             <CardTitle className="text-sm font-black">Main Balance: ₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}</CardTitle>
              <Button variant="ghost" size="sm" className="h-8 gap-1 text-[10px] uppercase font-black text-primary" onClick={() => setIsBankDialogOpen(true)}>
                <Building2 className="h-3 w-3" /> Payout Info
              </Button>
           </CardHeader>
           <CardContent className="space-y-4">
+             {/* New User / Low Balance Help Section */}
+             {(userProfile?.wallet?.balance || 0) < MIN_WITHDRAWAL && (
+               <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-2">
+                 <div className="flex items-center gap-2 text-amber-600">
+                    <AlertCircle className="h-4 w-4" />
+                    <p className="text-[10px] font-black uppercase">Balance check required</p>
+                 </div>
+                 <p className="text-[10px] font-medium text-amber-700 leading-tight">
+                   You need at least ₹{MIN_WITHDRAWAL} to initiate a payout. Add funds or complete more tasks to reach the threshold.
+                 </p>
+                 <Button variant="link" className="h-auto p-0 text-[10px] font-black uppercase text-amber-900 underline" onClick={() => setActiveTab('deposit')}>
+                    Recharge Balance Now
+                 </Button>
+               </div>
+             )}
+
              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase">Amount (₹)</Label>
+                <Label className="text-[10px] font-bold uppercase">Amount to Withdraw (₹)</Label>
                 <div className="relative">
                   <Input type="number" placeholder={`Min ₹${MIN_WITHDRAWAL}`} value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} className="h-12 font-black text-lg" />
-                  <div className="absolute inset-y-0 right-3 flex items-center font-bold">₹</div>
+                  <div className="absolute inset-y-0 right-3 flex items-center font-bold text-primary">₹</div>
                 </div>
              </div>
-             <Button className="w-full h-12 font-black uppercase" onClick={handleWithdraw} disabled={isWithdrawing}>
-               {isWithdrawing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />} Withdraw Now
+             <Button className="w-full h-12 font-black uppercase text-lg" onClick={handleWithdraw} disabled={isWithdrawing}>
+               {isWithdrawing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />} Request Payout
              </Button>
           </CardContent>
         </Card>
@@ -300,8 +325,8 @@ export default function WalletPageContent() {
       {activeTab === 'deposit' && (
         <Card className="border-primary/10">
           <CardHeader>
-            <CardTitle className="text-sm font-black uppercase">Recharge Wallet</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase">Add funds to start playing</CardDescription>
+            <CardTitle className="text-sm font-black uppercase">Add Funds</CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase">Recharge your wallet instantly</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center gap-4 p-6 bg-muted/50 rounded-2xl border border-primary/10">
@@ -318,7 +343,7 @@ export default function WalletPageContent() {
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase">Email ID</Label>
+                <Label className="text-[10px] font-bold uppercase">Notification Email</Label>
                 <div className="relative">
                   <Input 
                     type="email" 
@@ -333,7 +358,7 @@ export default function WalletPageContent() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase">Amount (₹)</Label>
+                <Label className="text-[10px] font-bold uppercase">Recharge Amount (₹)</Label>
                 <div className="relative">
                   <Input 
                     type="number" 
@@ -356,7 +381,7 @@ export default function WalletPageContent() {
               </div>
               <Button className="w-full h-12 font-black uppercase text-lg" onClick={handleDeposit} disabled={isDepositing}>
                 {isDepositing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                Submit Deposit
+                Submit Recharge
               </Button>
               <p className="text-[9px] font-bold text-center text-muted-foreground uppercase leading-relaxed">
                 Verification usually takes 10-30 minutes. <br />

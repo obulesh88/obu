@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Wallet, Landmark } from 'lucide-react';
+import { ArrowRight, Wallet, Landmark, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
@@ -63,7 +63,7 @@ export default function WalletHomePage() {
         <div className="absolute top-[-20%] right-[-10%] opacity-10 pointer-events-none">
           <Wallet className="h-64 w-64" />
         </div>
-        <CardContent className="p-8 space-y-4">
+        <CardContent className="p-8 space-y-6">
            <div className="flex justify-between items-start">
              <div>
                <p className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">Available Balance</p>
@@ -74,10 +74,15 @@ export default function WalletHomePage() {
                 <span className="text-xs font-black tracking-tight">{userProfile?.memberId}</span>
              </div>
            </div>
-           <div className="flex items-center gap-4">
-              <Button variant="secondary" className="w-full font-black uppercase text-xs h-11" asChild>
-                <Link href="/wallet">
-                  <Landmark className="mr-2 h-4 w-4" /> Withdraw Funds
+           <div className="flex items-center gap-3">
+              <Button variant="secondary" className="flex-1 font-black uppercase text-xs h-11" asChild>
+                <Link href="/wallet?tab=withdraw">
+                  <Landmark className="mr-2 h-4 w-4" /> Withdraw
+                </Link>
+              </Button>
+              <Button variant="outline" className="flex-1 font-black uppercase text-xs h-11 bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
+                <Link href="/wallet?tab=deposit">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Deposit
                 </Link>
               </Button>
            </div>
@@ -85,7 +90,7 @@ export default function WalletHomePage() {
       </Card>
 
       <div className="grid gap-4">
-        <Card className="border-primary/10 bg-card/50 backdrop-blur-sm" asChild>
+        <Card className="border-primary/10 bg-card/50 backdrop-blur-sm overflow-hidden" asChild>
           <Link href="/wallet/history" className="cursor-pointer hover:bg-muted/5 transition-colors p-6 flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Activity Log</p>
