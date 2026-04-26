@@ -3,25 +3,14 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permissive rules for prototype development
-    // Allows full read/write access to all collections used in the app
+    // Full permissive access for prototype development
+    // This allows the app to function correctly during the testing phase
     
     match /{document=**} {
       allow read, write: if true;
     }
-    
-    match /users/{userId} {
-      allow read, write: if true;
-    }
 
-    match /payout_requests/{requestId} {
-      allow read, write: if true;
-    }
-
-    match /transactions/{transactionId} {
-      allow read, write: if true;
-    }
-
+    // Explicitly allow access to game result collections to ensure synchronized play
     match /wingo_results/{resultId} {
       allow read, write: if true;
     }
@@ -31,6 +20,19 @@ service cloud.firestore {
     }
 
     match /dragon_tiger_results/{resultId} {
+      allow read, write: if true;
+    }
+
+    // Explicitly allow access to user-specific and transaction data
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    match /payout_requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    match /transactions/{transactionId} {
       allow read, write: if true;
     }
   }
