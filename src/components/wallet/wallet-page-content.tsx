@@ -23,6 +23,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const MIN_WITHDRAWAL = 100;
+const MIN_DEPOSIT = 50;
+const MAX_DEPOSIT = 500;
 const DEPOSIT_UPI_ID = "orwallet@paytm";
 
 export default function WalletPageContent() {
@@ -91,8 +93,17 @@ export default function WalletPageContent() {
     if (!user || !firestore) return;
 
     const amount = parseFloat(depositAmount);
-    if (isNaN(amount) || amount <= 0) {
+    if (isNaN(amount)) {
       toast({ variant: 'destructive', title: 'Invalid Amount' });
+      return;
+    }
+
+    if (amount < MIN_DEPOSIT || amount > MAX_DEPOSIT) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Invalid Amount', 
+        description: `Deposit must be between ₹${MIN_DEPOSIT} and ₹${MAX_DEPOSIT}.` 
+      });
       return;
     }
 
@@ -282,7 +293,6 @@ export default function WalletPageContent() {
             <CardDescription className="text-[10px] font-bold uppercase">Add funds to start playing</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Payment Method Details */}
             <div className="flex flex-col items-center gap-4 p-6 bg-muted/50 rounded-2xl border border-primary/10">
               <div className="w-full space-y-2">
                 <p className="text-[10px] font-black uppercase text-center text-muted-foreground">UPI Payment ID</p>
@@ -295,14 +305,13 @@ export default function WalletPageContent() {
               </div>
             </div>
 
-            {/* Deposit Form */}
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase">Amount (₹)</Label>
                 <div className="relative">
                   <Input 
                     type="number" 
-                    placeholder="Enter amount" 
+                    placeholder={`Min ₹${MIN_DEPOSIT} - Max ₹${MAX_DEPOSIT}`} 
                     value={depositAmount} 
                     onChange={(e) => setDepositAmount(e.target.value)} 
                     className="h-12 font-black text-lg" 
