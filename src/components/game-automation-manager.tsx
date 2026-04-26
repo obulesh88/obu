@@ -46,11 +46,18 @@ export function GameAutomationManager() {
       else if (r < 90) num = [2, 4, 6, 8][Math.floor(Math.random() * 4)];
       else num = [0, 5][Math.floor(Math.random() * 2)];
 
+      // WinGo standard: 0 is Red+Violet, 5 is Green+Violet
+      let colorClass = '';
+      if (num === 0) colorClass = 'bg-gradient-to-br from-violet-500 to-red-500';
+      else if (num === 5) colorClass = 'bg-gradient-to-br from-violet-500 to-green-500';
+      else if ([2, 4, 6, 8].includes(num)) colorClass = 'bg-red-500';
+      else colorClass = 'bg-green-500';
+
       const data = {
         period: wingoId,
         num: num,
         bs: num >= 5 ? 'Big' : 'Small',
-        color: (num === 0 || num === 5) ? 'bg-gradient-to-br from-violet-500 to-red-500' : ([2, 4, 6, 8].includes(num) ? 'bg-red-500' : 'bg-green-500'),
+        color: colorClass,
         createdAt: serverTimestamp()
       };
       setDoc(wingoRef, data).catch((e) => {
@@ -121,10 +128,13 @@ export function GameAutomationManager() {
       const querySnapshot = await getDocs(q);
       for (const txDoc of querySnapshot.docs) {
         const txData = txDoc.data();
-        const { period, bet, gameType, amount } = txData.metadata || {};
+        const metadata = txData.metadata || {};
+        const period = metadata.period;
+        const bet = metadata.bet;
+        const gameType = metadata.gameType;
+        const amount = Number(metadata.amount || 0);
 
-        if (!period || !bet || !gameType) {
-          // Incomplete metadata, mark as settled to avoid infinite retry
+        if (!period || !bet || !gameType || amount <= 0) {
           await updateDoc(doc(firestore, 'transactions', txDoc.id), { settled: true });
           continue;
         }
@@ -140,39 +150,44 @@ export function GameAutomationManager() {
           let multiplier = 0;
 
           if (gameType === 'wingo') {
-            if (bet === 'big' || bet === 'small') {
-              isWin = resultData.bs.toLowerCase() === bet.toLowerCase();
+            const betLower = bet.toLowerCase();
+            if (betLower === 'big' || betLower === 'small') {
+              isWin = resultData.bs.toLowerCase() === betLower;
               multiplier = 2;
-            } else if (['green', 'red', 'violet'].includes(bet.toLowerCase())) {
+            } else if (['green', 'red', 'violet'].includes(betLower)) {
               const resColor = resultData.color.toLowerCase();
-              if (bet.toLowerCase() === 'violet') {
+              if (betLower === 'violet') {
                 isWin = resColor.includes('violet');
                 multiplier = 4.5;
               } else {
-                isWin = resColor.includes(bet.toLowerCase());
+                isWin = resColor.includes(betLower);
                 multiplier = 2;
               }
-            } else if (bet.startsWith('number_')) {
-              const betNum = parseInt(bet.split('_')[1]);
+            } else if (betLower.startsWith('number_')) {
+              const betNum = parseInt(betLower.split('_')[1]);
               isWin = resultData.num === betNum;
               multiplier = 9;
             }
           } else if (gameType === 'k3') {
-            if (bet === 'big' || bet === 'small') {
-              isWin = resultData.bs.toLowerCase() === bet.toLowerCase();
+            const betLower = bet.toLowerCase();
+            if (betLower === 'big' || betLower === 'small') {
+              isWin = resultData.bs.toLowerCase() === betLower;
               multiplier = 2;
-            } else if (bet === 'odd' || bet === 'even') {
-              isWin = resultData.oe.toLowerCase() === bet.toLowerCase();
+            } else if (betLower === 'odd' || betLower === 'even') {
+              isWin = resultData.oe.toLowerCase() === betLower;
               multiplier = 2;
             }
           } else if (gameType === 'dt') {
-            isWin = resultData.winner.toLowerCase() === bet.toLowerCase();
-            multiplier = bet.toLowerCase() === 'tie' ? 9 : 2;
+            const betLower = bet.toLowerCase();
+            isWin = resultData.winner.toLowerCase() === betLower;
+            multiplier = betLower === 'tie' ? 9 : 2;
           }
 
-          if (isWin) {
+          if (isWin && multiplier > 0) {
             const winAmount = amount * multiplier;
             const userRef = doc(firestore, 'users', user.uid);
+            
+            // Atomically update balance and mark settlement
             await updateDoc(userRef, {
               'wallet.balance': increment(winAmount),
               updatedAt: serverTimestamp()
@@ -183,19 +198,19 @@ export function GameAutomationManager() {
               amount: winAmount,
               currency: 'INR',
               type: 'game',
-              description: `Win Payout: ${gameType.toUpperCase()} ${period}`,
+              description: `Win Payout: ${gameType.toUpperCase()} (P: ${period})`,
               settled: true,
               createdAt: serverTimestamp()
             });
 
             toast({
-              title: 'Congratulations!',
-              description: `You won ₹${winAmount.toFixed(2)} in ${gameType.toUpperCase()}!`,
-              className: 'bg-green-600 text-white'
+              title: 'WINNER! 🏆',
+              description: `₹${winAmount.toFixed(2)} added for ${gameType.toUpperCase()}`,
+              className: 'bg-green-600 text-white font-black'
             });
           }
 
-          // Mark original bet as settled regardless of outcome
+          // Mark as settled even if they lost
           await updateDoc(doc(firestore, 'transactions', txDoc.id), {
             settled: true,
             updatedAt: serverTimestamp()
@@ -203,7 +218,7 @@ export function GameAutomationManager() {
         }
       }
     } catch (error) {
-      console.error('Settlement error:', error);
+      console.error('Settlement process error:', error);
     } finally {
       isSettling.current = false;
     }
