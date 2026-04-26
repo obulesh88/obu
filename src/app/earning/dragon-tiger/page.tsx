@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -8,7 +7,7 @@ import {
   Timer, ChevronLeft, Trophy, History, Users, Sword, Coins, Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFirestore, useCollection, useUser } from '@/firebase';
+import { useFirebase, useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, orderBy, limit, doc, updateDoc, increment, addDoc, serverTimestamp } from 'firebase/firestore';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,7 +28,7 @@ type DTResult = {
   createdAt: any; 
 };
 
-const CardIcon = ({ val, winner, label }: { val: number, winner: boolean, label: string }) => {
+const CardIcon = ({ val, winner, label, period }: { val: number, winner: boolean, label: string, period: string }) => {
   const getLabel = (v: number) => {
     if (v === 1) return 'A'; 
     if (v === 11) return 'J'; 
@@ -46,7 +45,7 @@ const CardIcon = ({ val, winner, label }: { val: number, winner: boolean, label:
   const isRed = (v: number) => (v % 4 === 1 || v % 4 === 3);
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div key={`${period}-${label}`} className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom-10 duration-1000">
       <span className={cn(
         "text-[10px] font-black uppercase tracking-widest italic", 
         label === 'Dragon' ? "text-rose-500" : "text-blue-500"
@@ -54,8 +53,8 @@ const CardIcon = ({ val, winner, label }: { val: number, winner: boolean, label:
         {label}
       </span>
       <div className={cn(
-        "h-36 w-24 bg-white rounded-xl flex flex-col items-center justify-center relative shadow-[0_0_40px_rgba(255,255,255,0.15)] transition-all duration-700 animate-in zoom-in-75", 
-        winner ? "ring-4 ring-yellow-400 scale-110 z-20" : "opacity-95 z-10"
+        "h-36 w-24 bg-white rounded-xl flex flex-col items-center justify-center relative shadow-[0_0_40px_rgba(255,255,255,0.15)] transition-all", 
+        winner ? "ring-4 ring-yellow-400 scale-110 z-20 shadow-[0_0_50px_rgba(234,179,8,0.4)]" : "opacity-95 z-10"
       )}>
          <span className={cn("absolute top-2 left-2 text-sm font-black flex flex-col items-center leading-none", isRed(val) ? "text-red-600" : "text-slate-900")}>
            {getLabel(val)}
@@ -160,6 +159,8 @@ export default function DragonTigerPage() {
 
   if (!isMounted) return <div className="p-0 bg-[#050308] min-h-screen"><Skeleton className="h-full w-full" /></div>;
 
+  const currentResult = history?.[0];
+
   return (
     <div className="flex flex-col gap-0 pb-24 bg-[#050308] min-h-screen relative overflow-x-hidden">
       {/* Professional Header */}
@@ -205,8 +206,14 @@ export default function DragonTigerPage() {
            </div>
         </div>
         
-        <div className="relative z-20 w-full flex justify-around items-end px-4 mt-12">
-          <CardIcon label="Dragon" val={history?.[0]?.dragonCard || 1} winner={history?.[0]?.winner === 'Dragon'} />
+        {/* Card Arena with Animations */}
+        <div key={currentResult?.period} className="relative z-20 w-full flex justify-around items-end px-4 mt-12">
+          <CardIcon 
+            label="Dragon" 
+            val={currentResult?.dragonCard || 1} 
+            winner={currentResult?.winner === 'Dragon'} 
+            period={currentResult?.period || 'initial'} 
+          />
           
           <div className="flex flex-col items-center gap-4 mb-8">
             <div className="h-14 w-14 bg-yellow-500 rounded-full flex items-center justify-center font-black text-slate-950 shadow-[0_0_40px_rgba(234,179,8,0.5)] z-30 border-4 border-slate-950 animate-bounce">VS</div>
@@ -216,7 +223,12 @@ export default function DragonTigerPage() {
             </div>
           </div>
           
-          <CardIcon label="Tiger" val={history?.[0]?.tigerCard || 1} winner={history?.[0]?.winner === 'Tiger'} />
+          <CardIcon 
+            label="Tiger" 
+            val={currentResult?.tigerCard || 1} 
+            winner={currentResult?.winner === 'Tiger'} 
+            period={currentResult?.period || 'initial'} 
+          />
         </div>
 
         {/* Dynamic Status Bar */}
