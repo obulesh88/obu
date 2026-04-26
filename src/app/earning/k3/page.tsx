@@ -94,8 +94,15 @@ export default function K3Page() {
           amount: selectedChip,
           currency: 'INR',
           type: 'game',
+          settled: false,
           description: `K3 Bet: ${category.toUpperCase()} (Period ${currentPeriod})`,
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
+          metadata: {
+            gameType: 'k3',
+            period: currentPeriod,
+            bet: category,
+            amount: selectedChip
+          }
         });
         setUserBets(prev => ({ ...prev, [category]: (prev[category] || 0) + selectedChip }));
         toast({ title: 'Bet Placed!', description: `₹${selectedChip} on ${category.toUpperCase()}` });

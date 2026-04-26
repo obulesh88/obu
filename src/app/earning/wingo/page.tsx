@@ -90,10 +90,22 @@ export default function WingoPage() {
     }
     const userDocRef = doc(firestore, 'users', user.uid);
     const updateData = { 'wallet.balance': increment(-selectedChip), updatedAt: serverTimestamp() };
+    
     updateDoc(userDocRef, updateData).then(() => {
         addDoc(collection(firestore, 'transactions'), {
-          userId: user.uid, amount: selectedChip, currency: 'INR', type: 'game',
-          description: `WinGo Bet: ${category} (Period ${currentPeriod})`, createdAt: serverTimestamp()
+          userId: user.uid, 
+          amount: selectedChip, 
+          currency: 'INR', 
+          type: 'game',
+          settled: false,
+          description: `WinGo Bet: ${category} (Period ${currentPeriod})`, 
+          createdAt: serverTimestamp(),
+          metadata: {
+            gameType: 'wingo',
+            period: currentPeriod,
+            bet: category,
+            amount: selectedChip
+          }
         });
         setUserBets(prev => ({ ...prev, [category]: (prev[category] || 0) + selectedChip }));
         toast({ title: 'Bet Placed!', description: `₹${selectedChip} on ${category.toUpperCase()}` });

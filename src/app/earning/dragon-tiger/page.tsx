@@ -131,10 +131,18 @@ export default function DragonTigerPage() {
           amount: selectedChip,
           currency: 'INR',
           type: 'game',
+          settled: false,
           description: `DT Bet: ${category.toUpperCase()} (Period ${currentPeriod})`,
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
+          metadata: {
+            gameType: 'dt',
+            period: currentPeriod,
+            bet: category,
+            amount: selectedChip
+          }
         });
         setUserBets(prev => ({ ...prev, [category]: (prev[category] || 0) + selectedChip }));
+        toast({ title: 'Bet Placed!', description: `₹${selectedChip} on ${category.toUpperCase()}` });
       })
       .catch(async (error: any) => {
         if (error.code === 'permission-denied') {
