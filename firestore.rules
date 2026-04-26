@@ -38,19 +38,20 @@ service cloud.firestore {
     }
 
     // Game Results: Public read, Auth-only write (for simulation)
+    // Updated to explicitly allow create/update for the game simulation engine
     match /wingo_results/{resultId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow create, update: if isAuthenticated();
     }
 
     match /k3_results/{resultId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow create, update: if isAuthenticated();
     }
 
     match /dragon_tiger_results/{resultId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow create, update: if isAuthenticated();
     }
   }
 }

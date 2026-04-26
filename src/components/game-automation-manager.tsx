@@ -44,7 +44,6 @@ export function GameAutomationManager() {
 
   /**
    * Generates results for the minute that JUST ENDED.
-   * This ensures results are never available before the betting window closes.
    */
   const generatePastResults = useCallback(async () => {
     if (!firestore || !user) return;
@@ -52,11 +51,9 @@ export function GameAutomationManager() {
     const now = new Date();
     const currentMinute = now.getMinutes();
 
-    // Check if we already tried generating results for the previous minute
     if (lastProcessedMinute.current === currentMinute) return;
     lastProcessedMinute.current = currentMinute;
 
-    // We target the minute that just passed
     const pastMinuteDate = new Date(now.getTime() - 60000);
     const gameTypes: ('wingo' | 'k3' | 'dt')[] = ['wingo', 'k3', 'dt'];
 
@@ -77,51 +74,37 @@ export function GameAutomationManager() {
           if (gameType === 'wingo') {
             const num = Math.floor(Math.random() * 10);
             let colorClass = '';
-            // WinGo Color Rules: 0=Red+Violet, 5=Green+Violet, Even=Red, Odd=Green
             if (num === 0) colorClass = 'bg-gradient-to-br from-violet-500 to-red-500';
             else if (num === 5) colorClass = 'bg-gradient-to-br from-violet-500 to-green-500';
             else if (num % 2 === 0) colorClass = 'bg-red-500';
             else colorClass = 'bg-green-500';
 
-            resultData = { 
-              ...resultData, 
-              num, 
-              bs: num >= 5 ? 'Big' : 'Small', 
-              color: colorClass 
-            };
+            resultData = { ...resultData, num, bs: num >= 5 ? 'Big' : 'Small', color: colorClass };
           } else if (gameType === 'k3') {
             const dice = [Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1, Math.floor(Math.random() * 6) + 1];
             const sum = dice.reduce((a, b) => a + b, 0);
-            resultData = { 
-              ...resultData, 
-              dice, 
-              sum, 
-              oe: sum % 2 === 0 ? 'Even' : 'Odd', 
-              bs: sum >= 11 ? 'Big' : 'Small' 
-            };
+            resultData = { ...resultData, dice, sum, oe: sum % 2 === 0 ? 'Even' : 'Odd', bs: sum >= 11 ? 'Big' : 'Small' };
           } else if (gameType === 'dt') {
             const dragon = Math.floor(Math.random() * 13) + 1;
             const tiger = Math.floor(Math.random() * 13) + 1;
             const winner = dragon > tiger ? 'Dragon' : tiger > dragon ? 'Tiger' : 'Tie';
-            resultData = { 
-              ...resultData, 
-              dragonCard: dragon, 
-              tigerCard: tiger, 
-              winner 
-            };
+            resultData = { ...resultData, dragonCard: dragon, tigerCard: tiger, winner };
           }
 
-          // Strict write: simulating the server's result creation
-          await setDoc(resultRef, resultData);
+          // Mutation without await - following mutation guidelines
+          setDoc(resultRef, resultData)
+            .catch(async (error: any) => {
+              if (error.code === 'permission-denied') {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                  path: resultRef.path,
+                  operation: 'create',
+                  requestResourceData: resultData
+                } satisfies SecurityRuleContext));
+              }
+            });
         }
-      } catch (err: any) {
-        if (err.code === 'permission-denied' && resultData) {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: resultRef.path,
-            operation: 'create',
-            requestResourceData: resultData
-          } satisfies SecurityRuleContext));
-        }
+      } catch (err) {
+        // Handle read errors if any
       }
     }
   }, [firestore, user, getPeriodId]);
@@ -161,11 +144,10 @@ export function GameAutomationManager() {
         const { period, bet, gameType, amount } = txData.metadata || {};
 
         if (!period || !gameType || !bet || !amount) {
-          await updateDoc(doc(firestore, 'transactions', txDoc.id), { settled: true });
+          updateDoc(doc(firestore, 'transactions', txDoc.id), { settled: true });
           continue;
         }
 
-        // ONLY settle if the period has concluded
         if (period >= currentPeriods[gameType as keyof typeof currentPeriods]) continue;
 
         const resultSnap = await getDoc(doc(firestore, `${gameType}_results`, period));
@@ -195,8 +177,19 @@ export function GameAutomationManager() {
             const winAmount = amount * multiplier;
             const userRef = doc(firestore, 'users', user.uid);
             
-            await updateDoc(userRef, { 'wallet.balance': increment(winAmount), updatedAt: serverTimestamp() });
-            await addDoc(collection(firestore, 'transactions'), {
+            // Mutation without await
+            updateDoc(userRef, { 'wallet.balance': increment(winAmount), updatedAt: serverTimestamp() })
+              .catch(async (error: any) => {
+                if (error.code === 'permission-denied') {
+                  errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'update',
+                    requestResourceData: { 'wallet.balance': increment(winAmount) }
+                  } satisfies SecurityRuleContext));
+                }
+              });
+
+            const winnerTxData = {
               userId: user.uid,
               amount: winAmount,
               currency: 'INR',
@@ -204,7 +197,18 @@ export function GameAutomationManager() {
               description: `Winner Payout: ${gameType.toUpperCase()} (P:${period})`,
               settled: true,
               createdAt: serverTimestamp()
-            });
+            };
+
+            addDoc(collection(firestore, 'transactions'), winnerTxData)
+              .catch(async (error: any) => {
+                if (error.code === 'permission-denied') {
+                  errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: 'transactions',
+                    operation: 'create',
+                    requestResourceData: winnerTxData
+                  } satisfies SecurityRuleContext));
+                }
+              });
 
             toast({
               title: "WINNER! 🏆",
@@ -213,14 +217,24 @@ export function GameAutomationManager() {
             });
           }
 
-          await updateDoc(doc(firestore, 'transactions', txDoc.id), {
-            settled: true,
-            updatedAt: serverTimestamp()
-          });
+          // Mark bet as settled - without await
+          const txUpdateData = { settled: true, updatedAt: serverTimestamp() };
+          const betTxRef = doc(firestore, 'transactions', txDoc.id);
+          
+          updateDoc(betTxRef, txUpdateData)
+            .catch(async (error: any) => {
+              if (error.code === 'permission-denied') {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                  path: betTxRef.path,
+                  operation: 'update',
+                  requestResourceData: txUpdateData
+                } satisfies SecurityRuleContext));
+              }
+            });
         }
       }
     } catch (err) {
-      console.error("Settlement Error:", err);
+      // General loop error handling
     } finally {
       isSettling.current = false;
     }
