@@ -1,9 +1,8 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Building2, Send, Landmark, Clock, Construction, RefreshCw, Copy, CheckCircle2, QrCode } from 'lucide-react';
+import { DollarSign, Building2, Send, Landmark, Clock, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
@@ -22,7 +21,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Image from 'next/image';
 
 const MIN_WITHDRAWAL = 100;
 const DEPOSIT_UPI_ID = "orwallet@paytm";
@@ -286,18 +284,6 @@ export default function WalletPageContent() {
           <CardContent className="space-y-6">
             {/* Payment Method Details */}
             <div className="flex flex-col items-center gap-4 p-6 bg-muted/50 rounded-2xl border border-primary/10">
-              <div className="relative h-40 w-40 bg-white p-2 rounded-xl shadow-inner border border-zinc-200">
-                <Image 
-                  src="https://picsum.photos/seed/deposit-qr/400/400" 
-                  alt="QR Code" 
-                  fill 
-                  className="rounded-lg"
-                  data-ai-hint="QR Code"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 hover:opacity-100 transition-opacity rounded-xl">
-                  <QrCode className="h-10 w-10 text-primary" />
-                </div>
-              </div>
               <div className="w-full space-y-2">
                 <p className="text-[10px] font-black uppercase text-center text-muted-foreground">UPI Payment ID</p>
                 <div className="flex items-center gap-2 bg-background border rounded-lg p-3 justify-between">
@@ -334,7 +320,7 @@ export default function WalletPageContent() {
                 />
               </div>
               <Button className="w-full h-12 font-black uppercase text-lg" onClick={handleDeposit} disabled={isDepositing}>
-                {isDepositing ? <RefreshCw className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+                {isDepositing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
                 Submit Deposit
               </Button>
               <p className="text-[9px] font-bold text-center text-muted-foreground uppercase leading-relaxed">
