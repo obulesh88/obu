@@ -9,7 +9,10 @@ import {
   Timer, 
   Info, 
   ChevronLeft, 
-  Zap
+  Zap,
+  History,
+  TrendingUp,
+  Coins
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useUser } from '@/firebase';
@@ -26,6 +29,7 @@ const TIME_OPTIONS = [
 ];
 
 const NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+const CHIPS = [1, 5, 10, 50, 100, 500];
 
 type GameResult = {
   id?: string;
@@ -39,6 +43,7 @@ export default function WingoPage() {
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
   const [activeTab, setActiveTab] = useState('history');
+  const [selectedChip, setSelectedChip] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
@@ -184,7 +189,7 @@ export default function WingoPage() {
                <p className="text-[10px] font-black text-white/80 uppercase">Recent Results</p>
                <div className="flex gap-1 mt-1">
                   {history?.slice(0, 5).map((res, i) => (
-                    <div key={i} className={cn("h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white/20 shadow-lg", res.color)}>
+                    <div key={i} className={cn("h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white/20 shadow-lg animate-in zoom-in-50", res.color)}>
                       {res.num}
                     </div>
                   ))}
@@ -230,6 +235,23 @@ export default function WingoPage() {
         </div>
       </div>
 
+      <div className="bg-slate-900/50 p-3 rounded-2xl border border-white/5 flex items-center justify-around gap-2">
+        {CHIPS.map((chip) => (
+          <button
+            key={chip}
+            onClick={() => setSelectedChip(chip)}
+            className={cn(
+              "h-10 w-10 rounded-full flex items-center justify-center text-[10px] font-black transition-all transform active:scale-90",
+              selectedChip === chip 
+                ? "bg-cyan-500 text-white scale-110 shadow-[0_0_15px_rgba(34,211,238,0.5)] border-2 border-white" 
+                : "bg-slate-800 text-zinc-400 border border-white/10"
+            )}
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
       <div className="flex gap-2 bg-slate-900/80 p-1 rounded-2xl border border-white/5">
         <Button 
           onClick={() => setActiveTab('history')}
@@ -238,7 +260,7 @@ export default function WingoPage() {
             activeTab === 'history' ? "bg-cyan-500 text-white" : "bg-transparent text-slate-500"
           )}
         >
-          Game History
+          <History className="h-3 w-3 mr-2" /> Game History
         </Button>
         <Button 
           onClick={() => setActiveTab('chart')}
@@ -247,7 +269,7 @@ export default function WingoPage() {
             activeTab === 'chart' ? "bg-cyan-500 text-white" : "bg-transparent text-slate-500"
           )}
         >
-          Chart
+          <TrendingUp className="h-3 w-3 mr-2" /> Chart
         </Button>
       </div>
 
@@ -263,7 +285,7 @@ export default function WingoPage() {
           </thead>
           <tbody className="text-white text-xs font-bold divide-y divide-white/5">
             {history?.map((row, i) => (
-              <tr key={i} className="hover:bg-white/5">
+              <tr key={i} className="hover:bg-white/5 transition-colors">
                 <td className="py-3 px-4 font-mono text-[9px] text-slate-400">{row.period}</td>
                 <td className={cn("py-3 px-4 text-lg font-black", [1,3,7,9].includes(row.num) ? "text-green-500" : [2,4,6,8].includes(row.num) ? "text-red-500" : "text-violet-500")}>
                   {row.num}

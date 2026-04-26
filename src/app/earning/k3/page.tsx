@@ -12,8 +12,9 @@ import {
   Zap,
   Dice1, Dice2, Dice3, Dice4, Dice5, Dice6,
   History,
-  LayoutGrid,
-  Gamepad2
+  TrendingUp,
+  Gamepad2,
+  Coins
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useUser } from '@/firebase';
@@ -35,6 +36,8 @@ const SUM_MULTIPLIERS: Record<number, string> = {
   11: '7.68', 12: '8.3', 13: '9.88', 14: '13.83', 
   15: '20.74', 16: '34.56', 17: '69.12', 18: '207.36'
 };
+
+const CHIPS = [1, 5, 10, 50, 100, 500];
 
 type K3Result = {
   id?: string;
@@ -60,7 +63,8 @@ const DiceIcon = ({ num, className }: { num: number, className?: string }) => {
 export default function K3Page() {
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
-  const [activeTab, setActiveTab] = useState('Total');
+  const [activeTab, setActiveTab] = useState('history');
+  const [selectedChip, setSelectedChip] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
@@ -208,6 +212,44 @@ export default function K3Page() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="bg-[#161145]/60 p-3 rounded-2xl border border-white/5 flex items-center justify-around gap-2 mt-2">
+        {CHIPS.map((chip) => (
+          <button
+            key={chip}
+            onClick={() => setSelectedChip(chip)}
+            className={cn(
+              "h-10 w-10 rounded-full flex items-center justify-center text-[10px] font-black transition-all transform active:scale-90",
+              selectedChip === chip 
+                ? "bg-blue-500 text-white scale-110 shadow-[0_0_15px_rgba(59,130,246,0.5)] border-2 border-white" 
+                : "bg-[#0a052e] text-zinc-400 border border-white/10"
+            )}
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-2 bg-[#161145]/80 p-1 rounded-2xl border border-white/5 mt-2">
+        <Button 
+          onClick={() => setActiveTab('history')}
+          className={cn(
+            "flex-1 h-10 font-black uppercase text-[10px] rounded-xl transition-all",
+            activeTab === 'history' ? "bg-[#1b106b] text-white border border-blue-500/50" : "bg-transparent text-slate-500"
+          )}
+        >
+          <History className="h-3 w-3 mr-2" /> History
+        </Button>
+        <Button 
+          onClick={() => setActiveTab('chart')}
+          className={cn(
+            "flex-1 h-10 font-black uppercase text-[10px] rounded-xl transition-all",
+            activeTab === 'chart' ? "bg-[#1b106b] text-white border border-blue-500/50" : "bg-transparent text-slate-500"
+          )}
+        >
+          <TrendingUp className="h-3 w-3 mr-2" /> Chart
+        </Button>
       </div>
 
       <div className="bg-[#161145]/40 rounded-3xl overflow-hidden border border-white/5 mt-2">
