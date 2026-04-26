@@ -43,7 +43,6 @@ type K3Result = {
   period: string;
   dice: number[];
   sum: number;
-  bs: 'Big' | 'Small';
   oe: 'Odd' | 'Even';
 };
 
@@ -104,7 +103,6 @@ export default function K3Page() {
       period: periodId,
       dice: [d1, d2, d3],
       sum: sum,
-      bs: sum >= 11 ? 'Big' : 'Small',
       oe: sum % 2 === 0 ? 'Even' : 'Odd',
       createdAt: serverTimestamp()
     };
@@ -273,13 +271,7 @@ export default function K3Page() {
                       </div>
                     ))}
                     <span className={cn(
-                      "ml-2 text-[8px] font-black uppercase self-center px-1.5 py-0.5 rounded",
-                      row.bs === 'Big' ? 'bg-amber-500/20 text-amber-500' : 'bg-blue-500/20 text-blue-500'
-                    )}>
-                      {row.bs.charAt(0)}
-                    </span>
-                    <span className={cn(
-                      "text-[8px] font-black uppercase self-center px-1.5 py-0.5 rounded ml-0.5",
+                      "text-[8px] font-black uppercase self-center px-1.5 py-0.5 rounded ml-2",
                       row.oe === 'Odd' ? 'bg-red-500/20 text-red-500' : 'bg-emerald-500/20 text-emerald-500'
                     )}>
                       {row.oe.charAt(0)}

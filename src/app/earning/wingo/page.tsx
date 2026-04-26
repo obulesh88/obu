@@ -258,16 +258,6 @@ export default function WingoPage() {
             <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none h-7 px-3 text-[10px] font-black rounded-full uppercase">
               <Coins className="h-3 w-3 mr-1" /> ₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}
             </Button>
-            <div className="mt-2">
-               <p className="text-[10px] font-black text-white/80 uppercase">Recent Results</p>
-               <div className="flex gap-1 mt-1">
-                  {history?.slice(0, 5).map((res, i) => (
-                    <div key={i} className={cn("h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white/20 shadow-lg animate-in zoom-in-50", res.color)}>
-                      {res.num}
-                    </div>
-                  ))}
-               </div>
-            </div>
           </div>
           <div className="text-right flex flex-col items-end">
              <p className="text-xs font-black text-white uppercase tracking-wider mb-1">Time remaining</p>
@@ -396,23 +386,15 @@ export default function WingoPage() {
         <table className="w-full text-center">
           <thead className="bg-cyan-600/20 text-cyan-400 uppercase text-[10px] font-black">
             <tr>
-              <th className="py-3 px-4">Period</th>
-              <th className="py-3 px-4">Number</th>
-              <th className="py-3 px-4">Big Small</th>
-              <th className="py-3 px-4">Color</th>
+              <th className="py-3 px-4 text-left">Period</th>
+              <th className="py-3 px-4 text-right">Big Small</th>
             </tr>
           </thead>
           <tbody className="text-white text-xs font-bold divide-y divide-white/5">
             {history?.map((row, i) => (
               <tr key={i} className="hover:bg-white/5 transition-colors">
-                <td className="py-3 px-4 font-mono text-[9px] text-slate-400">{row.period}</td>
-                <td className={cn("py-3 px-4 text-lg font-black", [1,3,7,9].includes(row.num) ? "text-green-500" : [2,4,6,8].includes(row.num) ? "text-red-500" : "text-violet-500")}>
-                  {row.num}
-                </td>
-                <td className="py-3 px-4 uppercase italic tracking-tighter">{row.bs}</td>
-                <td className="py-3 px-4">
-                  <div className={cn("h-3 w-3 rounded-full mx-auto shadow-sm", row.color)}></div>
-                </td>
+                <td className="py-3 px-4 font-mono text-[9px] text-slate-400 text-left">{row.period}</td>
+                <td className="py-3 px-4 uppercase italic tracking-tighter text-right text-cyan-400">{row.bs}</td>
               </tr>
             ))}
           </tbody>
