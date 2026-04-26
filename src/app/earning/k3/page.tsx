@@ -4,16 +4,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
-  Trophy, 
   Timer, 
-  Info, 
   ChevronLeft, 
   Zap,
   Dice1, Dice2, Dice3, Dice4, Dice5, Dice6,
   History,
-  TrendingUp,
-  Gamepad2,
-  Coins
+  Gamepad2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useUser } from '@/firebase';
@@ -56,7 +52,6 @@ export default function K3Page() {
   const { setPaddingDisabled } = useLayout();
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
-  const [activeTab, setActiveTab] = useState('history');
   const [selectedChip, setSelectedChip] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
   const { user } = useUser();
@@ -72,7 +67,7 @@ export default function K3Page() {
     return query(
       collection(firestore, 'k3_results'),
       orderBy('period', 'desc'),
-      limit(10)
+      limit(15)
     );
   }, [firestore]);
 
@@ -145,7 +140,6 @@ export default function K3Page() {
 
   return (
     <div className="flex flex-col gap-0 bg-[#0a052e] min-h-screen">
-      {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-[#0a052e]/90 backdrop-blur-md flex items-center justify-between p-4 border-b border-white/5">
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
@@ -161,7 +155,6 @@ export default function K3Page() {
       </div>
 
       <div className="p-4 flex flex-col gap-4">
-        {/* Time Selection Tabs */}
         <div className="grid grid-cols-4 gap-2">
           {TIME_OPTIONS.map((opt) => (
             <button
@@ -182,7 +175,6 @@ export default function K3Page() {
           ))}
         </div>
 
-        {/* Period & Timer */}
         <div className="flex justify-between items-center text-white px-1">
           <div className="flex flex-col">
              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Period</span>
@@ -206,8 +198,7 @@ export default function K3Page() {
           </div>
         </div>
 
-        {/* The Green Capsule / Result View */}
-        <div className="bg-[#05a065] p-3 rounded-3xl relative overflow-hidden shadow-[0_0_40px_rgba(5,160,101,0.4)] border-2 border-[#05a065]/50 group">
+        <div className="bg-[#05a065] p-3 rounded-3xl relative overflow-hidden shadow-[0_0_40px_rgba(5,160,101,0.4)] border-2 border-[#05a065]/50">
           <div className="bg-[#1b106b] rounded-2xl p-8 flex justify-around items-center relative z-10">
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-10 bg-[#05a065] rounded-r-full shadow-lg"></div>
             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-10 bg-[#05a065] rounded-l-full shadow-lg"></div>
@@ -217,12 +208,8 @@ export default function K3Page() {
               </div>
             ))}
           </div>
-          {/* Decorative Particles */}
-          <div className="absolute top-2 right-4 h-1 w-1 bg-white rounded-full opacity-20 animate-ping"></div>
-          <div className="absolute bottom-4 left-6 h-2 w-2 bg-white rounded-full opacity-10 animate-pulse"></div>
         </div>
 
-        {/* Chip Selection */}
         <div className="bg-[#161145]/60 p-4 rounded-3xl border border-white/5 flex items-center justify-around gap-2 shadow-inner">
           {CHIPS.map((chip) => (
             <button
@@ -240,30 +227,11 @@ export default function K3Page() {
           ))}
         </div>
 
-        {/* Toggle Controls */}
-        <div className="flex gap-3 bg-[#161145]/80 p-1.5 rounded-3xl border border-white/5">
-          <Button 
-            onClick={() => setActiveTab('history')}
-            className={cn(
-              "flex-1 h-12 font-black uppercase text-xs rounded-2xl transition-all",
-              activeTab === 'history' ? "bg-rose-600 text-white border border-rose-500 shadow-[0_0_20px_rgba(225,29,72,0.4)]" : "bg-transparent text-slate-500"
-            )}
-          >
-            <History className="h-4 w-4 mr-2" /> History
-          </Button>
-          <Button 
-            onClick={() => setActiveTab('chart')}
-            className={cn(
-              "flex-1 h-12 font-black uppercase text-xs rounded-2xl transition-all",
-              activeTab === 'chart' ? "bg-[#1b106b] text-white border border-blue-500/50" : "bg-transparent text-slate-500"
-            )}
-          >
-            <TrendingUp className="h-4 w-4 mr-2" /> Chart
-          </Button>
-        </div>
-
-        {/* Results Table */}
-        <div className="bg-[#161145]/40 rounded-[32px] overflow-hidden border border-white/5 shadow-2xl">
+        <div className="bg-[#161145]/40 rounded-[32px] overflow-hidden border border-white/5 shadow-2xl mb-24">
+          <div className="p-4 border-b border-white/5 bg-[#1b106b]/50 flex items-center gap-2">
+            <History className="h-4 w-4 text-blue-400" />
+            <span className="text-[10px] font-black uppercase text-blue-400 tracking-widest">Game History</span>
+          </div>
           <table className="w-full text-center">
             <thead className="bg-[#1e1465] text-zinc-400 uppercase text-[10px] font-black tracking-widest">
               <tr>

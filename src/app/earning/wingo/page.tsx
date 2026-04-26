@@ -4,15 +4,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
-  Trophy, 
   Timer, 
   Info, 
   ChevronLeft, 
   Zap,
   History,
-  TrendingUp,
-  Coins,
-  DollarSign
+  Coins
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useUser } from '@/firebase';
@@ -46,7 +43,6 @@ export default function WingoPage() {
   const { toast } = useToast();
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
-  const [activeTab, setActiveTab] = useState('history');
   const [selectedChip, setSelectedChip] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
   const { user, userProfile } = useUser();
@@ -71,7 +67,7 @@ export default function WingoPage() {
     return query(
       collection(firestore, 'wingo_results'),
       orderBy('period', 'desc'),
-      limit(10)
+      limit(15)
     );
   }, [firestore]);
 
@@ -120,22 +116,18 @@ export default function WingoPage() {
       updatedAt: serverTimestamp()
     };
 
-    // Deduct balance
     updateDoc(userDocRef, updateData)
       .then(() => {
-        // Log transaction
         const transactionsRef = collection(firestore, 'transactions');
-        const txData = {
+        addDoc(transactionsRef, {
           userId: user.uid,
           amount: selectedChip,
           currency: 'INR',
           type: 'game',
           description: `WinGo Bet: ${category} (Period ${currentPeriod})`,
           createdAt: serverTimestamp()
-        };
-        addDoc(transactionsRef, txData);
+        });
 
-        // Update local bet state
         setUserBets(prev => ({
           ...prev,
           [category]: (prev[category] || 0) + selectedChip
@@ -226,7 +218,6 @@ export default function WingoPage() {
 
   return (
     <div className="flex flex-col bg-slate-950 min-h-screen">
-      {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-between p-4 border-b border-white/5">
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
@@ -240,7 +231,6 @@ export default function WingoPage() {
       </div>
 
       <div className="p-4 flex flex-col gap-4">
-        {/* Time Options */}
         <div className="grid grid-cols-4 gap-2">
           {TIME_OPTIONS.map((opt) => (
             <button
@@ -261,7 +251,6 @@ export default function WingoPage() {
           ))}
         </div>
 
-        {/* Dashboard Card */}
         <Card className="bg-gradient-to-r from-cyan-500 to-emerald-400 border-none relative overflow-hidden shadow-2xl rounded-3xl">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
           <CardContent className="p-6 flex justify-between items-center relative z-10">
@@ -290,7 +279,6 @@ export default function WingoPage() {
           </CardContent>
         </Card>
 
-        {/* Betting Zones */}
         <div className="grid grid-cols-3 gap-3">
           {['green', 'violet', 'red'].map((cat) => (
             <div key={cat} className="flex flex-col gap-1.5">
@@ -312,7 +300,6 @@ export default function WingoPage() {
           ))}
         </div>
 
-        {/* Number Grid */}
         <div className="bg-slate-900/50 p-5 rounded-[32px] border border-white/5 shadow-2xl">
           <div className="grid grid-cols-5 gap-4">
             {NUMBERS.map((num) => (
@@ -330,7 +317,6 @@ export default function WingoPage() {
           </div>
         </div>
 
-        {/* Big/Small Betting */}
         <div className="grid grid-cols-2 gap-4">
           {['big', 'small'].map((cat) => (
             <div key={cat} className="flex flex-col gap-1.5">
@@ -350,7 +336,6 @@ export default function WingoPage() {
           ))}
         </div>
 
-        {/* Chip Selection */}
         <div className="bg-slate-900/50 p-4 rounded-3xl border border-white/5 flex items-center justify-around gap-2 shadow-inner">
           {CHIPS.map((chip) => (
             <button
@@ -368,30 +353,11 @@ export default function WingoPage() {
           ))}
         </div>
 
-        {/* History/Chart Toggle */}
-        <div className="flex gap-3 bg-slate-900/80 p-1.5 rounded-3xl border border-white/5">
-          <Button 
-            onClick={() => setActiveTab('history')}
-            className={cn(
-              "flex-1 h-12 font-black uppercase text-xs rounded-2xl transition-all",
-              activeTab === 'history' ? "bg-cyan-500 text-white shadow-[0_0_20px_rgba(34,211,238,0.3)]" : "bg-transparent text-slate-500"
-            )}
-          >
-            <History className="h-4 w-4 mr-2" /> History
-          </Button>
-          <Button 
-            onClick={() => setActiveTab('chart')}
-            className={cn(
-              "flex-1 h-12 font-black uppercase text-xs rounded-2xl transition-all",
-              activeTab === 'chart' ? "bg-cyan-500 text-white shadow-[0_0_20px_rgba(34,211,238,0.3)]" : "bg-transparent text-slate-500"
-            )}
-          >
-            <TrendingUp className="h-4 w-4 mr-2" /> Chart
-          </Button>
-        </div>
-
-        {/* Results Table */}
         <div className="bg-slate-900/40 rounded-[32px] overflow-hidden border border-white/5 shadow-2xl mb-24">
+          <div className="p-4 border-b border-white/5 bg-cyan-600/10 flex items-center gap-2">
+            <History className="h-4 w-4 text-cyan-400" />
+            <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest">Game History</span>
+          </div>
           <table className="w-full text-center">
             <thead className="bg-cyan-600/20 text-cyan-400 uppercase text-[10px] font-black tracking-widest">
               <tr>
