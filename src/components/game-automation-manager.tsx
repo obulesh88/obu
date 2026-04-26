@@ -64,10 +64,12 @@ export function GameAutomationManager() {
       const periodId = getPeriodId(gameType, pastMinuteDate);
       const resultRef = doc(firestore, `${gameType}_results`, periodId);
       
+      let resultData: any = null;
+
       try {
         const snap = await getDoc(resultRef);
         if (!snap.exists()) {
-          let resultData: any = { period: periodId, createdAt: serverTimestamp() };
+          resultData = { period: periodId, createdAt: serverTimestamp() };
 
           if (gameType === 'wingo') {
             const num = Math.floor(Math.random() * 10);
