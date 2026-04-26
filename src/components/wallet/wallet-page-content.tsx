@@ -1,8 +1,9 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Building2, Send, Landmark, Clock, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
+import { DollarSign, Building2, Send, Landmark, Clock, RefreshCw, Copy, CheckCircle2, Mail } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
@@ -37,6 +38,7 @@ export default function WalletPageContent() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   
   const [depositAmount, setDepositAmount] = useState('');
+  const [depositEmail, setDepositEmail] = useState('');
   const [utrNumber, setUtrNumber] = useState('');
   const [isDepositing, setIsDepositing] = useState(false);
 
@@ -58,6 +60,9 @@ export default function WalletPageContent() {
       if (userProfile.bankDetails.payoutType === 'bank' || userProfile.bankDetails.payoutType === 'upi') {
         setPayoutType(userProfile.bankDetails.payoutType);
       }
+    }
+    if (userProfile?.email && !depositEmail) {
+      setDepositEmail(userProfile.email);
     }
   }, [userProfile]);
 
@@ -107,6 +112,11 @@ export default function WalletPageContent() {
       return;
     }
 
+    if (!depositEmail || !depositEmail.includes('@')) {
+      toast({ variant: 'destructive', title: 'Invalid Email', description: 'Please provide a valid email ID.' });
+      return;
+    }
+
     if (!utrNumber || utrNumber.length < 12) {
       toast({ variant: 'destructive', title: 'Invalid UTR', description: 'Please enter a valid 12-digit UTR/Ref number.' });
       return;
@@ -116,6 +126,7 @@ export default function WalletPageContent() {
     const requestsRef = collection(firestore, 'deposit_requests');
     const depositData = {
       userId: user.uid,
+      email: depositEmail,
       amount: amount,
       utr: utrNumber,
       status: 'pending',
@@ -306,6 +317,21 @@ export default function WalletPageContent() {
             </div>
 
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase">Email ID</Label>
+                <div className="relative">
+                  <Input 
+                    type="email" 
+                    placeholder="Enter your email" 
+                    value={depositEmail} 
+                    onChange={(e) => setDepositEmail(e.target.value)} 
+                    className="h-12 font-bold" 
+                  />
+                  <div className="absolute inset-y-0 right-3 flex items-center font-bold text-primary">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase">Amount (₹)</Label>
                 <div className="relative">

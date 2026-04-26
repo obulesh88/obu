@@ -76,6 +76,7 @@ export type WithdrawalRequest = {
 export type DepositRequest = {
   id?: string;
   userId: string;
+  email: string;
   amount: number;
   utr: string;
   status: 'pending' | 'completed' | 'rejected';

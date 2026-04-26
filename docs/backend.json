@@ -104,13 +104,14 @@
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
         "amount": { "type": "number" },
         "utr": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "completed", "rejected"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "amount", "utr", "status", "createdAt"]
+      "required": ["userId", "email", "amount", "utr", "status", "createdAt"]
     },
     "Transaction": {
       "title": "Transaction",
