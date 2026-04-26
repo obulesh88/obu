@@ -21,10 +21,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useLayout } from '@/context/layout-context';
 
 const TIME_OPTIONS = [
-  { id: '1m', label: 'WinGo 1 Min', icon: <Zap className="h-4 w-4" /> },
-  { id: '3m', label: 'WinGo 3 Min', icon: <Timer className="h-4 w-4" /> },
-  { id: '5m', label: 'WinGo 5 Min', icon: <Timer className="h-4 w-4" /> },
-  { id: '10m', label: 'WinGo 10 Min', icon: <Timer className="h-4 w-4" /> },
+  { id: '1m', label: '1 Min', icon: <Zap className="h-4 w-4" /> },
+  { id: '3m', label: '3 Min', icon: <Timer className="h-4 w-4" /> },
+  { id: '5m', label: '5 Min', icon: <Timer className="h-4 w-4" /> },
+  { id: '10m', label: '10 Min', icon: <Timer className="h-4 w-4" /> },
 ];
 
 const NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -201,11 +201,6 @@ export default function WingoPage() {
     return () => clearInterval(timer);
   }, [generateAndSaveResult]);
 
-  const formatTime = (seconds: number) => {
-    const s = (seconds % 60).toString().padStart(2, '0');
-    return `00 : ${s}`;
-  };
-
   if (!isMounted) {
     return (
       <div className="flex flex-col gap-4 p-4 bg-slate-950 min-h-screen">
@@ -217,20 +212,24 @@ export default function WingoPage() {
   }
 
   return (
-    <div className="flex flex-col bg-slate-950 min-h-screen">
-      <div className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-between p-4 border-b border-white/5">
+    <div className="flex flex-col bg-[#050510] min-h-screen overflow-x-hidden">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-[#050510]/90 backdrop-blur-md flex items-center justify-between p-4 border-b border-white/5">
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        <h1 className="text-lg font-black uppercase tracking-widest italic text-white">WinGo 1 Min</h1>
+        <div className="flex flex-col items-center">
+          <h1 className="text-xl font-black italic tracking-tighter text-white uppercase">WinGo 1 Min</h1>
+        </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+          <Button variant="ghost" size="icon" className="text-white">
             <Info className="h-5 w-5" />
           </Button>
         </div>
       </div>
 
       <div className="p-4 flex flex-col gap-4">
+        {/* Game Mode Selector */}
         <div className="grid grid-cols-4 gap-2">
           {TIME_OPTIONS.map((opt) => (
             <button
@@ -239,8 +238,8 @@ export default function WingoPage() {
               className={cn(
                 "flex flex-col items-center justify-center p-3 rounded-2xl transition-all border border-white/5",
                 selectedTime === opt.id 
-                  ? "bg-gradient-to-b from-cyan-400 to-cyan-600 text-white shadow-[0_0_15px_rgba(34,211,238,0.4)]" 
-                  : "bg-slate-900 text-slate-400"
+                  ? "bg-gradient-to-b from-cyan-600 to-cyan-900 text-white shadow-[0_0_15px_rgba(34,211,238,0.3)] border-b-2 border-b-cyan-400" 
+                  : "bg-[#101025] text-zinc-500"
               )}
             >
               <div className="mb-1">{opt.icon}</div>
@@ -251,63 +250,75 @@ export default function WingoPage() {
           ))}
         </div>
 
-        <Card className="bg-gradient-to-r from-cyan-500 to-emerald-400 border-none relative overflow-hidden shadow-2xl rounded-3xl">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+        {/* Balance and Timer Card */}
+        <Card className="bg-gradient-to-br from-cyan-500 to-emerald-500 border-none relative overflow-hidden shadow-2xl rounded-3xl">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
           <CardContent className="p-6 flex justify-between items-center relative z-10">
-            <div className="flex flex-col gap-2">
-              <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none h-8 px-4 text-xs font-black rounded-full uppercase">
-                <Coins className="h-3 w-3 mr-2" /> ₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}
-              </Button>
-              <div className="mt-2">
-                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Period</p>
-                <p className="text-sm font-black text-white font-mono">{currentPeriod}</p>
+            <div className="flex flex-col gap-3">
+              <div className="bg-black/20 backdrop-blur-md rounded-full px-4 py-1.5 flex items-center gap-2 border border-white/10 w-fit">
+                <Coins className="h-3 w-3 text-yellow-300" />
+                <span className="text-xs font-black text-white">₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-white/70 uppercase tracking-widest">Period ID</span>
+                <span className="text-sm font-black text-white font-mono tracking-tight">{currentPeriod}</span>
               </div>
             </div>
-            <div className="text-right flex flex-col items-end">
-               <p className="text-xs font-black text-white uppercase tracking-wider mb-2">Time Remaining</p>
-               <div className="flex gap-1.5">
-                 {formatTime(timeLeft).split('').map((char, i) => (
-                   <span key={i} className={cn(
-                     "bg-slate-900 text-white font-mono text-2xl font-black p-2 rounded-lg min-w-[32px] text-center shadow-2xl",
-                     char === ':' && "bg-transparent text-slate-900 shadow-none px-0"
-                   )}>
-                     {char}
-                   </span>
-                 ))}
+            
+            <div className="text-right flex flex-col items-end gap-1">
+               <span className="text-[10px] font-black text-white/70 uppercase tracking-widest">Count Down</span>
+               <div className="flex gap-1 mt-1">
+                {['0', '0', ':', ...timeLeft.toString().padStart(2, '0').split('')].map((char, i) => (
+                  <span 
+                    key={i} 
+                    className={cn(
+                      "flex items-center justify-center font-mono text-xl font-black rounded h-10 w-7",
+                      char === ':' ? "text-white" : "bg-black/30 text-white shadow-inner backdrop-blur-md"
+                    )}
+                  >
+                    {char}
+                  </span>
+                ))}
                </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Color Prediction Pads */}
         <div className="grid grid-cols-3 gap-3">
           {['green', 'violet', 'red'].map((cat) => (
-            <div key={cat} className="flex flex-col gap-1.5">
+            <div key={cat} className="flex flex-col gap-2">
               <Button 
                 onClick={() => handleBet(cat)}
                 className={cn(
-                  "h-14 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 active:shadow-none transition-all uppercase",
-                  cat === 'green' ? "bg-green-500 hover:bg-green-600 shadow-[0_5px_0_rgb(21,128,61)]" :
-                  cat === 'violet' ? "bg-violet-500 hover:bg-violet-600 shadow-[0_5px_0_rgb(109,40,217)]" :
-                  "bg-red-500 hover:bg-red-600 shadow-[0_5px_0_rgb(185,28,28)]"
+                  "h-16 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 active:shadow-none transition-all uppercase relative group overflow-hidden",
+                  cat === 'green' ? "bg-green-500 hover:bg-green-600 shadow-[0_6px_0_rgb(21,128,61)]" :
+                  cat === 'violet' ? "bg-violet-500 hover:bg-violet-600 shadow-[0_6px_0_rgb(109,40,217)]" :
+                  "bg-red-500 hover:bg-red-600 shadow-[0_6px_0_rgb(185,28,28)]"
                 )}
               >
+                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 {cat}
               </Button>
-              <p className={cn("text-[9px] font-black text-center uppercase opacity-80", cat === 'green' ? 'text-green-500' : cat === 'violet' ? 'text-violet-500' : 'text-red-500')}>
+              <div className={cn(
+                "text-[9px] font-black text-center uppercase py-1 rounded-full bg-white/5",
+                cat === 'green' ? 'text-green-500' : cat === 'violet' ? 'text-violet-500' : 'text-red-500'
+              )}>
                 Spend: ₹{userBets[cat]}
-              </p>
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="bg-slate-900/50 p-5 rounded-[32px] border border-white/5 shadow-2xl">
-          <div className="grid grid-cols-5 gap-4">
+        {/* Number Betting Pad */}
+        <div className="bg-[#101025] p-5 rounded-[32px] border border-white/5 shadow-2xl ring-1 ring-white/5">
+          <div className="grid grid-cols-5 gap-3">
             {NUMBERS.map((num) => (
               <button
                 key={num}
                 onClick={() => handleBet(`number_${num}`)}
                 className={cn(
-                  "aspect-square rounded-full flex items-center justify-center text-xl font-black text-white border-2 border-white/10 shadow-lg transition-transform active:scale-90 hover:scale-105",
+                  "aspect-square rounded-full flex items-center justify-center text-xl font-black text-white border-2 border-white/10 shadow-lg transition-transform active:scale-90 hover:scale-110",
                   getNumberColor(num)
                 )}
               >
@@ -317,26 +328,31 @@ export default function WingoPage() {
           </div>
         </div>
 
+        {/* Big/Small Betting Pads */}
         <div className="grid grid-cols-2 gap-4">
           {['big', 'small'].map((cat) => (
-            <div key={cat} className="flex flex-col gap-1.5">
+            <div key={cat} className="flex flex-col gap-2">
               <Button 
                 onClick={() => handleBet(cat)}
                 className={cn(
-                  "h-14 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 active:shadow-none transition-all uppercase",
-                  cat === 'big' ? "bg-amber-500 hover:bg-amber-600 shadow-[0_5px_0_rgb(180,83,9)]" : "bg-blue-500 hover:bg-blue-600 shadow-[0_5px_0_rgb(29,78,216)]"
+                  "h-16 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 active:shadow-none transition-all uppercase",
+                  cat === 'big' ? "bg-amber-500 hover:bg-amber-600 shadow-[0_6px_0_rgb(180,83,9)]" : "bg-blue-500 hover:bg-blue-600 shadow-[0_6px_0_rgb(29,78,216)]"
                 )}
               >
                 {cat}
               </Button>
-              <p className={cn("text-[9px] font-black text-center uppercase opacity-80", cat === 'big' ? 'text-amber-500' : 'text-blue-500')}>
+              <div className={cn(
+                "text-[9px] font-black text-center uppercase py-1 rounded-full bg-white/5",
+                cat === 'big' ? 'text-amber-500' : 'text-blue-500'
+              )}>
                 Spend: ₹{userBets[cat]}
-              </p>
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="bg-slate-900/50 p-4 rounded-3xl border border-white/5 flex items-center justify-around gap-2 shadow-inner">
+        {/* Chip Selection Bar */}
+        <div className="bg-[#101025]/60 p-4 rounded-3xl border border-white/5 flex items-center justify-around gap-2 shadow-inner">
           {CHIPS.map((chip) => (
             <button
               key={chip}
@@ -344,8 +360,8 @@ export default function WingoPage() {
               className={cn(
                 "h-12 w-12 rounded-full flex items-center justify-center text-[11px] font-black transition-all transform active:scale-90",
                 selectedChip === chip 
-                  ? "bg-cyan-500 text-white scale-110 shadow-[0_0_20px_rgba(34,211,238,0.5)] border-2 border-white ring-4 ring-cyan-500/20" 
-                  : "bg-slate-800 text-zinc-400 border border-white/10"
+                  ? "bg-cyan-500 text-white scale-110 shadow-[0_0_20px_rgba(34,211,238,0.6)] border-2 border-white ring-4 ring-cyan-500/20" 
+                  : "bg-slate-900 text-zinc-500 border border-white/10"
               )}
             >
               {chip}
@@ -353,30 +369,33 @@ export default function WingoPage() {
           ))}
         </div>
 
-        <div className="bg-slate-900/40 rounded-[32px] overflow-hidden border border-white/5 shadow-2xl mb-24">
+        {/* History Table */}
+        <div className="bg-[#101025]/40 rounded-[32px] overflow-hidden border border-white/5 shadow-2xl mb-24">
           <div className="p-4 border-b border-white/5 bg-cyan-600/10 flex items-center gap-2">
             <History className="h-4 w-4 text-cyan-400" />
-            <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest">Game History</span>
+            <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest">Battle Records</span>
           </div>
           <table className="w-full text-center">
-            <thead className="bg-cyan-600/20 text-cyan-400 uppercase text-[10px] font-black tracking-widest">
+            <thead className="bg-cyan-600/20 text-cyan-400/60 uppercase text-[9px] font-black tracking-widest">
               <tr>
                 <th className="py-4 px-6 text-left">Period</th>
                 <th className="py-4 px-6 text-right">Result</th>
               </tr>
             </thead>
-            <tbody className="text-white text-xs font-bold divide-y divide-white/5">
+            <tbody className="text-white text-[11px] font-bold divide-y divide-white/5">
               {history?.map((row, i) => (
                 <tr key={i} className="hover:bg-white/5 transition-colors">
-                  <td className="py-4 px-6 font-mono text-[10px] text-slate-400 text-left">{row.period}</td>
-                  <td className="py-4 px-6 uppercase italic tracking-tighter text-right text-cyan-400 font-black">{row.bs}</td>
+                  <td className="py-4 px-6 font-mono text-[10px] text-zinc-500 text-left">{row.period}</td>
+                  <td className="py-4 px-6 uppercase italic tracking-tighter text-right text-cyan-400 font-black text-sm">
+                    {row.bs}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
           {(!history || history.length === 0) && (
-            <div className="py-20 text-center text-zinc-500 font-black uppercase text-xs tracking-widest opacity-20">
-              Syncing Rounds...
+            <div className="py-20 text-center text-zinc-600 font-black uppercase text-xs tracking-widest opacity-20">
+              Syncing Arena...
             </div>
           )}
         </div>
