@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -18,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'K3 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -59,6 +59,7 @@ export default function K3Page() {
   const [timeLeft, setTimeLeft] = useState(60);
   const [activeTab, setActiveTab] = useState('Total');
   const [historyTab, setHistoryTab] = useState('Game history');
+  const [isMounted, setIsMounted] = useState(false);
   const firestore = useFirestore();
 
   const resultsQuery = useMemo(() => {
@@ -79,7 +80,7 @@ export default function K3Page() {
     return `${datePart}3000${totalMinutes.toString().padStart(4, '0')}`;
   }, []);
 
-  const currentPeriod = useMemo(() => generatePeriodId(), [generatePeriodId, timeLeft]);
+  const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
 
   const generateAndSaveResult = useCallback(async () => {
     if (!firestore) return;
@@ -104,6 +105,7 @@ export default function K3Page() {
   }, [firestore, generatePeriodId, history]);
 
   useEffect(() => {
+    setIsMounted(true);
     const timer = setInterval(() => {
       const now = new Date();
       const seconds = 60 - now.getSeconds();
@@ -116,9 +118,18 @@ export default function K3Page() {
     return () => clearInterval(timer);
   }, [generateAndSaveResult]);
 
+  if (!isMounted) {
+    return (
+      <div className="flex flex-col gap-4 p-4 bg-[#0a052e] min-h-screen">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 pb-24 bg-[#0a052e] min-h-screen -m-4 p-4 overflow-x-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between text-white mb-2">
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
@@ -133,7 +144,6 @@ export default function K3Page() {
         </div>
       </div>
 
-      {/* Time Tabs */}
       <div className="grid grid-cols-4 gap-2 mb-2">
         {TIME_OPTIONS.map((opt) => (
           <button
@@ -154,7 +164,6 @@ export default function K3Page() {
         ))}
       </div>
 
-      {/* Main Game Info */}
       <div className="flex justify-between items-center text-white mb-2 px-2">
         <div className="flex flex-col">
            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Period</span>
@@ -175,7 +184,6 @@ export default function K3Page() {
         </div>
       </div>
 
-      {/* Animated Dice Frame */}
       <div className="bg-[#05a065] p-3 rounded-3xl relative overflow-hidden shadow-[0_0_30px_rgba(5,160,101,0.3)] border-2 border-[#05a065]/50">
         <div className="bg-[#1b106b] rounded-2xl p-6 flex justify-around items-center relative z-10">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-8 bg-[#05a065] rounded-r-full"></div>
@@ -188,7 +196,6 @@ export default function K3Page() {
         </div>
       </div>
 
-      {/* Results Table */}
       <div className="bg-[#161145]/40 rounded-3xl overflow-hidden border border-white/5 mt-2">
         <table className="w-full text-center">
           <thead className="bg-[#1e1465] text-zinc-400 uppercase text-[9px] font-black">

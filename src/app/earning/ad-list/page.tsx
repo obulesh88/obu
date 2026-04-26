@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { AdDialog } from '@/components/earning/ad-dialog';
 import { Tv, CheckCircle2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const NUM_ADS = 10;
-const REWARD_PER_AD = 4;
+const REWARD_PER_AD = 0.004;
 const ADS_STORAGE_KEY = 'or_wallet_completed_ads';
 const ADS_DAY_KEY = 'or_wallet_ads_last_day';
 
@@ -17,8 +18,10 @@ export default function AdListPage() {
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_ADS).fill(false));
   const [currentAdIndex, setCurrentAdIndex] = useState<number | null>(null);
   const [allAdsCompleted, setAllAdsCompleted] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     const today = new Date().toDateString();
     const lastDay = localStorage.getItem(ADS_DAY_KEY);
     let initialCompleted = Array(NUM_ADS).fill(false);
@@ -74,7 +77,7 @@ export default function AdListPage() {
           <Tv className="h-6 w-6 text-primary" />
         </div>
         <p className="font-semibold mb-1">Ad #{index + 1}</p>
-        <p className="text-xs text-muted-foreground mb-4">Reward: {REWARD_PER_AD} OR</p>
+        <p className="text-xs text-muted-foreground mb-4">Reward: ₹{REWARD_PER_AD.toFixed(3)}</p>
         <Button 
           onClick={() => handleWatchAdClick(index)} 
           disabled={completed[index]}
@@ -94,13 +97,27 @@ export default function AdListPage() {
     return 'C';
   };
 
+  if (!isMounted) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-full mt-2" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-40 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
           <CardTitle>Watch Ads & Earn</CardTitle>
           <CardDescription>
-            Watch short ads to earn OR coins. You can watch up to {NUM_ADS} ads daily.
+            Watch short ads to earn ₹ rewards. You can watch up to {NUM_ADS} ads daily.
           </CardDescription>
         </CardHeader>
         <CardContent>

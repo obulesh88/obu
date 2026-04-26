@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -14,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'WinGo 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -36,6 +36,7 @@ export default function WingoPage() {
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
   const [activeTab, setActiveTab] = useState('history');
+  const [isMounted, setIsMounted] = useState(false);
   const firestore = useFirestore();
 
   const resultsQuery = useMemo(() => {
@@ -62,16 +63,14 @@ export default function WingoPage() {
     return `${datePart}1000${totalMinutes.toString().padStart(4, '0')}`;
   }, []);
 
-  const currentPeriod = useMemo(() => generatePeriodId(), [generatePeriodId, timeLeft]);
+  const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
 
   const generateAndSaveResult = useCallback(async () => {
     if (!firestore) return;
     
     const periodId = generatePeriodId();
-    // Check if this period already has a result in history to avoid duplicate logic
     if (history?.some(h => h.period === periodId)) return;
 
-    // Weighted Probability Algorithm (Algorithm #2)
     const r = Math.random() * 100;
     let num: number;
 
@@ -97,6 +96,7 @@ export default function WingoPage() {
   }, [firestore, generatePeriodId, history]);
 
   useEffect(() => {
+    setIsMounted(true);
     const timer = setInterval(() => {
       const now = new Date();
       const seconds = 60 - now.getSeconds();
@@ -114,9 +114,18 @@ export default function WingoPage() {
     return `00 : ${s}`;
   };
 
+  if (!isMounted) {
+    return (
+      <div className="flex flex-col gap-4 p-4 bg-slate-950 min-h-screen">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 pb-24 bg-slate-950 min-h-screen -m-4 p-4 overflow-x-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between text-white mb-2">
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
@@ -129,7 +138,6 @@ export default function WingoPage() {
         </div>
       </div>
 
-      {/* Time Tabs */}
       <div className="grid grid-cols-4 gap-2 mb-2">
         {TIME_OPTIONS.map((opt) => (
           <button
@@ -150,7 +158,6 @@ export default function WingoPage() {
         ))}
       </div>
 
-      {/* Main Game Card */}
       <Card className="bg-gradient-to-r from-cyan-500 to-emerald-400 border-none relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
         <CardContent className="p-4 flex justify-between items-center relative z-10">
@@ -186,14 +193,12 @@ export default function WingoPage() {
         </CardContent>
       </Card>
 
-      {/* Prediction Buttons */}
       <div className="grid grid-cols-3 gap-3">
         <Button className="h-12 bg-green-500 hover:bg-green-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(21,128,61)] active:translate-y-1 active:shadow-none transition-all uppercase">Green</Button>
         <Button className="h-12 bg-violet-500 hover:bg-violet-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(109,40,217)] active:translate-y-1 active:shadow-none transition-all uppercase">Violet</Button>
         <Button className="h-12 bg-red-500 hover:bg-red-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(185,28,28)] active:translate-y-1 active:shadow-none transition-all uppercase">Red</Button>
       </div>
 
-      {/* Number Grid */}
       <div className="bg-slate-900/50 p-4 rounded-3xl border border-white/5 shadow-xl">
         <div className="grid grid-cols-5 gap-3">
           {NUMBERS.map((num) => (
@@ -210,7 +215,6 @@ export default function WingoPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 bg-slate-900/80 p-1 rounded-2xl border border-white/5">
         <Button 
           onClick={() => setActiveTab('history')}
@@ -232,7 +236,6 @@ export default function WingoPage() {
         </Button>
       </div>
 
-      {/* Results Table */}
       <div className="bg-slate-900/40 rounded-3xl overflow-hidden border border-white/5">
         <table className="w-full text-center">
           <thead className="bg-cyan-600/20 text-cyan-400 uppercase text-[10px] font-black">

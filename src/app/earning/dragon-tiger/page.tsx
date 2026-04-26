@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -18,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import Image from 'next/image';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'DT 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -66,6 +66,7 @@ export default function DragonTigerPage() {
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
   const [selectedChip, setSelectedChip] = useState(10);
+  const [isMounted, setIsMounted] = useState(false);
   const firestore = useFirestore();
 
   const resultsQuery = useMemo(() => {
@@ -73,7 +74,7 @@ export default function DragonTigerPage() {
     return query(
       collection(firestore, 'dragon_tiger_results'),
       orderBy('period', 'desc'),
-      limit(24) // More results for the roadmap
+      limit(24)
     );
   }, [firestore]);
 
@@ -86,7 +87,7 @@ export default function DragonTigerPage() {
     return `${datePart}4000${totalMinutes.toString().padStart(4, '0')}`;
   }, []);
 
-  const currentPeriod = useMemo(() => generatePeriodId(), [generatePeriodId, timeLeft]);
+  const currentPeriod = useMemo(() => isMounted ? generatePeriodId() : '...', [generatePeriodId, timeLeft, isMounted]);
 
   const generateAndSaveResult = useCallback(async () => {
     if (!firestore) return;
@@ -121,6 +122,7 @@ export default function DragonTigerPage() {
   }, [firestore, generatePeriodId, history]);
 
   useEffect(() => {
+    setIsMounted(true);
     const timer = setInterval(() => {
       const now = new Date();
       const seconds = 60 - now.getSeconds();
@@ -133,9 +135,18 @@ export default function DragonTigerPage() {
     return () => clearInterval(timer);
   }, [generateAndSaveResult]);
 
+  if (!isMounted) {
+    return (
+      <div className="flex flex-col gap-0 bg-[#050308] min-h-screen">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-32 w-full mt-4" />
+        <Skeleton className="h-64 w-full mt-4" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-0 pb-24 bg-[#050308] min-h-screen -m-4 overflow-x-hidden relative">
-      {/* Top Bar / Header */}
       <div className="sticky top-0 z-50 flex items-center justify-between p-4 bg-black/80 backdrop-blur-md border-b border-white/5">
         <Button variant="ghost" size="icon" className="text-white" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
@@ -150,7 +161,6 @@ export default function DragonTigerPage() {
         </div>
       </div>
 
-      {/* Road Map Grid */}
       <div className="bg-[#1a1525] p-2 overflow-x-auto scrollbar-hide">
         <div className="grid grid-cols-12 gap-1 min-w-[400px]">
           {history?.slice(0, 24).reverse().map((res, i) => (
@@ -167,9 +177,7 @@ export default function DragonTigerPage() {
         </div>
       </div>
 
-      {/* Main Arena Display */}
       <div className="relative h-[300px] w-full flex flex-col items-center justify-center bg-gradient-to-b from-indigo-950 via-[#0a0515] to-[#0a0515] overflow-hidden">
-        {/* Dealer Avatar Placeholder */}
         <div className="absolute top-0 flex flex-col items-center">
           <div className="relative h-40 w-40 mt-2 opacity-80">
              <Image 
@@ -182,7 +190,6 @@ export default function DragonTigerPage() {
           </div>
         </div>
 
-        {/* Cards Reveal Area */}
         <div className="relative z-10 w-full flex justify-around items-center px-4 mt-16">
           <CardIcon 
             label="Dragon" 
@@ -204,7 +211,6 @@ export default function DragonTigerPage() {
           />
         </div>
 
-        {/* Dynamic Table Stats */}
         <div className="absolute bottom-4 w-full flex justify-between px-6">
            <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5">
               <Users className="h-3 w-3 text-zinc-400" />
@@ -217,7 +223,6 @@ export default function DragonTigerPage() {
         </div>
       </div>
 
-      {/* Betting Zone */}
       <div className="p-4 grid gap-4 bg-[#0a0515]">
         <div className="grid grid-cols-3 gap-3">
           <div className="flex flex-col gap-2">
@@ -246,7 +251,6 @@ export default function DragonTigerPage() {
           </div>
         </div>
 
-        {/* Chip Selection Bar */}
         <div className="flex items-center justify-around bg-slate-900/50 p-3 rounded-2xl border border-white/5 shadow-2xl">
           {CHIPS.map((chip) => (
             <button
@@ -265,7 +269,6 @@ export default function DragonTigerPage() {
         </div>
       </div>
 
-      {/* History Table Bottom */}
       <div className="px-4 pb-24">
         <div className="bg-slate-900/40 rounded-3xl overflow-hidden border border-white/5">
           <div className="p-4 border-b border-white/5 flex items-center justify-between">
