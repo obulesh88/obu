@@ -91,7 +91,7 @@ export function GameAutomationManager() {
             resultData = { ...resultData, dragonCard: dragon, tigerCard: tiger, winner };
           }
 
-          // Mutation without await - following mutation guidelines
+          // Mutation without await
           setDoc(resultRef, resultData)
             .catch(async (error: any) => {
               if (error.code === 'permission-denied') {
@@ -103,8 +103,14 @@ export function GameAutomationManager() {
               }
             });
         }
-      } catch (err) {
-        // Handle read errors if any
+      } catch (err: any) {
+        if (err.code === 'permission-denied' && resultData) {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: resultRef.path,
+            operation: 'create',
+            requestResourceData: resultData
+          } satisfies SecurityRuleContext));
+        }
       }
     }
   }, [firestore, user, getPeriodId]);
@@ -144,7 +150,8 @@ export function GameAutomationManager() {
         const { period, bet, gameType, amount } = txData.metadata || {};
 
         if (!period || !gameType || !bet || !amount) {
-          updateDoc(doc(firestore, 'transactions', txDoc.id), { settled: true });
+          const settledRef = doc(firestore, 'transactions', txDoc.id);
+          updateDoc(settledRef, { settled: true });
           continue;
         }
 
@@ -158,19 +165,22 @@ export function GameAutomationManager() {
 
           if (gameType === 'wingo') {
             const b = bet.toLowerCase();
-            if (b === 'big' || b === 'small') { isWin = res.bs.toLowerCase() === b; multiplier = 2; }
-            else if (b === 'green') { isWin = [1, 3, 7, 9, 5].includes(res.num); multiplier = res.num === 5 ? 1.5 : 2; }
-            else if (b === 'red') { isWin = [2, 4, 6, 8, 0].includes(res.num); multiplier = res.num === 0 ? 1.5 : 2; }
-            else if (b === 'violet') { isWin = [0, 5].includes(res.num); multiplier = 4.5; }
+            // Standard bets give 1.90x
+            if (b === 'big' || b === 'small') { isWin = res.bs.toLowerCase() === b; multiplier = 1.90; }
+            else if (b === 'green') { isWin = [1, 3, 7, 9, 5].includes(res.num); multiplier = res.num === 5 ? 1.45 : 1.90; }
+            else if (b === 'red') { isWin = [2, 4, 6, 8, 0].includes(res.num); multiplier = res.num === 0 ? 1.45 : 1.90; }
+            else if (b === 'violet') { isWin = [0, 5].includes(res.num); multiplier = 4.25; }
             else if (b.startsWith('number_')) { isWin = res.num === parseInt(b.split('_')[1]); multiplier = 9; }
           } else if (gameType === 'k3') {
             const b = bet.toLowerCase();
-            if (['big', 'small'].includes(b)) { isWin = res.bs.toLowerCase() === b; multiplier = 2; }
-            else if (['odd', 'even'].includes(b)) { isWin = res.oe.toLowerCase() === b; multiplier = 2; }
+            // Standard bets give 1.90x
+            if (['big', 'small'].includes(b)) { isWin = res.bs.toLowerCase() === b; multiplier = 1.90; }
+            else if (['odd', 'even'].includes(b)) { isWin = res.oe.toLowerCase() === b; multiplier = 1.90; }
           } else if (gameType === 'dt') {
             const b = bet.toLowerCase();
             isWin = res.winner.toLowerCase() === b;
-            multiplier = b === 'tie' ? 9 : 2;
+            // Standard Dragon/Tiger bets give 1.90x
+            multiplier = b === 'tie' ? 9 : 1.90;
           }
 
           if (isWin) {
@@ -217,7 +227,7 @@ export function GameAutomationManager() {
             });
           }
 
-          // Mark bet as settled - without await
+          // Mark bet as settled
           const txUpdateData = { settled: true, updatedAt: serverTimestamp() };
           const betTxRef = doc(firestore, 'transactions', txDoc.id);
           
@@ -250,3 +260,4 @@ export function GameAutomationManager() {
 
   return null;
 }
+
