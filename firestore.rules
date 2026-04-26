@@ -3,26 +3,23 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Standard permissive rules for prototype environment
+    // Permissive rules for prototype development
+    // Allows full read/write access to all collections used in the app
+    
+    match /{document=**} {
+      allow read, write: if true;
+    }
     
     match /users/{userId} {
-      allow read, create, update: if true;
-      allow delete: if false;
+      allow read, write: if true;
     }
 
     match /payout_requests/{requestId} {
-      allow read, create, update: if true;
-      allow delete: if false;
+      allow read, write: if true;
     }
 
     match /transactions/{transactionId} {
-      allow read, create: if true;
-      allow update, delete: if false;
-    }
-
-    match /referrals/{referralId} {
-      allow read, create, update: if true;
-      allow delete: if false;
+      allow read, write: if true;
     }
 
     match /wingo_results/{resultId} {
