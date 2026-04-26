@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
+import { useLayout } from '@/context/layout-context';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'WinGo 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -41,6 +42,7 @@ type GameResult = {
 };
 
 export default function WingoPage() {
+  const { setPaddingDisabled } = useLayout();
   const { toast } = useToast();
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
@@ -49,6 +51,11 @@ export default function WingoPage() {
   const [isMounted, setIsMounted] = useState(false);
   const { user, userProfile } = useUser();
   const firestore = useFirestore();
+
+  useEffect(() => {
+    setPaddingDisabled(true);
+    return () => setPaddingDisabled(false);
+  }, [setPaddingDisabled]);
 
   // Betting state
   const [userBets, setUserBets] = useState<Record<string, number>>({
@@ -218,12 +225,13 @@ export default function WingoPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-24 bg-slate-950 min-h-screen -m-4 p-4 overflow-x-hidden">
-      <div className="flex items-center justify-between text-white mb-2">
+    <div className="flex flex-col bg-slate-950 min-h-screen">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-between p-4 border-b border-white/5">
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        <h1 className="text-lg font-black uppercase tracking-widest italic">WinGo 1 Min</h1>
+        <h1 className="text-lg font-black uppercase tracking-widest italic text-white">WinGo 1 Min</h1>
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
             <Info className="h-5 w-5" />
@@ -231,174 +239,181 @@ export default function WingoPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 mb-2">
-        {TIME_OPTIONS.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => setSelectedTime(opt.id)}
-            className={cn(
-              "flex flex-col items-center justify-center p-2 rounded-xl transition-all border border-white/5",
-              selectedTime === opt.id 
-                ? "bg-gradient-to-b from-cyan-400 to-cyan-600 text-white shadow-[0_0_15px_rgba(34,211,238,0.4)]" 
-                : "bg-slate-900 text-slate-400"
-            )}
-          >
-            <div className="mb-1">{opt.icon}</div>
-            <span className="text-[9px] font-black uppercase text-center leading-tight">
-              {opt.label.split(' ')[0]}<br/>{opt.label.split(' ').slice(1).join(' ')}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <Card className="bg-gradient-to-r from-cyan-500 to-emerald-400 border-none relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-        <CardContent className="p-4 flex justify-between items-center relative z-10">
-          <div className="flex flex-col gap-2">
-            <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none h-7 px-3 text-[10px] font-black rounded-full uppercase">
-              <Coins className="h-3 w-3 mr-1" /> ₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}
-            </Button>
-          </div>
-          <div className="text-right flex flex-col items-end">
-             <p className="text-xs font-black text-white uppercase tracking-wider mb-1">Time remaining</p>
-             <div className="flex gap-1">
-               {formatTime(timeLeft).split('').map((char, i) => (
-                 <span key={i} className={cn(
-                   "bg-slate-900 text-white font-mono text-xl font-black p-1.5 rounded min-w-[24px] text-center shadow-inner",
-                   char === ':' && "bg-transparent text-slate-900 shadow-none"
-                 )}>
-                   {char}
-                 </span>
-               ))}
-             </div>
-             <p className="text-[9px] font-mono text-slate-900 mt-2 font-black">{currentPeriod}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div className="flex flex-col gap-1">
-          <Button 
-            onClick={() => handleBet('green')}
-            className="h-12 bg-green-500 hover:bg-green-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(21,128,61)] active:translate-y-1 active:shadow-none transition-all uppercase"
-          >
-            Green
-          </Button>
-          <p className="text-[9px] font-black text-center text-green-500/80 uppercase">Spend: ₹{userBets.green}</p>
-        </div>
-        <div className="flex flex-col gap-1">
-          <Button 
-            onClick={() => handleBet('violet')}
-            className="h-12 bg-violet-500 hover:bg-violet-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(109,40,217)] active:translate-y-1 active:shadow-none transition-all uppercase"
-          >
-            Violet
-          </Button>
-          <p className="text-[9px] font-black text-center text-violet-500/80 uppercase">Spend: ₹{userBets.violet}</p>
-        </div>
-        <div className="flex flex-col gap-1">
-          <Button 
-            onClick={() => handleBet('red')}
-            className="h-12 bg-red-500 hover:bg-red-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(185,28,28)] active:translate-y-1 active:shadow-none transition-all uppercase"
-          >
-            Red
-          </Button>
-          <p className="text-[9px] font-black text-center text-red-500/80 uppercase">Spend: ₹{userBets.red}</p>
-        </div>
-      </div>
-
-      <div className="bg-slate-900/50 p-4 rounded-3xl border border-white/5 shadow-xl">
-        <div className="grid grid-cols-5 gap-3">
-          {NUMBERS.map((num) => (
+      <div className="p-4 flex flex-col gap-4">
+        {/* Time Options */}
+        <div className="grid grid-cols-4 gap-2">
+          {TIME_OPTIONS.map((opt) => (
             <button
-              key={num}
-              onClick={() => handleBet(`number_${num}`)}
+              key={opt.id}
+              onClick={() => setSelectedTime(opt.id)}
               className={cn(
-                "aspect-square rounded-full flex items-center justify-center text-xl font-black text-white border-2 border-white/10 shadow-lg transition-transform active:scale-90",
-                getNumberColor(num)
+                "flex flex-col items-center justify-center p-3 rounded-2xl transition-all border border-white/5",
+                selectedTime === opt.id 
+                  ? "bg-gradient-to-b from-cyan-400 to-cyan-600 text-white shadow-[0_0_15px_rgba(34,211,238,0.4)]" 
+                  : "bg-slate-900 text-slate-400"
               )}
             >
-              {num}
+              <div className="mb-1">{opt.icon}</div>
+              <span className="text-[9px] font-black uppercase text-center leading-tight">
+                {opt.label}
+              </span>
             </button>
           ))}
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1">
-          <Button 
-            onClick={() => handleBet('big')}
-            className="h-12 bg-amber-500 hover:bg-amber-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(180,83,9)] active:translate-y-1 active:shadow-none transition-all uppercase"
-          >
-            Big
-          </Button>
-          <p className="text-[9px] font-black text-center text-amber-500/80 uppercase">Spend: ₹{userBets.big}</p>
-        </div>
-        <div className="flex flex-col gap-1">
-          <Button 
-            onClick={() => handleBet('small')}
-            className="h-12 bg-blue-500 hover:bg-blue-600 text-white font-black text-lg rounded-xl shadow-[0_4px_0_rgb(29,78,216)] active:translate-y-1 active:shadow-none transition-all uppercase"
-          >
-            Small
-          </Button>
-          <p className="text-[9px] font-black text-center text-blue-500/80 uppercase">Spend: ₹{userBets.small}</p>
-        </div>
-      </div>
+        {/* Dashboard Card */}
+        <Card className="bg-gradient-to-r from-cyan-500 to-emerald-400 border-none relative overflow-hidden shadow-2xl rounded-3xl">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+          <CardContent className="p-6 flex justify-between items-center relative z-10">
+            <div className="flex flex-col gap-2">
+              <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-none h-8 px-4 text-xs font-black rounded-full uppercase">
+                <Coins className="h-3 w-3 mr-2" /> ₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}
+              </Button>
+              <div className="mt-2">
+                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Period</p>
+                <p className="text-sm font-black text-white font-mono">{currentPeriod}</p>
+              </div>
+            </div>
+            <div className="text-right flex flex-col items-end">
+               <p className="text-xs font-black text-white uppercase tracking-wider mb-2">Time Remaining</p>
+               <div className="flex gap-1.5">
+                 {formatTime(timeLeft).split('').map((char, i) => (
+                   <span key={i} className={cn(
+                     "bg-slate-900 text-white font-mono text-2xl font-black p-2 rounded-lg min-w-[32px] text-center shadow-2xl",
+                     char === ':' && "bg-transparent text-slate-900 shadow-none px-0"
+                   )}>
+                     {char}
+                   </span>
+                 ))}
+               </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="bg-slate-900/50 p-3 rounded-2xl border border-white/5 flex items-center justify-around gap-2">
-        {CHIPS.map((chip) => (
-          <button
-            key={chip}
-            onClick={() => setSelectedChip(chip)}
+        {/* Betting Zones */}
+        <div className="grid grid-cols-3 gap-3">
+          {['green', 'violet', 'red'].map((cat) => (
+            <div key={cat} className="flex flex-col gap-1.5">
+              <Button 
+                onClick={() => handleBet(cat)}
+                className={cn(
+                  "h-14 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 active:shadow-none transition-all uppercase",
+                  cat === 'green' ? "bg-green-500 hover:bg-green-600 shadow-[0_5px_0_rgb(21,128,61)]" :
+                  cat === 'violet' ? "bg-violet-500 hover:bg-violet-600 shadow-[0_5px_0_rgb(109,40,217)]" :
+                  "bg-red-500 hover:bg-red-600 shadow-[0_5px_0_rgb(185,28,28)]"
+                )}
+              >
+                {cat}
+              </Button>
+              <p className={cn("text-[9px] font-black text-center uppercase opacity-80", cat === 'green' ? 'text-green-500' : cat === 'violet' ? 'text-violet-500' : 'text-red-500')}>
+                Spend: ₹{userBets[cat]}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Number Grid */}
+        <div className="bg-slate-900/50 p-5 rounded-[32px] border border-white/5 shadow-2xl">
+          <div className="grid grid-cols-5 gap-4">
+            {NUMBERS.map((num) => (
+              <button
+                key={num}
+                onClick={() => handleBet(`number_${num}`)}
+                className={cn(
+                  "aspect-square rounded-full flex items-center justify-center text-xl font-black text-white border-2 border-white/10 shadow-lg transition-transform active:scale-90 hover:scale-105",
+                  getNumberColor(num)
+                )}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Big/Small Betting */}
+        <div className="grid grid-cols-2 gap-4">
+          {['big', 'small'].map((cat) => (
+            <div key={cat} className="flex flex-col gap-1.5">
+              <Button 
+                onClick={() => handleBet(cat)}
+                className={cn(
+                  "h-14 text-white font-black text-lg rounded-2xl shadow-xl active:translate-y-1 active:shadow-none transition-all uppercase",
+                  cat === 'big' ? "bg-amber-500 hover:bg-amber-600 shadow-[0_5px_0_rgb(180,83,9)]" : "bg-blue-500 hover:bg-blue-600 shadow-[0_5px_0_rgb(29,78,216)]"
+                )}
+              >
+                {cat}
+              </Button>
+              <p className={cn("text-[9px] font-black text-center uppercase opacity-80", cat === 'big' ? 'text-amber-500' : 'text-blue-500')}>
+                Spend: ₹{userBets[cat]}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Chip Selection */}
+        <div className="bg-slate-900/50 p-4 rounded-3xl border border-white/5 flex items-center justify-around gap-2 shadow-inner">
+          {CHIPS.map((chip) => (
+            <button
+              key={chip}
+              onClick={() => setSelectedChip(chip)}
+              className={cn(
+                "h-12 w-12 rounded-full flex items-center justify-center text-[11px] font-black transition-all transform active:scale-90",
+                selectedChip === chip 
+                  ? "bg-cyan-500 text-white scale-110 shadow-[0_0_20px_rgba(34,211,238,0.5)] border-2 border-white ring-4 ring-cyan-500/20" 
+                  : "bg-slate-800 text-zinc-400 border border-white/10"
+              )}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+
+        {/* History/Chart Toggle */}
+        <div className="flex gap-3 bg-slate-900/80 p-1.5 rounded-3xl border border-white/5">
+          <Button 
+            onClick={() => setActiveTab('history')}
             className={cn(
-              "h-10 w-10 rounded-full flex items-center justify-center text-[10px] font-black transition-all transform active:scale-90",
-              selectedChip === chip 
-                ? "bg-cyan-500 text-white scale-110 shadow-[0_0_15px_rgba(34,211,238,0.5)] border-2 border-white" 
-                : "bg-slate-800 text-zinc-400 border border-white/10"
+              "flex-1 h-12 font-black uppercase text-xs rounded-2xl transition-all",
+              activeTab === 'history' ? "bg-cyan-500 text-white shadow-[0_0_20px_rgba(34,211,238,0.3)]" : "bg-transparent text-slate-500"
             )}
           >
-            {chip}
-          </button>
-        ))}
-      </div>
+            <History className="h-4 w-4 mr-2" /> History
+          </Button>
+          <Button 
+            onClick={() => setActiveTab('chart')}
+            className={cn(
+              "flex-1 h-12 font-black uppercase text-xs rounded-2xl transition-all",
+              activeTab === 'chart' ? "bg-cyan-500 text-white shadow-[0_0_20px_rgba(34,211,238,0.3)]" : "bg-transparent text-slate-500"
+            )}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" /> Chart
+          </Button>
+        </div>
 
-      <div className="flex gap-2 bg-slate-900/80 p-1 rounded-2xl border border-white/5">
-        <Button 
-          onClick={() => setActiveTab('history')}
-          className={cn(
-            "flex-1 h-10 font-black uppercase text-[10px] rounded-xl transition-all",
-            activeTab === 'history' ? "bg-cyan-500 text-white" : "bg-transparent text-slate-500"
-          )}
-        >
-          <History className="h-3 w-3 mr-2" /> Game History
-        </Button>
-        <Button 
-          onClick={() => setActiveTab('chart')}
-          className={cn(
-            "flex-1 h-10 font-black uppercase text-[10px] rounded-xl transition-all",
-            activeTab === 'chart' ? "bg-cyan-500 text-white" : "bg-transparent text-slate-500"
-          )}
-        >
-          <TrendingUp className="h-3 w-3 mr-2" /> Chart
-        </Button>
-      </div>
-
-      <div className="bg-slate-900/40 rounded-3xl overflow-hidden border border-white/5">
-        <table className="w-full text-center">
-          <thead className="bg-cyan-600/20 text-cyan-400 uppercase text-[10px] font-black">
-            <tr>
-              <th className="py-3 px-4 text-left">Period</th>
-              <th className="py-3 px-4 text-right">Big Small</th>
-            </tr>
-          </thead>
-          <tbody className="text-white text-xs font-bold divide-y divide-white/5">
-            {history?.map((row, i) => (
-              <tr key={i} className="hover:bg-white/5 transition-colors">
-                <td className="py-3 px-4 font-mono text-[9px] text-slate-400 text-left">{row.period}</td>
-                <td className="py-3 px-4 uppercase italic tracking-tighter text-right text-cyan-400">{row.bs}</td>
+        {/* Results Table */}
+        <div className="bg-slate-900/40 rounded-[32px] overflow-hidden border border-white/5 shadow-2xl mb-24">
+          <table className="w-full text-center">
+            <thead className="bg-cyan-600/20 text-cyan-400 uppercase text-[10px] font-black tracking-widest">
+              <tr>
+                <th className="py-4 px-6 text-left">Period</th>
+                <th className="py-4 px-6 text-right">Result</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="text-white text-xs font-bold divide-y divide-white/5">
+              {history?.map((row, i) => (
+                <tr key={i} className="hover:bg-white/5 transition-colors">
+                  <td className="py-4 px-6 font-mono text-[10px] text-slate-400 text-left">{row.period}</td>
+                  <td className="py-4 px-6 uppercase italic tracking-tighter text-right text-cyan-400 font-black">{row.bs}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(!history || history.length === 0) && (
+            <div className="py-20 text-center text-zinc-500 font-black uppercase text-xs tracking-widest opacity-20">
+              Syncing Rounds...
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

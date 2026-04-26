@@ -21,6 +21,7 @@ import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { useLayout } from '@/context/layout-context';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'K3 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -52,6 +53,7 @@ const DiceIcon = ({ num, className }: { num: number, className?: string }) => {
 };
 
 export default function K3Page() {
+  const { setPaddingDisabled } = useLayout();
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
   const [activeTab, setActiveTab] = useState('history');
@@ -59,6 +61,11 @@ export default function K3Page() {
   const [isMounted, setIsMounted] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
+
+  useEffect(() => {
+    setPaddingDisabled(true);
+    return () => setPaddingDisabled(false);
+  }, [setPaddingDisabled]);
 
   const resultsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -137,13 +144,14 @@ export default function K3Page() {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-24 bg-[#0a052e] min-h-screen -m-4 p-4 overflow-x-hidden">
-      <div className="flex items-center justify-between text-white mb-2">
+    <div className="flex flex-col gap-0 bg-[#0a052e] min-h-screen">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-[#0a052e]/90 backdrop-blur-md flex items-center justify-between p-4 border-b border-white/5">
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
         <div className="flex flex-col items-center">
-          <h1 className="text-xl font-black italic tracking-tighter">OR wallet.Game</h1>
+          <h1 className="text-xl font-black italic tracking-tighter text-white">K3 Lotre</h1>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" className="text-white">
@@ -152,129 +160,150 @@ export default function K3Page() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 mb-2">
-        {TIME_OPTIONS.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => setSelectedTime(opt.id)}
-            className={cn(
-              "flex flex-col items-center justify-center p-2 rounded-xl transition-all border border-white/5",
-              selectedTime === opt.id 
-                ? "bg-gradient-to-b from-[#1b106b] to-[#0a052e] text-white shadow-[0_0_15px_rgba(59,130,246,0.3)] border-b-2 border-b-blue-500" 
-                : "bg-[#161145] text-zinc-400"
-            )}
-          >
-            <div className="mb-1">{opt.icon}</div>
-            <span className="text-[9px] font-black uppercase text-center leading-tight">
-              {opt.label}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex justify-between items-center text-white mb-2 px-2">
-        <div className="flex flex-col">
-           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">PERIOD</span>
-           <span className="text-sm font-black font-mono tracking-tighter">{currentPeriod}</span>
-        </div>
-        <div className="text-right flex flex-col items-end">
-           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">TIME REMAINING</span>
-           <div className="flex gap-1 mt-1">
-              <span className="bg-[#161145] text-blue-400 font-mono text-xl font-black p-1 rounded min-w-[28px] text-center">0</span>
-              <span className="bg-[#161145] text-blue-400 font-mono text-xl font-black p-1 rounded min-w-[28px] text-center">0</span>
-              <span className="text-blue-400 font-black self-center">:</span>
-              {timeLeft.toString().padStart(2, '0').split('').map((char, i) => (
-                <span key={i} className="bg-[#161145] text-blue-400 font-mono text-xl font-black p-1 rounded min-w-[28px] text-center">
-                  {char}
-                </span>
-              ))}
-           </div>
-        </div>
-      </div>
-
-      <div className="bg-[#05a065] p-3 rounded-3xl relative overflow-hidden shadow-[0_0_30px_rgba(5,160,101,0.3)] border-2 border-[#05a065]/50">
-        <div className="bg-[#1b106b] rounded-2xl p-6 flex justify-around items-center relative z-10">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-8 bg-[#05a065] rounded-r-full"></div>
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-8 bg-[#05a065] rounded-l-full"></div>
-          {history?.[0]?.dice.map((d, i) => (
-            <div key={i} className="h-16 w-16 bg-white rounded-xl flex items-center justify-center shadow-2xl transform transition-transform animate-in zoom-in-75 duration-500">
-              <DiceIcon num={d} className="h-12 w-12 text-[#1b106b]" />
-            </div>
+      <div className="p-4 flex flex-col gap-4">
+        {/* Time Selection Tabs */}
+        <div className="grid grid-cols-4 gap-2">
+          {TIME_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => setSelectedTime(opt.id)}
+              className={cn(
+                "flex flex-col items-center justify-center p-3 rounded-2xl transition-all border border-white/5",
+                selectedTime === opt.id 
+                  ? "bg-gradient-to-b from-[#1b106b] to-[#0a052e] text-white shadow-[0_0_15px_rgba(59,130,246,0.3)] border-b-2 border-b-blue-500" 
+                  : "bg-[#161145] text-zinc-400"
+              )}
+            >
+              <div className="mb-1">{opt.icon}</div>
+              <span className="text-[9px] font-black uppercase text-center leading-tight">
+                {opt.label}
+              </span>
+            </button>
           ))}
         </div>
-      </div>
 
-      <div className="bg-[#161145]/60 p-3 rounded-2xl border border-white/5 flex items-center justify-around gap-2 mt-2">
-        {CHIPS.map((chip) => (
-          <button
-            key={chip}
-            onClick={() => setSelectedChip(chip)}
+        {/* Period & Timer */}
+        <div className="flex justify-between items-center text-white px-1">
+          <div className="flex flex-col">
+             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Period</span>
+             <span className="text-sm font-black font-mono tracking-tighter">{currentPeriod}</span>
+          </div>
+          <div className="text-right flex flex-col items-end">
+             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Time Remaining</span>
+             <div className="flex gap-1 mt-1">
+                {['0', '0', ':', ...timeLeft.toString().padStart(2, '0').split('')].map((char, i) => (
+                  <span 
+                    key={i} 
+                    className={cn(
+                      "flex items-center justify-center font-mono text-xl font-black rounded min-w-[28px] h-10",
+                      char === ':' ? "text-blue-400" : "bg-[#161145] text-blue-400 shadow-inner"
+                    )}
+                  >
+                    {char}
+                  </span>
+                ))}
+             </div>
+          </div>
+        </div>
+
+        {/* The Green Capsule / Result View */}
+        <div className="bg-[#05a065] p-3 rounded-3xl relative overflow-hidden shadow-[0_0_40px_rgba(5,160,101,0.4)] border-2 border-[#05a065]/50 group">
+          <div className="bg-[#1b106b] rounded-2xl p-8 flex justify-around items-center relative z-10">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-10 bg-[#05a065] rounded-r-full shadow-lg"></div>
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-10 bg-[#05a065] rounded-l-full shadow-lg"></div>
+            {history?.[0]?.dice.map((d, i) => (
+              <div key={i} className="h-20 w-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl transform transition-all duration-700 animate-in zoom-in-75 slide-in-from-bottom-4">
+                <DiceIcon num={d} className="h-14 w-14 text-[#1b106b]" />
+              </div>
+            ))}
+          </div>
+          {/* Decorative Particles */}
+          <div className="absolute top-2 right-4 h-1 w-1 bg-white rounded-full opacity-20 animate-ping"></div>
+          <div className="absolute bottom-4 left-6 h-2 w-2 bg-white rounded-full opacity-10 animate-pulse"></div>
+        </div>
+
+        {/* Chip Selection */}
+        <div className="bg-[#161145]/60 p-4 rounded-3xl border border-white/5 flex items-center justify-around gap-2 shadow-inner">
+          {CHIPS.map((chip) => (
+            <button
+              key={chip}
+              onClick={() => setSelectedChip(chip)}
+              className={cn(
+                "h-12 w-12 rounded-full flex items-center justify-center text-[11px] font-black transition-all transform active:scale-90",
+                selectedChip === chip 
+                  ? "bg-blue-500 text-white scale-110 shadow-[0_0_20px_rgba(59,130,246,0.6)] border-2 border-white ring-4 ring-blue-500/20" 
+                  : "bg-[#0a052e] text-zinc-400 border border-white/10"
+              )}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+
+        {/* Toggle Controls */}
+        <div className="flex gap-3 bg-[#161145]/80 p-1.5 rounded-3xl border border-white/5">
+          <Button 
+            onClick={() => setActiveTab('history')}
             className={cn(
-              "h-10 w-10 rounded-full flex items-center justify-center text-[10px] font-black transition-all transform active:scale-90",
-              selectedChip === chip 
-                ? "bg-blue-500 text-white scale-110 shadow-[0_0_15px_rgba(59,130,246,0.5)] border-2 border-white ring-4 ring-blue-500/20" 
-                : "bg-[#0a052e] text-zinc-400 border border-white/10"
+              "flex-1 h-12 font-black uppercase text-xs rounded-2xl transition-all",
+              activeTab === 'history' ? "bg-rose-600 text-white border border-rose-500 shadow-[0_0_20px_rgba(225,29,72,0.4)]" : "bg-transparent text-slate-500"
             )}
           >
-            {chip}
-          </button>
-        ))}
-      </div>
+            <History className="h-4 w-4 mr-2" /> History
+          </Button>
+          <Button 
+            onClick={() => setActiveTab('chart')}
+            className={cn(
+              "flex-1 h-12 font-black uppercase text-xs rounded-2xl transition-all",
+              activeTab === 'chart' ? "bg-[#1b106b] text-white border border-blue-500/50" : "bg-transparent text-slate-500"
+            )}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" /> Chart
+          </Button>
+        </div>
 
-      <div className="flex gap-2 bg-[#161145]/80 p-1 rounded-2xl border border-white/5 mt-2">
-        <Button 
-          onClick={() => setActiveTab('history')}
-          className={cn(
-            "flex-1 h-10 font-black uppercase text-[10px] rounded-xl transition-all",
-            activeTab === 'history' ? "bg-red-600 text-white border border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)]" : "bg-transparent text-slate-500"
-          )}
-        >
-          <History className="h-3 w-3 mr-2" /> HISTORY
-        </Button>
-        <Button 
-          onClick={() => setActiveTab('chart')}
-          className={cn(
-            "flex-1 h-10 font-black uppercase text-[10px] rounded-xl transition-all",
-            activeTab === 'chart' ? "bg-[#1b106b] text-white border border-blue-500/50" : "bg-transparent text-slate-500"
-          )}
-        >
-          <TrendingUp className="h-3 w-3 mr-2" /> CHART
-        </Button>
-      </div>
-
-      <div className="bg-[#161145]/40 rounded-3xl overflow-hidden border border-white/5 mt-2">
-        <table className="w-full text-center">
-          <thead className="bg-[#1e1465] text-zinc-400 uppercase text-[9px] font-black">
-            <tr>
-              <th className="py-3 px-4">PERIOD</th>
-              <th className="py-3 px-4">SUM</th>
-              <th className="py-3 px-4">RESULTS</th>
-            </tr>
-          </thead>
-          <tbody className="text-white text-xs font-bold divide-y divide-white/5">
-            {history?.map((row, i) => (
-              <tr key={i} className="hover:bg-white/5 transition-colors">
-                <td className="py-3 px-4 font-mono text-[9px] text-zinc-500">{row.period}</td>
-                <td className="py-3 px-4 text-sm font-black text-blue-400">{row.sum}</td>
-                <td className="py-3 px-4">
-                  <div className="flex justify-center gap-1">
-                    {row.dice.map((d, di) => (
-                      <div key={di} className="bg-white rounded-[2px] p-0.5 shadow-sm">
-                        <DiceIcon num={d} className="h-4 w-4 text-[#161145]" />
-                      </div>
-                    ))}
-                    <span className={cn(
-                      "text-[8px] font-black uppercase self-center px-1.5 py-0.5 rounded ml-2",
-                      row.oe === 'Odd' ? 'bg-red-500/20 text-red-500' : 'bg-emerald-500/20 text-emerald-500'
-                    )}>
-                      {row.oe.charAt(0)}
-                    </span>
-                  </div>
-                </td>
+        {/* Results Table */}
+        <div className="bg-[#161145]/40 rounded-[32px] overflow-hidden border border-white/5 shadow-2xl">
+          <table className="w-full text-center">
+            <thead className="bg-[#1e1465] text-zinc-400 uppercase text-[10px] font-black tracking-widest">
+              <tr>
+                <th className="py-4 px-4">Period</th>
+                <th className="py-4 px-4">Sum</th>
+                <th className="py-4 px-4">Result</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="text-white text-sm font-bold divide-y divide-white/5">
+              {history?.map((row, i) => (
+                <tr key={i} className="hover:bg-white/5 transition-colors">
+                  <td className="py-4 px-4 font-mono text-[10px] text-zinc-500">{row.period}</td>
+                  <td className="py-4 px-4 text-base font-black text-blue-400">{row.sum}</td>
+                  <td className="py-4 px-4">
+                    <div className="flex justify-center items-center gap-1.5">
+                      <div className="flex gap-0.5">
+                        {row.dice.map((d, di) => (
+                          <div key={di} className="bg-white rounded-sm p-0.5 shadow-sm transform scale-90">
+                            <DiceIcon num={d} className="h-4 w-4 text-[#161145]" />
+                          </div>
+                        ))}
+                      </div>
+                      <span className={cn(
+                        "text-[9px] font-black uppercase px-2 py-0.5 rounded-full ml-1",
+                        row.oe === 'Odd' ? 'bg-rose-500/20 text-rose-500' : 'bg-emerald-500/20 text-emerald-500'
+                      )}>
+                        {row.oe.charAt(0)}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(!history || history.length === 0) && (
+            <div className="py-20 text-center text-zinc-500 font-black uppercase text-xs tracking-widest opacity-20">
+              Syncing Battle...
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

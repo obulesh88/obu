@@ -20,6 +20,7 @@ import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { useLayout } from '@/context/layout-context';
 
 const CHIPS = [1, 5, 10, 50, 100];
 
@@ -60,12 +61,18 @@ const CardIcon = ({ val, winner, label }: { val: number, winner: boolean, label:
 };
 
 export default function DragonTigerPage() {
+  const { setPaddingDisabled } = useLayout();
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
   const [selectedChip, setSelectedChip] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
+
+  useEffect(() => {
+    setPaddingDisabled(true);
+    return () => setPaddingDisabled(false);
+  }, [setPaddingDisabled]);
 
   const resultsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -155,7 +162,7 @@ export default function DragonTigerPage() {
   }
 
   return (
-    <div className="flex flex-col gap-0 pb-24 bg-[#050308] min-h-screen -m-4 overflow-x-hidden relative">
+    <div className="flex flex-col gap-0 pb-24 bg-[#050308] min-h-screen overflow-x-hidden relative">
       <div className="sticky top-0 z-50 flex items-center justify-between p-4 bg-black/80 backdrop-blur-md border-b border-white/5">
         <Button variant="ghost" size="icon" className="text-white" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
@@ -278,7 +285,7 @@ export default function DragonTigerPage() {
         </div>
       </div>
 
-      <div className="px-4 pb-24">
+      <div className="px-4 pb-24 bg-[#0a0515]">
         <div className="bg-slate-900/40 rounded-3xl overflow-hidden border border-white/5">
           <div className="p-4 border-b border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
