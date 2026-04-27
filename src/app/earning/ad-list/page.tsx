@@ -7,6 +7,8 @@ import { AdDialog } from '@/components/earning/ad-dialog';
 import { Tv, CheckCircle2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUser } from '@/hooks/use-user';
+import { useRouter } from 'next/navigation';
 
 const NUM_ADS = 10;
 const REWARD_PER_AD = 0.004;
@@ -14,11 +16,19 @@ const ADS_STORAGE_KEY = 'or_wallet_completed_ads';
 const ADS_DAY_KEY = 'or_wallet_ads_last_day';
 
 export default function AdListPage() {
+  const { user, loading } = useUser();
+  const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [completed, setCompleted] = useState<boolean[]>(() => Array(NUM_ADS).fill(false));
   const [currentAdIndex, setCurrentAdIndex] = useState<number | null>(null);
   const [allAdsCompleted, setAllAdsCompleted] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -97,7 +107,7 @@ export default function AdListPage() {
     return 'C';
   };
 
-  if (!isMounted) {
+  if (!isMounted || loading || !user) {
     return (
       <Card>
         <CardHeader>

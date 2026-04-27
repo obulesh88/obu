@@ -1,18 +1,20 @@
-
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Gamepad2, Star, Timer, Trophy, Clock } from 'lucide-react';
 import { AdDialog } from '@/components/earning/ad-dialog';
 import { Separator } from '@/components/ui/separator';
+import { useUser } from '@/hooks/use-user';
+import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const GAMES = [
   { 
     id: 'g_block_blast', 
     name: 'Block Blast Puzzle', 
-    reward: 0.012, // ₹0.012
+    reward: 0.012, 
     time: 300, 
     difficulty: 'Easy', 
     division: 'A',
@@ -48,13 +50,31 @@ const GAMES = [
 ];
 
 export default function GamesPage() {
+  const { user, loading } = useUser();
+  const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState<typeof GAMES[0] | null>(null);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   const handlePlay = (game: typeof GAMES[0]) => {
     setSelectedGame(game);
     setIsDialogOpen(true);
   };
+
+  if (loading || !user) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 pb-20">
