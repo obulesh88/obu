@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -21,9 +22,6 @@ import type { UserProfile } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
-/**
- * Hook to manage user authentication state and Firestore profile synchronization.
- */
 export function useUser() {
   const { user: authUser, loading: authLoading } = useFirebaseAuth();
   const firestore = useFirestore();
@@ -72,13 +70,12 @@ export function useUser() {
 
           setDoc(currentUserRef, newProfile)
             .then(() => {
-              // Log the Sign-up Bonus Transaction
               const transactionsRef = collection(firestore, 'transactions');
               addDoc(transactionsRef, {
                 userId: guestUid,
                 amount: SIGNUP_BONUS,
                 currency: 'INR',
-                type: 'referral', // Using referral type for rewards
+                type: 'referral',
                 description: 'Sign-up Bonus',
                 createdAt: serverTimestamp()
               });
@@ -105,7 +102,7 @@ export function useUser() {
             if (!querySnapshot.empty) {
               const referrerDoc = querySnapshot.docs[0];
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
-              const referralReward = 45; // ₹45 reward per referral
+              const referralReward = 45;
               
               const updateData = {
                 'referral.count': increment(1),
@@ -135,21 +132,12 @@ export function useUser() {
                 createdAt: serverTimestamp()
               };
 
-              addDoc(transactionsRef, txData)
-                .catch(async (error) => {
-                  if (error.code === 'permission-denied') {
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({
-                      path: transactionsRef.path,
-                      operation: 'create',
-                      requestResourceData: txData
-                    } satisfies SecurityRuleContext));
-                  }
-                });
+              addDoc(transactionsRef, txData);
             }
             localStorage.removeItem('or_wallet_referral_code');
           }
         } catch (error) {
-          // General initialization failures
+          console.error(error);
         } finally {
           setIsInitializing(false);
         }

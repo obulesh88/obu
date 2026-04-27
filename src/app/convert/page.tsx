@@ -1,5 +1,15 @@
-import ConvertPage from '@/components/convert/convert-page';
 
-export default function Convert() {
-  return <ConvertPage />;
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function ConvertPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/wallet');
+  }, [router]);
+
+  return null;
 }
