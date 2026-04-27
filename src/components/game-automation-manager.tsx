@@ -25,13 +25,10 @@ import { useToast } from '@/hooks/use-toast';
  * It strictly handles:
  * 1. Result Generation (Only for completed periods)
  * 2. Bet Settlement (Calculating winners and updating balances)
- * 
- * Rules:
- * - House always has advantage.
- * - Payout for even-money bets is 1.90x.
+ * 3. Bankruptcy Protection (Clearing wages if balance hits zero)
  */
 export function GameAutomationManager() {
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const lastProcessedMinute = useRef<number | null>(null);
@@ -44,6 +41,37 @@ export function GameAutomationManager() {
     const typeCode = gameType === 'wingo' ? '1000' : gameType === 'k3' ? '3000' : '4000';
     return `${datePart}${typeCode}${totalMinutes.toString().padStart(4, '0')}`;
   }, []);
+
+  /**
+   * BANKRUPTCY PROTECTION
+   * If the user's balance hits zero (loss whole amount), 
+   * clear the wagering turnover automatically.
+   */
+  useEffect(() => {
+    if (!firestore || !user || !userProfile) return;
+
+    const balance = userProfile.wallet?.balance || 0;
+    const wages = userProfile.wallet?.wageringRequired || 0;
+
+    // If balance is practically zero and there are still wages to clear
+    if (balance < 0.01 && wages > 0.01) {
+      const userRef = doc(firestore, 'users', user.uid);
+      const updateData = {
+        'wallet.wageringRequired': 0,
+        updatedAt: serverTimestamp()
+      };
+
+      updateDoc(userRef, updateData).catch((error: any) => {
+        if (error.code === 'permission-denied') {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'update',
+            requestResourceData: updateData
+          } satisfies SecurityRuleContext));
+        }
+      });
+    }
+  }, [userProfile?.wallet?.balance, userProfile?.wallet?.wageringRequired, firestore, user]);
 
   /**
    * Generates results for the minute that JUST ENDED.

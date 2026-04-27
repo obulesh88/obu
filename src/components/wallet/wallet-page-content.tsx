@@ -64,7 +64,6 @@ export default function WalletPageContent() {
 
   const hasSuccessfulDeposit = useMemo(() => {
     if (!deposits) return false;
-    // Handle variations in status strings manually set in console
     return deposits.some(d => {
       const s = d.status?.toLowerCase();
       return s === 'success' || s === 'completed';
@@ -73,7 +72,7 @@ export default function WalletPageContent() {
 
   const wageringRequired = userProfile?.wallet?.wageringRequired || 0;
   
-  // Logic: Unlock if 1st deposit is success OR if wages required shows in wallet
+  // UNLOCK LOGIC: Unlock if 1st deposit is SUCCESS OR if active turnover progress is visible
   const isWithdrawLocked = !hasSuccessfulDeposit && !(wageringRequired > 0.01);
 
   useEffect(() => {
@@ -326,7 +325,7 @@ export default function WalletPageContent() {
                <div className="space-y-2">
                  <h3 className="text-lg font-black uppercase tracking-tight">Withdrawal Locked</h3>
                  <p className="text-[10px] font-bold text-muted-foreground uppercase leading-relaxed max-w-[240px]">
-                   Complete at least one recharge or active turnover requirement to unlock withdrawals.
+                   Complete at least one recharge or clear turnover requirement to unlock withdrawals.
                  </p>
                </div>
                <Button onClick={() => setActiveTab('deposit')} className="w-full font-black uppercase h-12 shadow-lg">
