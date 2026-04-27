@@ -55,7 +55,7 @@ const CardIcon = ({ val, winner, label, period }: { val: number, winner: boolean
       </span>
       <div className={cn(
         "h-32 w-22 bg-white rounded-xl flex flex-col items-center justify-center relative shadow-2xl transition-all", 
-        winner ? "ring-4 ring-yellow-400 scale-110 z-20 shadow-[0_0_30px_rgba(234,179,8,0.5)]" : "opacity-90 z-10"
+        winner ? "ring-4 ring-yellow-400 scale-110 shadow-[0_0_30px_rgba(234,179,8,0.5)]" : "opacity-90"
       )}>
          <span className={cn("absolute top-2 left-2 text-xs font-black flex flex-col items-center leading-none", isRed(val) ? "text-red-600" : "text-slate-900")}>
            {getLabel(val)}
@@ -172,7 +172,7 @@ export default function DragonTigerPage() {
 
   return (
     <div className="flex flex-col gap-0 pb-24 bg-[#050308] min-h-screen relative overflow-x-hidden text-white">
-      {/* PROFESSIONAL HEADER (Screenshot Style) */}
+      {/* PROFESSIONAL HEADER */}
       <div className="flex flex-col items-center justify-center pt-6 pb-2 px-6 relative bg-black">
         <Button variant="ghost" size="icon" className="absolute left-4 top-6 text-white" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
@@ -194,17 +194,17 @@ export default function DragonTigerPage() {
         </div>
       </div>
 
-      {/* MINI ROADMAP (Screenshot Style) */}
+      {/* MINI ROADMAP */}
       <div className="bg-[#1a1525] py-3 flex gap-1.5 overflow-x-auto scrollbar-hide px-6 justify-center">
         {history?.slice(0, 15).reverse().map((res, i) => (
           <div key={i} className={cn(
             "h-5 w-5 rounded-full flex-shrink-0 border border-white/10", 
-            res.winner === 'Dragon' ? "bg-blue-600" : res.winner === 'Tiger' ? "bg-rose-600" : "bg-emerald-500"
+            res.winner === 'Dragon' ? "bg-rose-600" : res.winner === 'Tiger' ? "bg-blue-600" : "bg-emerald-500"
           )} />
         ))}
       </div>
 
-      {/* BETTING PAD (Screenshot Style) */}
+      {/* BETTING PAD */}
       <div className="px-4 pt-6 flex flex-col gap-6">
         <div className="grid grid-cols-3 gap-3 h-44">
           {/* Dragon Button */}
@@ -222,7 +222,7 @@ export default function DragonTigerPage() {
               ) : (
                 <>
                   <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-red-100/40">DRAGON</span>
-                  <span className="text-[10px] font-bold text-red-200/60 uppercase">Payout 1 : 1</span>
+                  <span className="text-[10px] font-bold text-red-200/60 uppercase">Payout 1 : 0.9</span>
                 </>
               )}
             </button>
@@ -270,7 +270,7 @@ export default function DragonTigerPage() {
               ) : (
                 <>
                   <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-blue-500">TIGER</span>
-                  <span className="text-[10px] font-bold text-blue-500/60 uppercase">Payout 1 : 1</span>
+                  <span className="text-[10px] font-bold text-blue-500/60 uppercase">Payout 1 : 0.9</span>
                 </>
               )}
             </button>
@@ -280,7 +280,7 @@ export default function DragonTigerPage() {
           </div>
         </div>
 
-        {/* CHIP SELECTOR (Screenshot Style) */}
+        {/* CHIP SELECTOR */}
         <div className="bg-[#121225] p-6 rounded-[32px] border border-white/5 flex items-center justify-around gap-2 shadow-inner">
           {CHIPS.map((chip) => (
             <button 
@@ -300,7 +300,7 @@ export default function DragonTigerPage() {
           ))}
         </div>
 
-        {/* BATTLE RECORDS (Screenshot Style) */}
+        {/* BATTLE RECORDS */}
         <div className="bg-[#121225] rounded-[32px] overflow-hidden border border-white/5 shadow-2xl mb-12">
           <div className="p-5 border-b border-white/5 bg-[#1a1525]/50 flex items-center gap-3">
             <History className="h-4 w-4 text-zinc-500" />
