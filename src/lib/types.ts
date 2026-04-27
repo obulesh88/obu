@@ -9,6 +9,7 @@ export type UserProfile = {
   };
   wallet: {
     balance: number;
+    wageringRequired?: number;
   };
   bankDetails?: {
     name: string;

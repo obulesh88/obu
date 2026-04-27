@@ -63,7 +63,7 @@ export function useUser() {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             profile: { displayName: authUser.displayName || 'New Earner', Uid: guestUid },
-            wallet: { balance: SIGNUP_BONUS },
+            wallet: { balance: SIGNUP_BONUS, wageringRequired: 0 },
             referral: { code: referralCode, count: 0, earnings: 0 },
             bankDetails: { name: '', contact: '', email: '', accountNumber: '', ifsc: '', vpa: '' },
             watchAds: { ad_provider: 'Monetag', ad_start: null, verifiedAt: null, ad_completed: false, reward_comm: 0 },

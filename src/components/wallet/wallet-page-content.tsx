@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -65,14 +64,17 @@ export default function WalletPageContent() {
 
   const hasSuccessfulDeposit = useMemo(() => {
     if (!deposits) return false;
-    return deposits.some(d => 
-      d.status?.toLowerCase() === 'success' || 
-      d.status?.toLowerCase() === 'completed'
-    );
+    // Handle variations in status strings manually set in console
+    return deposits.some(d => {
+      const s = d.status?.toLowerCase();
+      return s === 'success' || s === 'completed';
+    });
   }, [deposits]);
 
   const wageringRequired = userProfile?.wallet?.wageringRequired || 0;
-  const isWithdrawLocked = !hasSuccessfulDeposit;
+  
+  // Logic: Unlock if 1st deposit is success OR if wages required shows in wallet
+  const isWithdrawLocked = !hasSuccessfulDeposit && !(wageringRequired > 0.01);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -322,9 +324,9 @@ export default function WalletPageContent() {
                   <AlertCircle className="h-10 w-10 text-amber-500" />
                </div>
                <div className="space-y-2">
-                 <h3 className="text-lg font-black uppercase tracking-tight">Recharge Required</h3>
+                 <h3 className="text-lg font-black uppercase tracking-tight">Withdrawal Locked</h3>
                  <p className="text-[10px] font-bold text-muted-foreground uppercase leading-relaxed max-w-[240px]">
-                   To unlock withdrawals, you must complete at least one manual recharge of ₹{MIN_DEPOSIT} or more.
+                   Complete at least one recharge or active turnover requirement to unlock withdrawals.
                  </p>
                </div>
                <Button onClick={() => setActiveTab('deposit')} className="w-full font-black uppercase h-12 shadow-lg">
@@ -469,7 +471,7 @@ export default function WalletPageContent() {
                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Recharge History</span>
                 </div>
                 <div className="space-y-2">
-                   {deposits.slice(0, 5).map((d: any, i: number) => (
+                   {deposits.map((d: any, i: number) => (
                      <div key={i} className="flex items-center justify-between p-4 rounded-xl border bg-muted/10">
                         <div className="flex flex-col gap-0.5">
                            <span className="text-xs font-black">₹{d.amount.toFixed(2)}</span>
@@ -477,7 +479,7 @@ export default function WalletPageContent() {
                         </div>
                         <span className={cn(
                           "text-[9px] font-black uppercase px-3 py-1 rounded-full border",
-                          d.status === 'success' || d.status === 'completed' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                          d.status?.toLowerCase() === 'success' || d.status?.toLowerCase() === 'completed' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"
                         )}>
                           {d.status?.toUpperCase()}
                         </span>
