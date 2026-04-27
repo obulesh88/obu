@@ -132,7 +132,12 @@ export default function DragonTigerPage() {
     }
 
     const userDocRef = doc(firestore, 'users', user.uid);
-    const updateData = { 'wallet.balance': increment(-selectedChip), updatedAt: serverTimestamp() };
+    // Every bet placed reduces the wagering turnover requirement
+    const updateData = { 
+      'wallet.balance': increment(-selectedChip), 
+      'wallet.wageringRequired': increment(-selectedChip),
+      updatedAt: serverTimestamp() 
+    };
 
     updateDoc(userDocRef, updateData)
       .then(() => {
