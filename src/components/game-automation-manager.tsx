@@ -122,7 +122,7 @@ export function GameAutomationManager() {
           }
         }
       } catch (err: any) {
-        // Handled via catch chain above
+        // Errors caught by catch chain above
       }
     }
   }, [firestore, user, getPeriodId]);
@@ -178,7 +178,6 @@ export function GameAutomationManager() {
 
           if (gameType === 'wingo') {
             const b = bet.toLowerCase();
-            // House edge: 1.90x payout
             if (b === 'big' || b === 'small') { 
               isWin = res.bs.toLowerCase() === b; 
               multiplier = 1.90; 
@@ -197,13 +196,11 @@ export function GameAutomationManager() {
             }
           } else if (gameType === 'k3') {
             const b = bet.toLowerCase();
-            // House edge: 1.90x payout
             if (['big', 'small'].includes(b)) { isWin = res.bs.toLowerCase() === b; multiplier = 1.90; }
             else if (['odd', 'even'].includes(b)) { isWin = res.oe.toLowerCase() === b; multiplier = 1.90; }
           } else if (gameType === 'dt') {
             const b = bet.toLowerCase();
             isWin = res.winner.toLowerCase() === b;
-            // House edge: 1.90x payout for Dragon/Tiger, 8:1 (9x) for Tie
             multiplier = b === 'tie' ? 9 : 1.90;
           }
 

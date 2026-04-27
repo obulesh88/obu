@@ -16,7 +16,6 @@ import { useLayout } from '@/context/layout-context';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const CHIPS = [1, 5, 10, 50, 100];
 
@@ -173,35 +172,67 @@ export default function DragonTigerPage() {
   return (
     <div className="flex flex-col gap-0 pb-24 bg-[#050308] min-h-screen relative overflow-x-hidden text-white">
       {/* PROFESSIONAL HEADER */}
-      <div className="flex flex-col items-center justify-center pt-6 pb-2 px-6 relative bg-black">
-        <Button variant="ghost" size="icon" className="absolute left-4 top-6 text-white" onClick={() => window.history.back()}>
+      <div className="flex items-center justify-between pt-6 pb-2 px-6 bg-black">
+        <Button variant="ghost" size="icon" className="text-white" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
         <div className="flex flex-col items-center">
           <h1 className="text-xl font-black italic text-rose-500 uppercase tracking-tighter italic">DRAGON VS TIGER</h1>
           <span className="text-[10px] font-bold text-zinc-500 font-mono tracking-widest">{currentPeriod}</span>
         </div>
-        <div className="absolute right-6 top-6 flex flex-col items-end">
-           <div className="flex items-center gap-1">
+        <div className="flex flex-col items-end">
+          <div className="flex items-center gap-1">
              <Zap className="h-4 w-4 text-yellow-500 fill-yellow-500" />
              <span className={cn("text-sm font-black font-mono", isBettingClosed ? "text-red-500" : "text-yellow-500")}>
                00:{timeLeft.toString().padStart(2, '0')}
              </span>
-           </div>
-           {isBettingClosed && (
-             <span className="text-[8px] font-black text-red-400 uppercase tracking-tighter mt-0.5 animate-pulse">CLOSED</span>
-           )}
+          </div>
+          <div className="bg-primary/20 px-2 py-0.5 rounded border border-primary/30 flex items-center gap-1 mt-1">
+             <Coins className="h-3 w-3 text-yellow-400" />
+             <span className="text-[10px] font-black">₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}</span>
+          </div>
         </div>
       </div>
 
       {/* MINI ROADMAP */}
-      <div className="bg-[#1a1525] py-3 flex gap-1.5 overflow-x-auto scrollbar-hide px-6 justify-center">
+      <div className="bg-[#1a1525] py-3 flex gap-1.5 overflow-x-auto scrollbar-hide px-6 justify-center border-b border-white/5">
         {history?.slice(0, 15).reverse().map((res, i) => (
           <div key={i} className={cn(
-            "h-5 w-5 rounded-full flex-shrink-0 border border-white/10", 
+            "h-5 w-5 rounded-full flex-shrink-0 border border-white/10 shadow-lg", 
             res.winner === 'Dragon' ? "bg-rose-600" : res.winner === 'Tiger' ? "bg-blue-600" : "bg-emerald-500"
           )} />
         ))}
+      </div>
+
+      {/* BATTLE ARENA */}
+      <div className="flex justify-center items-center gap-12 py-10 relative overflow-hidden bg-gradient-to-b from-black to-[#050308]">
+        <div className="absolute inset-0 bg-gradient-to-b from-rose-500/5 to-transparent pointer-events-none" />
+        {history?.[0] ? (
+          <>
+            <CardIcon 
+              val={history[0].dragonCard} 
+              winner={history[0].winner === 'Dragon'} 
+              label="Dragon" 
+              period={history[0].period} 
+            />
+            <div className="flex flex-col items-center gap-2 z-10">
+              <div className="h-12 w-12 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                 <span className="text-xl font-black italic text-zinc-500">VS</span>
+              </div>
+              <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{history[0].period.slice(-4)}</span>
+            </div>
+            <CardIcon 
+              val={history[0].tigerCard} 
+              winner={history[0].winner === 'Tiger'} 
+              label="Tiger" 
+              period={history[0].period} 
+            />
+          </>
+        ) : (
+          <div className="h-40 flex items-center justify-center text-zinc-700 font-black uppercase tracking-widest animate-pulse">
+             Waiting for Battle...
+          </div>
+        )}
       </div>
 
       {/* BETTING PAD */}
@@ -213,21 +244,21 @@ export default function DragonTigerPage() {
               onClick={() => handleBet('dragon')}
               disabled={isBettingClosed}
               className={cn(
-                "flex-1 rounded-2xl bg-red-600 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all",
-                isBettingClosed && "opacity-50 grayscale shadow-none"
+                "flex-1 rounded-2xl bg-red-600 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all border-b-4 border-red-800",
+                isBettingClosed && "opacity-50 grayscale shadow-none border-b-0"
               )}
             >
               {isBettingClosed ? (
                 <Lock className="h-6 w-6 text-red-200/40" />
               ) : (
                 <>
-                  <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-red-100/40">DRAGON</span>
-                  <span className="text-[10px] font-bold text-red-200/60 uppercase">Payout 1 : 0.9</span>
+                  <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-red-100">DRAGON</span>
+                  <span className="text-[10px] font-bold text-red-200/60 uppercase">Payout 1.90</span>
                 </>
               )}
             </button>
             <div className="h-9 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5">
-               <span className="text-[10px] font-black uppercase text-rose-500">Spend: ₹{userBets.dragon}</span>
+               <span className="text-[10px] font-black uppercase text-rose-500 tracking-tighter">Spend: ₹{userBets.dragon}</span>
             </div>
           </div>
 
@@ -237,8 +268,8 @@ export default function DragonTigerPage() {
               onClick={() => handleBet('tie')}
               disabled={isBettingClosed}
               className={cn(
-                "flex-1 rounded-2xl bg-[#0a2e1e] border-2 border-emerald-500/30 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all",
-                isBettingClosed && "opacity-50 grayscale shadow-none"
+                "flex-1 rounded-2xl bg-[#0a2e1e] border-2 border-emerald-500/30 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all border-b-4 border-emerald-900",
+                isBettingClosed && "opacity-50 grayscale shadow-none border-b-0"
               )}
             >
               {isBettingClosed ? (
@@ -246,12 +277,12 @@ export default function DragonTigerPage() {
               ) : (
                 <>
                   <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-emerald-400">TIE</span>
-                  <span className="text-[10px] font-bold text-emerald-500/60 uppercase">Payout 1 : 8</span>
+                  <span className="text-[10px] font-bold text-emerald-500/60 uppercase">Payout 9.0</span>
                 </>
               )}
             </button>
             <div className="h-9 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5">
-               <span className="text-[10px] font-black uppercase text-emerald-500">Spend: ₹{userBets.tie}</span>
+               <span className="text-[10px] font-black uppercase text-emerald-500 tracking-tighter">Spend: ₹{userBets.tie}</span>
             </div>
           </div>
 
@@ -261,8 +292,8 @@ export default function DragonTigerPage() {
               onClick={() => handleBet('tiger')}
               disabled={isBettingClosed}
               className={cn(
-                "flex-1 rounded-2xl bg-[#0a1a4a] border-2 border-blue-500/30 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all",
-                isBettingClosed && "opacity-50 grayscale shadow-none"
+                "flex-1 rounded-2xl bg-[#0a1a4a] border-2 border-blue-500/30 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all border-b-4 border-blue-900",
+                isBettingClosed && "opacity-50 grayscale shadow-none border-b-0"
               )}
             >
               {isBettingClosed ? (
@@ -270,12 +301,12 @@ export default function DragonTigerPage() {
               ) : (
                 <>
                   <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-blue-500">TIGER</span>
-                  <span className="text-[10px] font-bold text-blue-500/60 uppercase">Payout 1 : 0.9</span>
+                  <span className="text-[10px] font-bold text-blue-500/60 uppercase">Payout 1.90</span>
                 </>
               )}
             </button>
             <div className="h-9 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5">
-               <span className="text-[10px] font-black uppercase text-blue-500">Spend: ₹{userBets.tiger}</span>
+               <span className="text-[10px] font-black uppercase text-blue-500 tracking-tighter">Spend: ₹{userBets.tiger}</span>
             </div>
           </div>
         </div>
