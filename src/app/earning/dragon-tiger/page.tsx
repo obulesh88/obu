@@ -52,19 +52,19 @@ const CardIcon = ({ val, winner, label, period }: { val: number, winner: boolean
         {label}
       </span>
       <div className={cn(
-        "h-44 w-28 bg-white rounded-2xl flex flex-col items-center justify-center relative shadow-2xl transition-all duration-500", 
-        winner ? "ring-4 ring-yellow-400 scale-110 shadow-[0_0_40px_rgba(234,179,8,0.5)] z-20" : "opacity-80 grayscale-[0.2]"
+        "h-36 w-24 bg-white rounded-xl flex flex-col items-center justify-center relative shadow-2xl transition-all duration-500", 
+        winner ? "ring-4 ring-yellow-400 scale-105 shadow-[0_0_40px_rgba(234,179,8,0.5)] z-20" : "opacity-80 grayscale-[0.2]"
       )}>
-         <span className={cn("absolute top-3 left-3 text-lg font-black flex flex-col items-center leading-none", isRed(val) ? "text-red-600" : "text-zinc-900")}>
+         <span className={cn("absolute top-2 left-2 text-base font-black flex flex-col items-center leading-none", isRed(val) ? "text-red-600" : "text-zinc-900")}>
            {getLabel(val)}
-           <span className="text-xs mt-0.5">{getSuite(val)}</span>
+           <span className="text-[10px] mt-0.5">{getSuite(val)}</span>
          </span>
-         <span className={cn("text-6xl font-black", isRed(val) ? "text-red-600" : "text-zinc-900")}>
+         <span className={cn("text-5xl font-black", isRed(val) ? "text-red-600" : "text-zinc-900")}>
            {getSuite(val)}
          </span>
-         <span className={cn("absolute bottom-3 right-3 text-lg font-black flex flex-col items-center leading-none rotate-180", isRed(val) ? "text-red-600" : "text-zinc-900")}>
+         <span className={cn("absolute bottom-2 right-2 text-base font-black flex flex-col items-center leading-none rotate-180", isRed(val) ? "text-red-600" : "text-zinc-900")}>
            {getLabel(val)}
-           <span className="text-xs mt-0.5">{getSuite(val)}</span>
+           <span className="text-[10px] mt-0.5">{getSuite(val)}</span>
          </span>
       </div>
     </div>
@@ -215,10 +215,10 @@ export default function DragonTigerPage() {
       </div>
 
       {/* BATTLE ARENA (ADJUSTED CARDS SIDE-BY-SIDE) */}
-      <div className="flex flex-col items-center justify-center py-12 relative overflow-hidden bg-gradient-to-b from-black via-[#080610] to-[#050308]">
+      <div className="flex flex-col items-center justify-center py-10 relative bg-gradient-to-b from-black via-[#080610] to-[#050308]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(225,29,72,0.05)_0%,transparent_70%)] pointer-events-none" />
         
-        <div className="flex justify-center items-center gap-8 md:gap-16 z-10 px-4">
+        <div className="flex justify-center items-center gap-4 md:gap-8 z-10 px-4">
           {history?.[0] ? (
             <>
               <CardIcon 
@@ -228,16 +228,16 @@ export default function DragonTigerPage() {
                 period={history[0].period} 
               />
               <div className="flex flex-col items-center gap-4">
-                <div className="h-14 w-14 rounded-full bg-zinc-950 border-4 border-white/5 flex items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.8)] relative">
+                <div className="h-12 w-12 rounded-full bg-zinc-950 border-4 border-white/5 flex items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.8)] relative">
                    <div className="absolute inset-0 rounded-full animate-ping bg-rose-500/10" />
-                   <span className="text-2xl font-black italic text-zinc-700 tracking-tighter z-10">VS</span>
+                   <span className="text-xl font-black italic text-zinc-700 tracking-tighter z-10">VS</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <span className={cn(
-                    "text-[8px] font-black uppercase px-3 py-1 rounded-full border border-white/5",
+                    "text-[8px] font-black uppercase px-2 py-1 rounded-full border border-white/5",
                     history[0].winner === 'Tie' ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" : "text-zinc-600 bg-black/50"
                   )}>
-                    {history[0].winner === 'Tie' ? 'TIE DRAW' : `ID: ${history[0].period.slice(-4)}`}
+                    {history[0].winner === 'Tie' ? 'TIE' : `ID: ${history[0].period.slice(-4)}`}
                   </span>
                 </div>
               </div>
@@ -249,17 +249,17 @@ export default function DragonTigerPage() {
               />
             </>
           ) : (
-            <div className="h-56 flex flex-col items-center justify-center gap-6 text-zinc-800 font-black uppercase tracking-[0.4em] animate-pulse">
-               <Sword className="h-12 w-12 opacity-20" />
-               <span className="text-xs">Preparing Battle...</span>
+            <div className="h-48 flex flex-col items-center justify-center gap-6 text-zinc-800 font-black uppercase tracking-[0.4em] animate-pulse">
+               <Sword className="h-10 w-10 opacity-20" />
+               <span className="text-[10px]">Preparing Battle...</span>
             </div>
           )}
         </div>
       </div>
 
       {/* BETTING ZONE */}
-      <div className="px-5 pt-8 flex flex-col gap-8">
-        <div className="grid grid-cols-3 gap-4 h-52">
+      <div className="px-5 pt-4 flex flex-col gap-8">
+        <div className="grid grid-cols-3 gap-4 h-48">
           {/* Dragon Button */}
           <div className="flex flex-col gap-3">
             <button 
@@ -274,18 +274,18 @@ export default function DragonTigerPage() {
                 <Lock className="h-8 w-8 text-rose-200/30" />
               ) : (
                 <>
-                  <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-rose-100">DRAGON</span>
-                  <span className="text-[10px] font-black text-rose-200/50 uppercase tracking-widest">Payout 1.90</span>
+                  <span className="text-xl font-black italic tracking-tighter uppercase leading-none text-rose-100">DRAGON</span>
+                  <span className="text-[10px] font-black text-rose-200/50 uppercase tracking-widest">1.90</span>
                 </>
               )}
             </button>
-            <div className="h-11 rounded-full bg-zinc-950 flex items-center justify-center border border-white/5 shadow-inner">
-               <span className="text-[11px] font-black uppercase text-rose-500">₹{userBets.dragon}</span>
+            <div className="h-10 rounded-full bg-zinc-950 flex items-center justify-center border border-white/5 shadow-inner">
+               <span className="text-[10px] font-black uppercase text-rose-500">₹{userBets.dragon}</span>
             </div>
           </div>
 
           {/* Tie Button */}
-          <div className="flex flex-col gap-3 pt-6">
+          <div className="flex flex-col gap-3 pt-4">
             <button 
               onClick={() => handleBet('tie')} 
               disabled={isBettingClosed}
@@ -294,11 +294,11 @@ export default function DragonTigerPage() {
                 isBettingClosed && "opacity-50 grayscale shadow-none border-b-0 translate-y-1"
               )}
             >
-              <span className="text-xl font-black italic tracking-tighter uppercase leading-none text-emerald-500">TIE</span>
-              <span className="text-[9px] font-black text-emerald-500/40 uppercase tracking-widest">Payout 9.0</span>
+              <span className="text-lg font-black italic tracking-tighter uppercase leading-none text-emerald-500">TIE</span>
+              <span className="text-[9px] font-black text-emerald-500/40 uppercase tracking-widest">9.0</span>
             </button>
-            <div className="h-11 rounded-full bg-zinc-950 flex items-center justify-center border border-white/5 shadow-inner">
-               <span className="text-[11px] font-black uppercase text-emerald-500">₹{userBets.tie}</span>
+            <div className="h-10 rounded-full bg-zinc-950 flex items-center justify-center border border-white/5 shadow-inner">
+               <span className="text-[10px] font-black uppercase text-emerald-500">₹{userBets.tie}</span>
             </div>
           </div>
 
@@ -316,19 +316,19 @@ export default function DragonTigerPage() {
                 <Lock className="h-8 w-8 text-blue-200/30" />
               ) : (
                 <>
-                  <span className="text-2xl font-black italic tracking-tighter uppercase leading-none text-blue-100">TIGER</span>
-                  <span className="text-[10px] font-black text-blue-200/50 uppercase tracking-widest">Payout 1.90</span>
+                  <span className="text-xl font-black italic tracking-tighter uppercase leading-none text-blue-100">TIGER</span>
+                  <span className="text-[10px] font-black text-blue-200/50 uppercase tracking-widest">1.90</span>
                 </>
               )}
             </button>
-            <div className="h-11 rounded-full bg-zinc-950 flex items-center justify-center border border-white/5 shadow-inner">
-               <span className="text-[11px] font-black uppercase text-blue-500">₹{userBets.tiger}</span>
+            <div className="h-10 rounded-full bg-zinc-950 flex items-center justify-center border border-white/5 shadow-inner">
+               <span className="text-[10px] font-black uppercase text-blue-500">₹{userBets.tiger}</span>
             </div>
           </div>
         </div>
 
         {/* CHIP SELECTOR */}
-        <div className="bg-[#121225] p-6 rounded-[40px] border border-white/5 flex items-center justify-around gap-2 shadow-2xl relative overflow-hidden">
+        <div className="bg-[#121225] p-5 rounded-[40px] border border-white/5 flex items-center justify-around gap-2 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
           {CHIPS.map((chip) => (
             <button 
@@ -336,9 +336,9 @@ export default function DragonTigerPage() {
               onClick={() => setSelectedChip(chip)} 
               disabled={isBettingClosed}
               className={cn(
-                "h-16 w-16 rounded-full flex items-center justify-center text-sm font-black transition-all border-4", 
+                "h-14 w-14 rounded-full flex items-center justify-center text-xs font-black transition-all border-4", 
                 selectedChip === chip 
-                  ? "bg-yellow-500 text-slate-950 scale-115 shadow-[0_0_35px_rgba(234,179,8,0.6)] border-white ring-8 ring-yellow-500/10" 
+                  ? "bg-yellow-500 text-slate-950 scale-110 shadow-[0_0_35px_rgba(234,179,8,0.6)] border-white ring-8 ring-yellow-500/10" 
                   : "bg-zinc-900 text-zinc-600 border-zinc-800 hover:border-zinc-700",
                 isBettingClosed && "opacity-40 pointer-events-none"
               )}
@@ -350,7 +350,7 @@ export default function DragonTigerPage() {
 
         {/* COMPACT BATTLE LOG */}
         <div className="bg-black/40 rounded-[40px] overflow-hidden border border-white/5 shadow-2xl mb-12">
-          <div className="p-5 border-b border-white/5 bg-white/5 flex items-center gap-3">
+          <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
             <History className="h-4 w-4 text-zinc-600" />
             <span className="text-[10px] font-black uppercase text-zinc-600 tracking-[0.3em]">BATTLE HISTORY</span>
           </div>
@@ -358,8 +358,8 @@ export default function DragonTigerPage() {
             <tbody className="text-white text-[11px] font-black divide-y divide-white/5">
               {history?.slice(0, 10).map((row, i) => (
                 <tr key={i} className="hover:bg-white/5 transition-colors">
-                  <td className="py-5 px-6 font-mono text-[9px] text-zinc-700 text-left">{row.period.slice(-4)}</td>
-                  <td className="py-5 px-2 text-center">
+                  <td className="py-4 px-6 font-mono text-[9px] text-zinc-700 text-left">{row.period.slice(-4)}</td>
+                  <td className="py-4 px-2 text-center">
                     <span className={cn(
                       "text-[9px] font-black uppercase px-4 py-1 rounded-full", 
                       row.winner === 'Dragon' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 
@@ -369,7 +369,7 @@ export default function DragonTigerPage() {
                       {row.winner.toUpperCase()}
                     </span>
                   </td>
-                  <td className="py-5 px-6 text-right">
+                  <td className="py-4 px-6 text-right">
                     <div className="flex justify-end gap-3 text-[10px] font-black tabular-nums">
                       <span className="text-rose-400">{row.dragonCard}</span>
                       <span className="text-zinc-800">VS</span>
