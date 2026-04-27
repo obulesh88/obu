@@ -22,7 +22,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const MIN_WITHDRAWAL = 100;
 const MIN_DEPOSIT = 50;
@@ -31,8 +32,9 @@ const DEPOSIT_UPI_ID = "orwallet@paytm";
 
 export default function WalletPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'withdraw' | 'deposit'>('withdraw');
-  const { user, userProfile } = useUser();
+  const { user, userProfile, loading } = useUser();
   const { toast } = useToast();
   const firestore = useFirestore();
 
@@ -48,6 +50,12 @@ export default function WalletPageContent() {
   const [isSavingBank, setIsSavingBank] = useState(false);
   const [payoutType, setPayoutType] = useState<'bank' | 'upi'>('upi');
   const [bankData, setBankData] = useState({ name: '', contact: '', email: '', accountNumber: '', ifsc: '', vpa: '' });
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -270,6 +278,15 @@ export default function WalletPageContent() {
     .finally(() => setIsWithdrawing(false));
   };
 
+  if (loading || !user) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6">
       <div className="grid grid-cols-2 gap-2">
@@ -292,7 +309,6 @@ export default function WalletPageContent() {
              </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-             {/* New User / Low Balance Help Section */}
              {(userProfile?.wallet?.balance || 0) < MIN_WITHDRAWAL && (
                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-2">
                  <div className="flex items-center gap-2 text-amber-600">

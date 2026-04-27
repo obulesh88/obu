@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -15,6 +16,7 @@ import { useLayout } from '@/context/layout-context';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { useRouter } from 'next/navigation';
 
 const TIME_OPTIONS = [
   { id: '1m', label: 'K3 1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -37,13 +39,20 @@ const DiceIcon = ({ num, className }: { num: number, className?: string }) => {
 
 export default function K3Page() {
   const { setPaddingDisabled } = useLayout();
+  const router = useRouter();
   const { toast } = useToast();
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
   const [selectedChip, setSelectedChip] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
-  const { user, userProfile } = useUser();
+  const { user, userProfile, loading } = useUser();
   const firestore = useFirestore();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   const [userBets, setUserBets] = useState<Record<string, number>>({
     big: 0, small: 0, odd: 0, even: 0
@@ -131,7 +140,12 @@ export default function K3Page() {
     return () => clearInterval(timer);
   }, []);
 
-  if (!isMounted) return <div className="p-4 bg-[#0a052e] min-h-screen"><Skeleton className="h-full w-full" /></div>;
+  if (!isMounted || loading || !user) return (
+    <div className="p-4 bg-[#0a052e] min-h-screen">
+      <Skeleton className="h-20 w-full mb-4" />
+      <Skeleton className="h-64 w-full" />
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-0 bg-[#0a052e] min-h-screen">

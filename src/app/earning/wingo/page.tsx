@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -21,6 +22,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
 import { useLayout } from '@/context/layout-context';
+import { useRouter } from 'next/navigation';
 
 const TIME_OPTIONS = [
   { id: '1m', label: '1 Min', icon: <Zap className="h-4 w-4" /> },
@@ -39,13 +41,20 @@ type GameResult = {
 
 export default function WingoPage() {
   const { setPaddingDisabled } = useLayout();
+  const router = useRouter();
   const { toast } = useToast();
   const [selectedTime, setSelectedTime] = useState('1m');
   const [timeLeft, setTimeLeft] = useState(60);
   const [selectedChip, setSelectedChip] = useState(10);
   const [isMounted, setIsMounted] = useState(false);
-  const { user, userProfile } = useUser();
+  const { user, userProfile, loading } = useUser();
   const firestore = useFirestore();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
     setPaddingDisabled(true);
@@ -130,7 +139,12 @@ export default function WingoPage() {
     return () => clearInterval(timer);
   }, []);
 
-  if (!isMounted) return <div className="p-4 bg-slate-950 min-h-screen"><Skeleton className="h-full w-full" /></div>;
+  if (!isMounted || loading || !user) return (
+    <div className="p-4 bg-[#050510] min-h-screen">
+      <Skeleton className="h-20 w-full mb-4" />
+      <Skeleton className="h-64 w-full" />
+    </div>
+  );
 
   return (
     <div className="flex flex-col bg-[#050510] min-h-screen overflow-x-hidden">
