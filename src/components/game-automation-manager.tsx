@@ -62,7 +62,8 @@ export function GameAutomationManager() {
 
     for (const gameType of gameTypes) {
       const periodId = getPeriodId(gameType, pastMinuteDate);
-      const resultRef = doc(firestore, `${gameType}_results`, periodId);
+      const collectionName = gameType === 'dt' ? 'dragon_tiger_results' : (gameType === 'k3' ? 'k3_results' : 'wingo_results');
+      const resultRef = doc(firestore, collectionName, periodId);
       
       let resultData: any = null;
 
@@ -170,7 +171,9 @@ export function GameAutomationManager() {
         // Only settle periods that have concluded
         if (period >= currentPeriods[gameType as keyof typeof currentPeriods]) continue;
 
-        const resultSnap = await getDoc(doc(firestore, `${gameType}_results`, period));
+        const collectionName = gameType === 'dt' ? 'dragon_tiger_results' : (gameType === 'k3' ? 'k3_results' : 'wingo_results');
+        const resultSnap = await getDoc(doc(firestore, collectionName, period));
+        
         if (resultSnap.exists()) {
           const res = resultSnap.data();
           let isWin = false;

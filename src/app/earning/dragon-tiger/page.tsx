@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -45,27 +44,27 @@ const CardIcon = ({ val, winner, label, period }: { val: number, winner: boolean
   const isRed = (v: number) => (v % 4 === 1 || v % 4 === 3);
 
   return (
-    <div key={`${period}-${label}`} className="flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+    <div key={`${period}-${label}`} className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-12 duration-700">
       <span className={cn(
-        "text-xs font-black uppercase tracking-[0.2em] italic px-3 py-0.5 rounded-full border", 
+        "text-[10px] font-black uppercase tracking-[0.2em] italic px-4 py-1 rounded-full border shadow-sm", 
         label === 'Dragon' ? "text-rose-500 border-rose-500/20 bg-rose-500/5" : "text-blue-500 border-blue-500/20 bg-blue-500/5"
       )}>
         {label}
       </span>
       <div className={cn(
-        "h-48 w-32 bg-white rounded-2xl flex flex-col items-center justify-center relative shadow-[0_0_50px_rgba(0,0,0,0.5)] transition-all duration-500", 
-        winner ? "ring-8 ring-yellow-400 scale-110 shadow-[0_0_60px_rgba(234,179,8,0.7)] z-20" : "opacity-80 grayscale-[0.2]"
+        "h-44 w-28 bg-white rounded-2xl flex flex-col items-center justify-center relative shadow-2xl transition-all duration-500", 
+        winner ? "ring-4 ring-yellow-400 scale-110 shadow-[0_0_40px_rgba(234,179,8,0.5)] z-20" : "opacity-80 grayscale-[0.2]"
       )}>
-         <span className={cn("absolute top-3 left-3 text-lg font-black flex flex-col items-center leading-none", isRed(val) ? "text-red-600" : "text-slate-950")}>
+         <span className={cn("absolute top-3 left-3 text-lg font-black flex flex-col items-center leading-none", isRed(val) ? "text-red-600" : "text-zinc-900")}>
            {getLabel(val)}
-           <span className="text-sm mt-1">{getSuite(val)}</span>
+           <span className="text-xs mt-0.5">{getSuite(val)}</span>
          </span>
-         <span className={cn("text-7xl font-black", isRed(val) ? "text-red-600" : "text-slate-950")}>
+         <span className={cn("text-6xl font-black", isRed(val) ? "text-red-600" : "text-zinc-900")}>
            {getSuite(val)}
          </span>
-         <span className={cn("absolute bottom-3 right-3 text-lg font-black flex flex-col items-center leading-none rotate-180", isRed(val) ? "text-red-600" : "text-slate-950")}>
+         <span className={cn("absolute bottom-3 right-3 text-lg font-black flex flex-col items-center leading-none rotate-180", isRed(val) ? "text-red-600" : "text-zinc-900")}>
            {getLabel(val)}
-           <span className="text-sm mt-1">{getSuite(val)}</span>
+           <span className="text-xs mt-0.5">{getSuite(val)}</span>
          </span>
       </div>
     </div>
@@ -198,7 +197,7 @@ export default function DragonTigerPage() {
           <ChevronLeft className="h-6 w-6" />
         </Button>
         <div className="flex flex-col items-center">
-          <h1 className="text-2xl font-black italic text-rose-500 uppercase tracking-tighter italic leading-none">DRAGON <span className="text-blue-500">TIGER</span></h1>
+          <h1 className="text-2xl font-black italic text-rose-500 uppercase tracking-tighter leading-none">DRAGON <span className="text-blue-500">TIGER</span></h1>
           <span className="text-[9px] font-black text-zinc-500 font-mono tracking-[0.2em] mt-1">{currentPeriod}</span>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -215,11 +214,11 @@ export default function DragonTigerPage() {
         </div>
       </div>
 
-      {/* BATTLE ARENA (ADJUSTED CARDS) */}
+      {/* BATTLE ARENA (ADJUSTED CARDS SIDE-BY-SIDE) */}
       <div className="flex flex-col items-center justify-center py-12 relative overflow-hidden bg-gradient-to-b from-black via-[#080610] to-[#050308]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(225,29,72,0.05)_0%,transparent_70%)] pointer-events-none" />
         
-        <div className="flex justify-center items-center gap-10 md:gap-20 z-10">
+        <div className="flex justify-center items-center gap-8 md:gap-16 z-10 px-4">
           {history?.[0] ? (
             <>
               <CardIcon 
@@ -228,14 +227,17 @@ export default function DragonTigerPage() {
                 label="Dragon" 
                 period={history[0].period} 
               />
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-16 w-16 rounded-full bg-zinc-950 border-4 border-white/5 flex items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-14 w-14 rounded-full bg-zinc-950 border-4 border-white/5 flex items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.8)] relative">
                    <div className="absolute inset-0 rounded-full animate-ping bg-rose-500/10" />
-                   <span className="text-3xl font-black italic text-zinc-700 tracking-tighter z-10">VS</span>
+                   <span className="text-2xl font-black italic text-zinc-700 tracking-tighter z-10">VS</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest bg-black/50 px-3 py-1 rounded-full border border-white/5">
-                    Result ID: {history[0].period.slice(-4)}
+                  <span className={cn(
+                    "text-[8px] font-black uppercase px-3 py-1 rounded-full border border-white/5",
+                    history[0].winner === 'Tie' ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" : "text-zinc-600 bg-black/50"
+                  )}>
+                    {history[0].winner === 'Tie' ? 'TIE DRAW' : `ID: ${history[0].period.slice(-4)}`}
                   </span>
                 </div>
               </div>
@@ -247,9 +249,9 @@ export default function DragonTigerPage() {
               />
             </>
           ) : (
-            <div className="h-64 flex flex-col items-center justify-center gap-6 text-zinc-800 font-black uppercase tracking-[0.4em] animate-pulse">
-               <Sword className="h-16 w-16 opacity-20" />
-               <span className="text-sm">Battle Pending...</span>
+            <div className="h-56 flex flex-col items-center justify-center gap-6 text-zinc-800 font-black uppercase tracking-[0.4em] animate-pulse">
+               <Sword className="h-12 w-12 opacity-20" />
+               <span className="text-xs">Preparing Battle...</span>
             </div>
           )}
         </div>
@@ -285,7 +287,7 @@ export default function DragonTigerPage() {
           {/* Tie Button */}
           <div className="flex flex-col gap-3 pt-6">
             <button 
-              onClick={() => handleBet('tie')}
+              onClick={() => handleBet('tie')} 
               disabled={isBettingClosed}
               className={cn(
                 "flex-1 rounded-[32px] bg-zinc-900/50 border-2 border-emerald-500/20 flex flex-col items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all border-b-4 border-emerald-950",
@@ -350,11 +352,11 @@ export default function DragonTigerPage() {
         <div className="bg-black/40 rounded-[40px] overflow-hidden border border-white/5 shadow-2xl mb-12">
           <div className="p-5 border-b border-white/5 bg-white/5 flex items-center gap-3">
             <History className="h-4 w-4 text-zinc-600" />
-            <span className="text-[10px] font-black uppercase text-zinc-600 tracking-[0.3em]">LAST BATTLES</span>
+            <span className="text-[10px] font-black uppercase text-zinc-600 tracking-[0.3em]">BATTLE HISTORY</span>
           </div>
           <table className="w-full text-center">
             <tbody className="text-white text-[11px] font-black divide-y divide-white/5">
-              {history?.slice(0, 8).map((row, i) => (
+              {history?.slice(0, 10).map((row, i) => (
                 <tr key={i} className="hover:bg-white/5 transition-colors">
                   <td className="py-5 px-6 font-mono text-[9px] text-zinc-700 text-left">{row.period.slice(-4)}</td>
                   <td className="py-5 px-2 text-center">
