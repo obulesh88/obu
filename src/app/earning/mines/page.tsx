@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
-  ChevronLeft, History, Coins, Bomb, Diamond, Plus, Minus, RefreshCw, Trophy, Zap
+  ChevronLeft, Coins, Bomb, Diamond, Plus, Minus, RefreshCw, Trophy, Zap, Lock, Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
@@ -187,115 +187,128 @@ export default function MinesPage() {
   };
 
   if (!isMounted || loading || !user) return (
-    <div className="p-0 bg-[#0a122a] min-h-screen flex items-center justify-center">
+    <div className="p-0 bg-[#050b1d] min-h-screen flex items-center justify-center">
       <Skeleton className="h-40 w-40 rounded-3xl animate-pulse bg-slate-900" />
     </div>
   );
 
   return (
-    <div className="flex flex-col bg-[#050b1d] min-h-screen text-white overflow-hidden">
+    <div className="flex flex-col bg-[#050b1d] min-h-screen text-white overflow-hidden pb-12">
       {/* HEADER */}
-      <div className="p-6 flex items-center justify-between bg-black/20 backdrop-blur-xl border-b border-white/5">
-        <Button variant="ghost" size="icon" onClick={() => router.push('/earning')}>
+      <div className="flex items-center justify-between p-6 bg-black/40 backdrop-blur-xl sticky top-0 z-50 border-b border-white/5">
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => router.push('/earning')}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        <div className="text-center">
-          <h1 className="text-xl font-black uppercase tracking-tighter italic text-blue-400">MINES</h1>
-          <p className="text-[10px] font-black opacity-30 tracking-[0.3em]">MULTIPLIER: x{currentMultiplier}</p>
+        <div className="flex flex-col items-center">
+          <h1 className="text-xl font-black italic text-blue-500 uppercase tracking-tighter leading-none">MINES</h1>
+          <span className="text-[8px] font-black text-zinc-500 font-mono tracking-[0.2em] mt-1">PROVABLY FAIR</span>
         </div>
-        <div className="bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-400/20 flex items-center gap-2">
-           <Coins className="h-4 w-4 text-yellow-400" />
-           <span className="font-black text-sm">₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}</span>
+        <div className="flex flex-col items-end gap-1">
+          <div className="bg-blue-600/20 px-3 py-1.5 rounded-lg border border-blue-500/30 flex items-center gap-2">
+             <Coins className="h-3 w-3 text-yellow-400" />
+             <span className="text-xs font-black">₹{userProfile?.wallet?.balance?.toFixed(2) || '0.00'}</span>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 p-6 flex flex-col gap-6">
-        {/* GAME INFO */}
-        <div className="flex justify-between items-center bg-[#0a122a] p-4 rounded-2xl border border-white/5 shadow-2xl">
-           <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase text-zinc-500">Next Payout</span>
-              <span className="text-lg font-black text-blue-400">₹{(betAmount * nextMultiplier).toFixed(2)}</span>
+        {/* GAME INFO CARDS */}
+        <div className="grid grid-cols-2 gap-4">
+           <div className="bg-[#0a122a] p-4 rounded-2xl border border-white/5 shadow-2xl flex flex-col items-center text-center">
+              <span className="text-[10px] font-black uppercase text-zinc-500 mb-1">Current Multiplier</span>
+              <div className="flex items-center gap-2">
+                 <Zap className="h-3 w-3 text-blue-400 fill-blue-400" />
+                 <span className="text-lg font-black text-blue-400 font-mono">x{currentMultiplier}</span>
+              </div>
            </div>
-           <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black uppercase text-zinc-500">Number of Mines</span>
+           <div className="bg-[#0a122a] p-4 rounded-2xl border border-white/5 shadow-2xl flex flex-col items-center text-center">
+              <span className="text-[10px] font-black uppercase text-zinc-500 mb-1">Mines Active</span>
               <div className="flex items-center gap-2">
                  <Bomb className="h-3 w-3 text-rose-500" />
-                 <span className="text-lg font-black">{mineCount}</span>
+                 <span className="text-lg font-black font-mono">{mineCount}</span>
               </div>
            </div>
         </div>
 
-        {/* GRID */}
-        <div className="grid grid-cols-5 gap-2 md:gap-4 aspect-square">
-          {revealed.map((isRevealed, i) => {
-            const isMine = minePositions.includes(i);
-            const showReal = isRevealed || gameState === 'ended';
+        {/* GRID CONTAINER */}
+        <div className="bg-black/30 p-4 rounded-[32px] border border-white/5 backdrop-blur-sm">
+          <div className="grid grid-cols-5 gap-2 md:gap-3 aspect-square">
+            {revealed.map((isRevealed, i) => {
+              const isMine = minePositions.includes(i);
+              const showReal = isRevealed || gameState === 'ended';
 
-            return (
-              <button
-                key={i}
-                onClick={() => handleCellClick(i)}
-                disabled={gameState !== 'playing' || isRevealed}
-                className={cn(
-                  "relative rounded-xl border-b-4 transition-all duration-300 flex items-center justify-center group overflow-hidden",
-                  !showReal 
-                    ? "bg-[#16274e] border-[#0a122a] hover:bg-[#1d3366] hover:-translate-y-1 active:translate-y-0.5 active:border-b-0" 
-                    : isMine 
-                      ? "bg-rose-600/20 border-rose-950 scale-95" 
-                      : "bg-emerald-600/20 border-emerald-950 scale-95"
-                )}
-              >
-                {!showReal ? (
-                  <div className="h-3 w-3 rounded-full bg-[#0a122a] group-hover:bg-blue-400/20 transition-colors shadow-inner" />
-                ) : isMine ? (
-                  <Bomb className="h-8 w-8 text-rose-500 animate-in zoom-in-50" />
-                ) : (
-                  <Diamond className="h-8 w-8 text-emerald-400 animate-in zoom-in-50" />
-                )}
-                {isRevealed && !isMine && (
-                   <div className="absolute inset-0 bg-emerald-400/5 animate-pulse" />
-                )}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleCellClick(i)}
+                  disabled={gameState !== 'playing' || isRevealed}
+                  className={cn(
+                    "relative rounded-xl border-b-4 transition-all duration-300 flex items-center justify-center group overflow-hidden",
+                    !showReal 
+                      ? "bg-[#16274e] border-[#0a122a] hover:bg-[#1d3366] hover:-translate-y-0.5 active:translate-y-0.5 active:border-b-0" 
+                      : isMine 
+                        ? "bg-rose-600/30 border-rose-950 scale-95 ring-2 ring-rose-500/20" 
+                        : "bg-emerald-600/30 border-emerald-950 scale-95 ring-2 ring-emerald-500/20"
+                  )}
+                >
+                  {!showReal ? (
+                    <div className="h-2 w-2 rounded-full bg-[#0a122a] group-hover:bg-blue-400/30 transition-colors" />
+                  ) : isMine ? (
+                    <Bomb className="h-8 w-8 text-rose-500 animate-in zoom-in-50 duration-300" />
+                  ) : (
+                    <Diamond className="h-8 w-8 text-emerald-400 animate-in zoom-in-50 duration-300" />
+                  )}
+                  {isRevealed && !isMine && (
+                     <div className="absolute inset-0 bg-emerald-400/5 animate-pulse" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* CONTROLS */}
-        <div className="flex flex-col gap-4 bg-[#0a122a] p-6 rounded-[32px] border border-white/5 shadow-2xl mt-auto">
+        <div className="flex flex-col gap-4 bg-[#0a122a] p-6 rounded-[40px] border border-white/5 shadow-2xl mt-auto">
           {gameState === 'idle' || gameState === 'ended' ? (
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <span className="text-[10px] font-black uppercase text-zinc-500 px-1">Bet Amount</span>
-                  <div className="flex items-center justify-between bg-black/30 rounded-2xl p-2 border border-white/5">
-                    <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-500" onClick={() => setBetAmount(Math.max(MIN_BET, betAmount - 10))}><Minus className="h-4 w-4" /></Button>
-                    <span className="font-black text-sm">₹{betAmount}</span>
-                    <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-500" onClick={() => setBetAmount(Math.min(MAX_BET, betAmount + 10))}><Plus className="h-4 w-4" /></Button>
+                  <div className="flex items-center justify-between bg-black/40 rounded-2xl p-2 border border-white/5">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setBetAmount(Math.max(MIN_BET, betAmount - 10))}><Minus className="h-4 w-4" /></Button>
+                    <span className="font-black text-xs font-mono">₹{betAmount}</span>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setBetAmount(Math.min(MAX_BET, betAmount + 10))}><Plus className="h-4 w-4" /></Button>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <span className="text-[10px] font-black uppercase text-zinc-500 px-1">Mines</span>
-                  <div className="flex items-center justify-between bg-black/30 rounded-2xl p-2 border border-white/5">
-                    <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-500" onClick={() => setMineCount(Math.max(1, mineCount - 1))}><Minus className="h-4 w-4" /></Button>
-                    <span className="font-black text-sm">{mineCount}</span>
-                    <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-500" onClick={() => setMineCount(Math.min(24, mineCount + 1))}><Plus className="h-4 w-4" /></Button>
+                  <div className="flex items-center justify-between bg-black/40 rounded-2xl p-2 border border-white/5">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setMineCount(Math.max(1, mineCount - 1))}><Minus className="h-4 w-4" /></Button>
+                    <span className="font-black text-xs font-mono">{mineCount}</span>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setMineCount(Math.min(24, mineCount + 1))}><Plus className="h-4 w-4" /></Button>
                   </div>
                 </div>
               </div>
               <Button 
                 onClick={startGame} 
                 disabled={isProcessing}
-                className="h-16 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 font-black text-lg uppercase tracking-tight shadow-xl active:scale-95 transition-all border-b-8 border-blue-900"
+                className="h-16 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 font-black text-lg uppercase tracking-tighter shadow-xl active:scale-95 transition-all border-b-8 border-blue-900"
               >
-                {gameState === 'ended' ? <RefreshCw className="mr-2 h-6 w-6" /> : null}
-                {gameState === 'ended' ? 'Play Again' : 'Place Bet'}
+                {gameState === 'ended' && <RefreshCw className="mr-3 h-5 w-5" />}
+                {gameState === 'ended' ? 'PLAY AGAIN' : 'PLACE BET'}
               </Button>
             </>
           ) : (
-            <div className="flex flex-col gap-4 animate-in slide-in-from-bottom-4">
-               <div className="text-center p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
-                  <span className="text-[10px] font-black uppercase text-blue-400">Current Win Payout</span>
-                  <div className="text-3xl font-black text-white">₹{(betAmount * currentMultiplier).toFixed(2)}</div>
+            <div className="flex flex-col gap-4 animate-in slide-in-from-bottom-6">
+               <div className="flex justify-between items-center p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black uppercase text-blue-400">Potential Win</span>
+                    <div className="text-2xl font-black text-white font-mono">₹{(betAmount * currentMultiplier).toFixed(2)}</div>
+                  </div>
+                  <div className="text-right flex flex-col">
+                    <span className="text-[9px] font-black uppercase text-zinc-500">Next Payout</span>
+                    <span className="text-sm font-black text-zinc-300 font-mono">₹{(betAmount * nextMultiplier).toFixed(2)}</span>
+                  </div>
                </div>
                <Button 
                   onClick={handleCashOut} 
@@ -305,7 +318,7 @@ export default function MinesPage() {
                     revealedGems === 0 ? "bg-zinc-800 border-zinc-950 opacity-50" : "bg-gradient-to-r from-emerald-500 to-emerald-600 border-emerald-900"
                   )}
                 >
-                  <Trophy className="mr-2 h-6 w-6" /> Cash Out
+                  <Trophy className="mr-3 h-6 w-6" /> CASH OUT
                 </Button>
             </div>
           )}
