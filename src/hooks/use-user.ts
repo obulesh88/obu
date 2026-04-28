@@ -1,4 +1,3 @@
-
 'use client';
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -16,7 +15,8 @@ import {
   getDocs, 
   updateDoc, 
   increment,
-  addDoc
+  addDoc,
+  writeBatch
 } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -65,7 +65,7 @@ export function useUser() {
           const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           const memberId = 'OR-' + Math.floor(100000 + Math.random() * 900000);
           
-          // PLATFORM BONUSES (No Turnover required as per latest logic)
+          // PLATFORM BONUSES (No Turnover required for signup bonus)
           const SIGNUP_BONUS = 28;
 
           const newProfile: UserProfile = {
@@ -108,31 +108,31 @@ export function useUser() {
             },
           };
 
-          // Initialize the profile
-          setDoc(currentUserRef, newProfile)
-            .then(() => {
-              // Log the signup bonus transaction
-              const transactionsRef = collection(firestore, 'transactions');
-              addDoc(transactionsRef, {
-                userId: guestUid,
-                amount: SIGNUP_BONUS,
-                currency: 'INR',
-                type: 'referral',
-                description: 'Welcome Signup Bonus',
-                createdAt: serverTimestamp()
-              });
-            })
-            .catch(async (error) => {
-              if (error.code === 'permission-denied') {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                  path: currentUserRef.path,
-                  operation: 'create',
-                  requestResourceData: newProfile
-                } satisfies SecurityRuleContext));
-              }
-            });
+          // Use a batch for atomic creation and first transaction
+          const batch = writeBatch(firestore);
+          batch.set(currentUserRef, newProfile);
 
-          // Cleanup pending phone number
+          const transactionsRef = doc(collection(firestore, 'transactions'));
+          batch.set(transactionsRef, {
+            userId: guestUid,
+            amount: SIGNUP_BONUS,
+            currency: 'INR',
+            type: 'referral',
+            description: 'Welcome Signup Bonus',
+            createdAt: serverTimestamp()
+          });
+
+          await batch.commit().catch(async (error) => {
+            if (error.code === 'permission-denied') {
+              errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: currentUserRef.path,
+                operation: 'create',
+                requestResourceData: newProfile
+              } satisfies SecurityRuleContext));
+            }
+          });
+
+          // Cleanup pending metadata
           if (typeof window !== 'undefined') {
             localStorage.removeItem('pending_phone_number');
           }
@@ -151,7 +151,7 @@ export function useUser() {
               const referrerRef = doc(firestore, 'users', referrerDoc.id);
               const referralReward = 45;
               
-              // Update Referrer (Balance + Count + Earnings)
+              // Update Referrer (Balance + Count + Earnings) using an atomic update
               const updateData = {
                 'referral.count': increment(1),
                 'referral.earnings': increment(referralReward),
@@ -160,6 +160,17 @@ export function useUser() {
               };
 
               updateDoc(referrerRef, updateData)
+                .then(() => {
+                  // Log Referrer Transaction
+                  addDoc(collection(firestore, 'transactions'), {
+                    userId: referrerDoc.id,
+                    amount: referralReward,
+                    currency: 'INR',
+                    type: 'referral',
+                    description: `Referral Reward: ${newProfile.profile.displayName} joined`,
+                    createdAt: serverTimestamp()
+                  });
+                })
                 .catch(async (error) => {
                   if (error.code === 'permission-denied') {
                     errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -169,21 +180,9 @@ export function useUser() {
                     } satisfies SecurityRuleContext));
                   }
                 });
-
-              // Log Referrer Transaction
-              const transactionsRef = collection(firestore, 'transactions');
-              const txData = {
-                userId: referrerDoc.id,
-                amount: referralReward,
-                currency: 'INR',
-                type: 'referral',
-                description: `Referral Reward: ${newProfile.profile.displayName} joined`,
-                createdAt: serverTimestamp()
-              };
-
-              addDoc(transactionsRef, txData);
             }
             
+            // Clear code after processing
             if (typeof window !== 'undefined') {
               localStorage.removeItem('or_wallet_referral_code');
             }

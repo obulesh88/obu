@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -16,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
-import { RefreshCw, FileText } from 'lucide-react';
+import { RefreshCw, FileText, UserPlus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +32,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -62,7 +62,12 @@ export default function LoginPage() {
         if (phoneNumber.length < 10) {
           throw new Error('Please enter a valid mobile number.');
         }
+
+        // Store registration metadata in localStorage for the initialization hook
         localStorage.setItem('pending_phone_number', phoneNumber);
+        if (referralCode.trim()) {
+          localStorage.setItem('or_wallet_referral_code', referralCode.trim().toUpperCase());
+        }
         
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
@@ -84,7 +89,7 @@ export default function LoginPage() {
   const termsContent = `
     1. Acceptance of Terms: By creating an account on OR wallet, you agree to abide by these terms.
     2. Eligibility: You must provide accurate information, including a valid email and mobile number.
-    3. Rewards: Digital rewards are micro-incentives earned by completing tasks and engaging with content.
+    3. Rewards: Digital rewards are incentives earned by completing tasks and engaging with content.
     4. Prohibited Conduct: Any attempt to manipulate tasks, use bots, or create multiple accounts will result in immediate termination.
     5. Withdrawals: Payouts are processed to verified UPI or Bank accounts. Processing takes 1-7 business days. Minimum withdrawal is ₹100.
     6. Privacy: We value your data. Your information is used solely for task verification and payout processing.
@@ -92,16 +97,16 @@ export default function LoginPage() {
   `;
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 gap-8">
+    <div className="flex flex-col items-center justify-center p-6 gap-8 overflow-y-auto max-h-full">
       <div className="flex flex-col items-center gap-2">
-        <Logo className="h-12 w-12" />
+        <Logo className="h-12 w-12 text-primary" />
         <h1 className="text-3xl font-black uppercase tracking-tighter">OR wallet</h1>
       </div>
 
       <Card className="w-full max-w-sm border-primary/10">
         <CardHeader>
-          <CardTitle className="uppercase font-black">{isLogin ? 'Login' : 'Create Account'}</CardTitle>
-          <CardDescription className="text-xs font-bold uppercase">
+          <CardTitle className="uppercase font-black text-xl">{isLogin ? 'Login' : 'Create Account'}</CardTitle>
+          <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-70">
             {isLogin ? 'Access your digital rewards' : 'Start earning rewards today'}
           </CardDescription>
         </CardHeader>
@@ -110,44 +115,60 @@ export default function LoginPage() {
             {!isLogin && (
               <>
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold">Full Name</Label>
+                  <Label className="text-[10px] uppercase font-bold tracking-wider">Full Name</Label>
                   <Input 
                     required 
                     placeholder="John Doe" 
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold">Mobile Number</Label>
+                  <Label className="text-[10px] uppercase font-bold tracking-wider">Mobile Number</Label>
                   <Input 
                     required 
                     type="tel"
                     placeholder="91XXXXXXXX" 
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="h-11"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold tracking-wider text-primary">Referral Code (Optional)</Label>
+                  <div className="relative">
+                    <Input 
+                      placeholder="ENTER CODE" 
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      className="h-11 font-mono tracking-widest uppercase pl-10"
+                    />
+                    <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/50" />
+                  </div>
                 </div>
               </>
             )}
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold">Email Address</Label>
+              <Label className="text-[10px] uppercase font-bold tracking-wider">Email Address</Label>
               <Input 
                 type="email" 
                 required 
                 placeholder="name@example.com" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="h-11"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold">Password</Label>
+              <Label className="text-[10px] uppercase font-bold tracking-wider">Password</Label>
               <Input 
                 type="password" 
                 required 
                 placeholder="••••••••" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="h-11"
               />
             </div>
 
@@ -157,6 +178,7 @@ export default function LoginPage() {
                   id="terms" 
                   checked={termsAccepted} 
                   onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                  className="mt-1"
                 />
                 <div className="grid gap-1.5 leading-none">
                   <label
@@ -193,22 +215,22 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button 
-              className="w-full h-12 font-black uppercase" 
+              className="w-full h-12 font-black uppercase text-lg shadow-xl active:scale-95 transition-all" 
               disabled={isLoading || (!isLogin && !termsAccepted)}
             >
-              {isLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isLoading ? <RefreshCw className="mr-2 h-5 w-5 animate-spin" /> : null}
               {isLogin ? 'Sign In' : 'Join Now'}
             </Button>
             <Button 
               type="button" 
               variant="ghost" 
-              className="text-[10px] uppercase font-bold"
+              className="text-[10px] uppercase font-bold tracking-widest hover:bg-primary/5"
               onClick={() => {
                 setIsLogin(!isLogin);
                 setTermsAccepted(false);
               }}
             >
-              {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login"}
+              {isLogin ? "New user? Create Account" : "Back to Login"}
             </Button>
           </CardFooter>
         </form>
