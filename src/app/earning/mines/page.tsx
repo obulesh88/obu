@@ -17,7 +17,7 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { useRouter } from 'next/navigation';
 
 const GRID_SIZE = 25; // 5x5
-const MIN_BET = 10;
+const MIN_BET = 1;
 const MAX_BET = 1000;
 
 type GameState = 'idle' | 'playing' | 'ended';
@@ -30,7 +30,7 @@ export default function MinesPage() {
   const firestore = useFirestore();
 
   const [gameState, setGameState] = useState<GameState>('idle');
-  const [betAmount, setBetAmount] = useState(10);
+  const [betAmount, setBetAmount] = useState(1);
   const [mineCount, setMineCount] = useState(3);
   const [revealed, setRevealed] = useState<boolean[]>(Array(GRID_SIZE).fill(false));
   const [minePositions, setMinePositions] = useState<number[]>([]);
@@ -63,7 +63,8 @@ export default function MinesPage() {
 
   const currentMultiplier = useMemo(() => {
     if (revealedGems === 0) return 1;
-    const houseEdge = 0.96; // 4% house edge
+    // Adjusted house edge to ~0.95 to match user request (e.g., 3 bombs, 1 gem ≈ 1.08x)
+    const houseEdge = 0.95; 
     const prob = combinations(GRID_SIZE - mineCount, revealedGems) / combinations(GRID_SIZE, revealedGems);
     return Number((1 / prob * houseEdge).toFixed(2));
   }, [revealedGems, mineCount]);
@@ -71,7 +72,7 @@ export default function MinesPage() {
   const nextMultiplier = useMemo(() => {
     const nextGems = revealedGems + 1;
     if (nextGems > GRID_SIZE - mineCount) return currentMultiplier;
-    const houseEdge = 0.96;
+    const houseEdge = 0.95;
     const prob = combinations(GRID_SIZE - mineCount, nextGems) / combinations(GRID_SIZE, nextGems);
     return Number((1 / prob * houseEdge).toFixed(2));
   }, [revealedGems, mineCount, currentMultiplier]);
@@ -275,9 +276,9 @@ export default function MinesPage() {
                 <div className="space-y-2">
                   <span className="text-[10px] font-black uppercase text-zinc-500 px-1">Bet Amount</span>
                   <div className="flex items-center justify-between bg-black/40 rounded-2xl p-2 border border-white/5">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setBetAmount(Math.max(MIN_BET, betAmount - 10))}><Minus className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setBetAmount(Math.max(MIN_BET, betAmount - 1))}><Minus className="h-4 w-4" /></Button>
                     <span className="font-black text-xs font-mono">₹{betAmount}</span>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setBetAmount(Math.min(MAX_BET, betAmount + 10))}><Plus className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setBetAmount(Math.min(MAX_BET, betAmount + 1))}><Plus className="h-4 w-4" /></Button>
                   </div>
                 </div>
                 <div className="space-y-2">
