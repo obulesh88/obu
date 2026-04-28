@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -5,16 +6,10 @@ import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { 
   doc, 
-  setDoc, 
   serverTimestamp, 
   type DocumentReference, 
   getDoc, 
-  query, 
   collection, 
-  where, 
-  getDocs, 
-  updateDoc, 
-  increment,
   addDoc,
   writeBatch
 } from 'firebase/firestore';
@@ -27,7 +22,7 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
  * Handles:
  * 1. Real-time profile fetching
  * 2. New user profile creation (Signup Bonus: ₹28)
- * 3. Referral processing (Referrer Reward: ₹45)
+ * 3. Referral processing (Referee registers a claim document)
  */
 export function useUser() {
   const { user: authUser, loading: authLoading } = useFirebaseAuth();
@@ -65,7 +60,7 @@ export function useUser() {
           const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           const memberId = 'OR-' + Math.floor(100000 + Math.random() * 900000);
           
-          // PLATFORM BONUSES (No Turnover required for signup bonus)
+          // PLATFORM BONUSES
           const SIGNUP_BONUS = 28;
 
           const newProfile: UserProfile = {
@@ -108,7 +103,7 @@ export function useUser() {
             },
           };
 
-          // Use a batch for atomic creation and first transaction
+          // Use a batch for atomic creation
           const batch = writeBatch(firestore);
           batch.set(currentUserRef, newProfile);
 
@@ -137,50 +132,31 @@ export function useUser() {
             localStorage.removeItem('pending_phone_number');
           }
 
-          // PROCESS REFERRAL (INSTANT)
+          // REFERRAL CLAIM SYSTEM
+          // Referee creates a record in '/referrals' which the Referrer will claim upon login.
           const pendingReferralCode = typeof window !== 'undefined' ? localStorage.getItem('or_wallet_referral_code') : null;
           if (pendingReferralCode && !referralProcessed.current) {
             referralProcessed.current = true;
             
-            const usersRef = collection(firestore, 'users');
-            const q = query(usersRef, where('referral.code', '==', pendingReferralCode.toUpperCase()));
-            const querySnapshot = await getDocs(q);
+            const referralRecord = {
+              referrerCode: pendingReferralCode.toUpperCase(),
+              refereeUid: guestUid,
+              refereeName: newProfile.profile.displayName,
+              amount: 45,
+              status: 'pending',
+              createdAt: serverTimestamp()
+            };
 
-            if (!querySnapshot.empty) {
-              const referrerDoc = querySnapshot.docs[0];
-              const referrerRef = doc(firestore, 'users', referrerDoc.id);
-              const referralReward = 45;
-              
-              // Update Referrer (Balance + Count + Earnings) using an atomic update
-              const updateData = {
-                'referral.count': increment(1),
-                'referral.earnings': increment(referralReward),
-                'wallet.balance': increment(referralReward),
-                'updatedAt': serverTimestamp()
-              };
-
-              updateDoc(referrerRef, updateData)
-                .then(() => {
-                  // Log Referrer Transaction
-                  addDoc(collection(firestore, 'transactions'), {
-                    userId: referrerDoc.id,
-                    amount: referralReward,
-                    currency: 'INR',
-                    type: 'referral',
-                    description: `Referral Reward: ${newProfile.profile.displayName} joined`,
-                    createdAt: serverTimestamp()
-                  });
-                })
-                .catch(async (error) => {
-                  if (error.code === 'permission-denied') {
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({
-                      path: referrerRef.path,
-                      operation: 'update',
-                      requestResourceData: updateData
-                    } satisfies SecurityRuleContext));
-                  }
-                });
-            }
+            addDoc(collection(firestore, 'referrals'), referralRecord)
+              .catch(async (error) => {
+                if (error.code === 'permission-denied') {
+                  errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: 'referrals',
+                    operation: 'create',
+                    requestResourceData: referralRecord
+                  } satisfies SecurityRuleContext));
+                }
+              });
             
             // Clear code after processing
             if (typeof window !== 'undefined') {

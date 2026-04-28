@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -22,7 +23,8 @@
         "wallet": {
           "type": "object",
           "properties": {
-            "balance": { "type": "number" }
+            "balance": { "type": "number" },
+            "wageringRequired": { "type": "number" }
           },
           "required": ["balance"]
         },
@@ -64,6 +66,20 @@
         }
       },
       "required": ["uid", "memberId", "email", "phoneNumber", "createdAt", "profile", "wallet"]
+    },
+    "ReferralRecord": {
+      "title": "Referral Record",
+      "description": "A record created by a referee to be claimed by the referrer.",
+      "type": "object",
+      "properties": {
+        "referrerCode": { "type": "string" },
+        "refereeUid": { "type": "string" },
+        "refereeName": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["referrerCode", "refereeUid", "amount", "status", "createdAt"]
     },
     "WithdrawalRequest": {
       "title": "Withdrawal Request",
@@ -159,6 +175,10 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Stores individual user profile data."
+    },
+    "/referrals/{referralId}": {
+      "schema": { "$ref": "#/entities/ReferralRecord" },
+      "description": "Tracks pending referral rewards between users."
     },
     "/payout_requests/{requestId}": {
       "schema": { "$ref": "#/entities/WithdrawalRequest" },

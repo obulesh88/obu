@@ -18,6 +18,11 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    // Referrals: Allow authenticated users to create and update status
+    match /referrals/{referralId} {
+      allow read, create, update: if isAuthenticated();
+    }
+
     // Transactions: Users can manage their own log
     match /transactions/{transactionId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
@@ -38,7 +43,6 @@ service cloud.firestore {
     }
 
     // Game Results: Public read, Auth-only write (for simulation)
-    // Updated to explicitly allow create/update for the game simulation engine
     match /wingo_results/{resultId} {
       allow read: if true;
       allow create, update: if isAuthenticated();
