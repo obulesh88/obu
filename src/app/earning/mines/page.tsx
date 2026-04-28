@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
-  ChevronLeft, Coins, Bomb, Diamond, Plus, Minus, RefreshCw, Trophy, Zap, Lock, Info
+  ChevronLeft, Coins, Bomb, Diamond, Plus, Minus, RefreshCw, Trophy, Zap, Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirestore } from '@/firebase';
@@ -19,6 +19,9 @@ import { useRouter } from 'next/navigation';
 const GRID_SIZE = 25; // 5x5
 const MIN_BET = 1;
 const MAX_BET = 1000;
+
+const QUICK_BOMBS = [1, 3, 5, 10, 24];
+const QUICK_BETS = [1, 5, 10, 50, 100];
 
 type GameState = 'idle' | 'playing' | 'ended';
 
@@ -63,7 +66,7 @@ export default function MinesPage() {
 
   const currentMultiplier = useMemo(() => {
     if (revealedGems === 0) return 1;
-    // Adjusted house edge to ~0.95 to match user request (e.g., 3 bombs, 1 gem ≈ 1.08x)
+    // house edge ~0.95 to approximate user request
     const houseEdge = 0.95; 
     const prob = combinations(GRID_SIZE - mineCount, revealedGems) / combinations(GRID_SIZE, revealedGems);
     return Number((1 / prob * houseEdge).toFixed(2));
@@ -111,7 +114,6 @@ export default function MinesPage() {
         };
         addDoc(collection(firestore, 'transactions'), txData);
 
-        // Generate Mines
         const positions: number[] = [];
         while (positions.length < mineCount) {
           const r = Math.floor(Math.random() * GRID_SIZE);
@@ -121,7 +123,7 @@ export default function MinesPage() {
         setRevealed(Array(GRID_SIZE).fill(false));
         setRevealedGems(0);
         setGameState('playing');
-        toast({ title: 'Game Started!', description: 'Good luck!' });
+        toast({ title: 'Game Started!', description: 'Avoid the bombs!' });
       })
       .catch(async (error: any) => {
         if (error.code === 'permission-denied') {
@@ -144,10 +146,11 @@ export default function MinesPage() {
 
     if (minePositions.includes(index)) {
       setGameState('ended');
-      toast({ variant: 'destructive', title: 'BOOM! 💥', description: 'Better luck next time.' });
+      toast({ variant: 'destructive', title: 'GAME OVER! 💣', description: 'You hit a mine.' });
     } else {
-      setRevealedGems(prev => prev + 1);
-      if (revealedGems + 1 === GRID_SIZE - mineCount) {
+      const newCount = revealedGems + 1;
+      setRevealedGems(newCount);
+      if (newCount === GRID_SIZE - mineCount) {
         handleCashOut();
       }
     }
@@ -175,7 +178,7 @@ export default function MinesPage() {
       };
       addDoc(collection(firestore, 'transactions'), txData);
       setGameState('ended');
-      toast({ title: 'CASHED OUT! 💰', description: `You won ₹${winAmount}` });
+      toast({ title: 'CASHED OUT! 💰', description: `Win: ₹${winAmount}` });
     }).catch(async (error: any) => {
       if (error.code === 'permission-denied') {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -223,10 +226,10 @@ export default function MinesPage() {
               </div>
            </div>
            <div className="bg-[#0a122a] p-4 rounded-2xl border border-white/5 shadow-2xl flex flex-col items-center text-center">
-              <span className="text-[10px] font-black uppercase text-zinc-500 mb-1">Mines Active</span>
+              <span className="text-[10px] font-black uppercase text-zinc-500 mb-1">Potential Win</span>
               <div className="flex items-center gap-2">
-                 <Bomb className="h-3 w-3 text-rose-500" />
-                 <span className="text-lg font-black font-mono">{mineCount}</span>
+                 <Coins className="h-3 w-3 text-emerald-400" />
+                 <span className="text-lg font-black text-emerald-400 font-mono">₹{(betAmount * currentMultiplier).toFixed(2)}</span>
               </div>
            </div>
         </div>
@@ -259,9 +262,6 @@ export default function MinesPage() {
                   ) : (
                     <Diamond className="h-8 w-8 text-emerald-400 animate-in zoom-in-50 duration-300" />
                   )}
-                  {isRevealed && !isMine && (
-                     <div className="absolute inset-0 bg-emerald-400/5 animate-pulse" />
-                  )}
                 </button>
               );
             })}
@@ -269,27 +269,53 @@ export default function MinesPage() {
         </div>
 
         {/* CONTROLS */}
-        <div className="flex flex-col gap-4 bg-[#0a122a] p-6 rounded-[40px] border border-white/5 shadow-2xl mt-auto">
+        <div className="flex flex-col gap-6 bg-[#0a122a] p-6 rounded-[40px] border border-white/5 shadow-2xl mt-auto">
           {gameState === 'idle' || gameState === 'ended' ? (
             <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-zinc-500 px-1">Bet Amount</span>
-                  <div className="flex items-center justify-between bg-black/40 rounded-2xl p-2 border border-white/5">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setBetAmount(Math.max(MIN_BET, betAmount - 1))}><Minus className="h-4 w-4" /></Button>
-                    <span className="font-black text-xs font-mono">₹{betAmount}</span>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setBetAmount(Math.min(MAX_BET, betAmount + 1))}><Plus className="h-4 w-4" /></Button>
-                  </div>
+              {/* Bet Amount Controls */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[10px] font-black uppercase text-zinc-500">Bet Amount</span>
+                  <span className="text-xs font-black font-mono text-blue-400">₹{betAmount}</span>
                 </div>
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase text-zinc-500 px-1">Mines</span>
-                  <div className="flex items-center justify-between bg-black/40 rounded-2xl p-2 border border-white/5">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setMineCount(Math.max(1, mineCount - 1))}><Minus className="h-4 w-4" /></Button>
-                    <span className="font-black text-xs font-mono">{mineCount}</span>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white" onClick={() => setMineCount(Math.min(24, mineCount + 1))}><Plus className="h-4 w-4" /></Button>
-                  </div>
+                <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
+                  {QUICK_BETS.map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => setBetAmount(amt)}
+                      className={cn(
+                        "flex-1 min-w-[50px] py-2 rounded-lg text-[10px] font-black transition-all border",
+                        betAmount === amt ? "bg-blue-600 border-blue-400 text-white" : "bg-black/20 border-white/5 text-zinc-500 hover:text-zinc-300"
+                      )}
+                    >
+                      ₹{amt}
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              {/* Mine Count Controls */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[10px] font-black uppercase text-zinc-500">Bomb Count</span>
+                  <span className="text-xs font-black font-mono text-rose-500">{mineCount} Mines</span>
+                </div>
+                <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
+                  {QUICK_BOMBS.map((count) => (
+                    <button
+                      key={count}
+                      onClick={() => setMineCount(count)}
+                      className={cn(
+                        "flex-1 min-w-[50px] py-2 rounded-lg text-[10px] font-black transition-all border",
+                        mineCount === count ? "bg-rose-600 border-rose-400 text-white" : "bg-black/20 border-white/5 text-zinc-500 hover:text-zinc-300"
+                      )}
+                    >
+                      {count}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <Button 
                 onClick={startGame} 
                 disabled={isProcessing}
@@ -303,7 +329,7 @@ export default function MinesPage() {
             <div className="flex flex-col gap-4 animate-in slide-in-from-bottom-6">
                <div className="flex justify-between items-center p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-black uppercase text-blue-400">Potential Win</span>
+                    <span className="text-[9px] font-black uppercase text-blue-400">Current Payout</span>
                     <div className="text-2xl font-black text-white font-mono">₹{(betAmount * currentMultiplier).toFixed(2)}</div>
                   </div>
                   <div className="text-right flex flex-col">
