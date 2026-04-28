@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Building2, Send, Landmark, Clock, RefreshCw, Copy, CheckCircle2, Mail, AlertCircle, TrendingUp } from 'lucide-react';
+import { DollarSign, Building2, Send, Landmark, Clock, RefreshCw, Copy, CheckCircle2, Mail, AlertCircle, TrendingUp, Info } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/hooks/use-user';
@@ -114,6 +114,22 @@ export default function WalletPageContent() {
 
   const handleSaveBankDetails = async () => {
     if (!user || !firestore) return;
+    
+    if (!bankData.name.trim()) {
+      toast({ variant: 'destructive', title: 'Name Required', description: 'Please enter account holder name.' });
+      return;
+    }
+
+    if (payoutType === 'upi' && !bankData.vpa.trim()) {
+      toast({ variant: 'destructive', title: 'UPI ID Required', description: 'Please enter your VPA/UPI ID.' });
+      return;
+    }
+
+    if (payoutType === 'bank' && (!bankData.accountNumber.trim() || !bankData.ifsc.trim())) {
+      toast({ variant: 'destructive', title: 'Bank Info Required', description: 'Please enter Account Number and IFSC.' });
+      return;
+    }
+
     setIsSavingBank(true);
     const userDocRef = doc(firestore, 'users', user.uid);
     const updateData = { bankDetails: { ...bankData, payoutType }, updatedAt: serverTimestamp() };
@@ -181,18 +197,35 @@ export default function WalletPageContent() {
 
   const handleWithdraw = async () => {
     if (!user || !userProfile || !firestore) return;
+
+    // 1. Check if payout details exist
+    const hasName = bankData.name.trim().length > 0;
+    const hasDetails = payoutType === 'upi' ? bankData.vpa.trim().length > 0 : (bankData.accountNumber.trim().length > 0 && bankData.ifsc.trim().length > 0);
+
+    if (!hasName || !hasDetails) {
+      toast({
+        variant: 'destructive',
+        title: 'Payout Details Missing',
+        description: 'Please update your Name and UPI ID/Bank details before requesting a payout.',
+      });
+      setIsBankDialogOpen(true);
+      return;
+    }
     
+    // 2. Check turnover requirement
     if (wageringRequired > 0.01) {
       toast({ variant: 'destructive', title: 'Wagering Required', description: `Complete ₹${wageringRequired.toFixed(2)} turnover.` });
       return;
     }
 
+    // 3. Validate amount
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
       toast({ variant: 'destructive', title: 'Min Withdrawal ₹' + MIN_WITHDRAWAL });
       return;
     }
 
+    // 4. Check sufficient balance
     if (amount > (userProfile.wallet?.balance || 0)) {
       toast({ variant: 'destructive', title: 'Insufficient Balance' });
       return;
@@ -269,7 +302,10 @@ export default function WalletPageContent() {
               <CardContent className="space-y-6 pt-6">
                  {wageringRequired > 0.01 && (
                    <div className="bg-primary/5 border rounded-xl p-4 space-y-2">
-                     <p className="text-[10px] font-black uppercase">Turnover: ₹{wageringRequired.toFixed(2)} Left</p>
+                     <div className="flex justify-between items-center">
+                        <p className="text-[10px] font-black uppercase">Turnover: ₹{wageringRequired.toFixed(2)} Left</p>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                     </div>
                      <Progress value={0} className="h-1" />
                    </div>
                  )}
@@ -329,10 +365,17 @@ export default function WalletPageContent() {
         <DialogContent>
             <DialogHeader><DialogTitle className="uppercase font-black">Payout Details</DialogTitle></DialogHeader>
             <div className="space-y-4 py-4">
-                <Input value={bankData.name} onChange={(e) => setBankData({...bankData, name: e.target.value})} placeholder="Account Holder Name" className="font-bold" />
-                <Input value={bankData.vpa} onChange={(e) => setBankData({...bankData, vpa: e.target.value})} placeholder="UPI ID" className="font-bold" />
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase">Account Holder Name</Label>
+                  <Input value={bankData.name} onChange={(e) => setBankData({...bankData, name: e.target.value})} placeholder="Your Full Name" className="font-bold h-12" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase">UPI ID / VPA</Label>
+                  <Input value={bankData.vpa} onChange={(e) => setBankData({...bankData, vpa: e.target.value})} placeholder="example@upi" className="font-bold h-12" />
+                </div>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase leading-relaxed">Ensure the details are correct. Payouts are processed to this account only.</p>
             </div>
-            <DialogFooter><Button onClick={handleSaveBankDetails} className="w-full font-black uppercase" disabled={isSavingBank}>Save Details</Button></DialogFooter>
+            <DialogFooter><Button onClick={handleSaveBankDetails} className="w-full font-black uppercase h-12" disabled={isSavingBank}>Save Details</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
