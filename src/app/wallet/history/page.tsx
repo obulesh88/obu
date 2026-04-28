@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -55,7 +56,7 @@ export default function HistoryPage() {
   const { data: rawDeposits, loading: depositsLoading } = useCollection<DepositRequest>(depositsQuery);
 
   const getTimestamp = (date: any) => {
-    if (!date) return 0;
+    if (!date) return Date.now(); // Handle pending server timestamps by using current time for sorting
     if (date.toDate) return date.toDate().getTime();
     if (date.seconds) return date.seconds * 1000;
     if (typeof date === 'string' || date instanceof Date) return new Date(date).getTime();

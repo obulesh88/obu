@@ -198,7 +198,6 @@ export default function WalletPageContent() {
   const handleWithdraw = async () => {
     if (!user || !userProfile || !firestore) return;
 
-    // 1. Check if payout details exist
     const hasName = bankData.name.trim().length > 0;
     const hasDetails = payoutType === 'upi' ? bankData.vpa.trim().length > 0 : (bankData.accountNumber.trim().length > 0 && bankData.ifsc.trim().length > 0);
 
@@ -212,20 +211,17 @@ export default function WalletPageContent() {
       return;
     }
     
-    // 2. Check turnover requirement
     if (wageringRequired > 0.01) {
       toast({ variant: 'destructive', title: 'Wagering Required', description: `Complete ₹${wageringRequired.toFixed(2)} turnover.` });
       return;
     }
 
-    // 3. Validate amount
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
       toast({ variant: 'destructive', title: 'Min Withdrawal ₹' + MIN_WITHDRAWAL });
       return;
     }
 
-    // 4. Check sufficient balance
     if (amount > (userProfile.wallet?.balance || 0)) {
       toast({ variant: 'destructive', title: 'Insufficient Balance' });
       return;
@@ -244,19 +240,37 @@ export default function WalletPageContent() {
       updatedAt: serverTimestamp()
     };
 
-    addDoc(requestsRef, requestData).then(() => {
-        addDoc(collection(firestore, 'transactions'), {
-            userId: user.uid,
-            amount: amount,
-            currency: 'INR',
-            type: 'withdrawal',
-            description: `Withdrawal Request`,
-            createdAt: serverTimestamp()
-        });
-        updateDoc(userDocRef, { 'wallet.balance': increment(-amount), updatedAt: serverTimestamp() });
-        toast({ title: 'Success', description: 'Payout request sent.' });
-        setWithdrawAmount('');
-    }).finally(() => setIsWithdrawing(false));
+    try {
+      await addDoc(requestsRef, requestData);
+      
+      const txData = {
+        userId: user.uid,
+        amount: amount,
+        currency: 'INR',
+        type: 'withdrawal',
+        description: `Withdrawal Request`,
+        createdAt: serverTimestamp()
+      };
+      
+      await addDoc(collection(firestore, 'transactions'), txData);
+      
+      await updateDoc(userDocRef, { 
+        'wallet.balance': increment(-amount), 
+        updatedAt: serverTimestamp() 
+      });
+      
+      toast({ title: 'Success', description: 'Payout request sent successfully.' });
+      setWithdrawAmount('');
+    } catch (error: any) {
+      console.error('Withdrawal failed:', error);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Request Failed', 
+        description: error.message || 'Please try again later.' 
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
   };
 
   if (loading || depositsLoading) {
