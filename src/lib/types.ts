@@ -1,4 +1,8 @@
 
+/**
+ * Core data entities for the OR wallet platform.
+ */
+
 export type UserProfile = {
   uid: string;
   memberId: string;
@@ -10,7 +14,7 @@ export type UserProfile = {
   };
   wallet: {
     balance: number;
-    wageringRequired?: number;
+    wageringRequired?: number; // Turnover requirement (only for recharges)
   };
   bankDetails?: {
     name: string;
@@ -50,6 +54,13 @@ export type Transaction = {
   type: TransactionType;
   description: string;
   createdAt: any;
+  settled?: boolean; // Used for game bet tracking
+  metadata?: {
+    gameType?: 'wingo' | 'k3' | 'dt';
+    period?: string;
+    bet?: string;
+    amount?: number;
+  };
 };
 
 export type WithdrawalRequest = {
