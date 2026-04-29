@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Edit2, Check, RefreshCw, LogOut, Fingerprint } from 'lucide-react';
+import { Moon, Sun, Edit2, Check, RefreshCw, LogOut, Fingerprint, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -179,6 +179,15 @@ export default function ProfilePage() {
                 <Label htmlFor="memberId" className="text-[10px] font-bold uppercase text-primary">Unique Member ID</Label>
                 <Input id="memberId" value={userProfile.memberId} readOnly className="h-11 font-black bg-muted text-primary" />
             </div>
+            {userProfile.referredBy && (
+              <div className="space-y-2">
+                <Label htmlFor="referredBy" className="text-[10px] font-bold uppercase text-purple-500">Referred By</Label>
+                <div className="relative">
+                  <Input id="referredBy" value={userProfile.referredBy} readOnly className="h-11 font-black bg-muted pl-10" />
+                  <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-500/50" />
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
                 <Label htmlFor="accountType" className="text-[10px] font-bold uppercase">Account Type</Label>
                 <Input id="accountType" value="Verified Earner" readOnly className="h-11 font-bold bg-muted" />

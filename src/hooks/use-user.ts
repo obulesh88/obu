@@ -1,4 +1,3 @@
-
 'use client';
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useFirebaseAuth } from '@/firebase/auth/use-user';
@@ -60,6 +59,9 @@ export function useUser() {
           const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
           const memberId = 'OR-' + Math.floor(100000 + Math.random() * 900000);
           
+          // Check for referral code
+          const pendingReferralCode = typeof window !== 'undefined' ? localStorage.getItem('or_wallet_referral_code') : null;
+          
           // PLATFORM BONUSES
           const SIGNUP_BONUS = 28;
 
@@ -68,6 +70,7 @@ export function useUser() {
             memberId: memberId,
             email: authUser.email || '',
             phoneNumber: pendingPhone,
+            referredBy: pendingReferralCode ? pendingReferralCode.toUpperCase() : undefined,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             profile: { 
@@ -134,7 +137,6 @@ export function useUser() {
 
           // REFERRAL CLAIM SYSTEM
           // Referee creates a record in '/referrals' which the Referrer will claim upon login.
-          const pendingReferralCode = typeof window !== 'undefined' ? localStorage.getItem('or_wallet_referral_code') : null;
           if (pendingReferralCode && !referralProcessed.current) {
             referralProcessed.current = true;
             

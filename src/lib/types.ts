@@ -1,4 +1,3 @@
-
 /**
  * Core data entities for the OR wallet platform.
  */
@@ -8,6 +7,7 @@ export type UserProfile = {
   memberId: string;
   email: string;
   phoneNumber: string;
+  referredBy?: string; // The code of the user who referred this person
   profile: {
     displayName: string;
     Uid: string;
