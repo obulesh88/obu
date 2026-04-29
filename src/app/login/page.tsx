@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
 import { 
@@ -39,6 +39,14 @@ export default function LoginPage() {
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  // Pre-fill referral code from localStorage if coming from a referral link
+  useEffect(() => {
+    const storedCode = localStorage.getItem('or_wallet_referral_code');
+    if (storedCode && !isLogin) {
+      setReferralCode(storedCode.toUpperCase());
+    }
+  }, [isLogin]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
